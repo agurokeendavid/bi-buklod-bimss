@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Bimss.Api/Bimss.Api.csproj" />
+    <Project Path="src/Bimss.Application/Bimss.Application.csproj" />
+    <Project Path="src/Bimss.Contracts/Bimss.Contracts.csproj" />
+    <Project Path="src/Bimss.Domain/Bimss.Domain.csproj" />
+    <Project Path="src/Bimss.Infrastructure/Bimss.Infrastructure.csproj" />
+    <Project Path="src/Bimss.Web/Bimss.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Bimss.ArchitectureTests/Bimss.ArchitectureTests.csproj" />
+    <Project Path="tests/Bimss.IntegrationTests/Bimss.IntegrationTests.csproj" />
+    <Project Path="tests/Bimss.UnitTests/Bimss.UnitTests.csproj" />
+  </Folder>
+</Solution>
