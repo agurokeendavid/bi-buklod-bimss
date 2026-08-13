@@ -34,7 +34,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-003 | CI build/test workflow | Done — [PR #1](https://github.com/agurokeendavid/bi-buklod-bimss/pull/1) |
 | BIMSS-001 | Centralize build settings & `.editorconfig` | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2) |
 | BIMSS-002 | Safe local configuration (`appsettings*.json.example`) | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2), revised in [PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3) |
-| BIMSS-004 | EF Core DbContext scaffolding | In branch — `feature/bimss-004-efcore-dbcontext-foundation` |
+| BIMSS-004 | EF Core DbContext scaffolding | Done — [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5) |
 | BIMSS-005 | ASP.NET Core Identity + first migration | Not started |
 | BIMSS-006 | Permission/policy authorization model | Not started |
 | BIMSS-007 | Audit logging foundation | Not started |
@@ -45,10 +45,13 @@ architecture or security rules that live elsewhere.
 | BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Not started |
 | BIMSS-013 | Synthetic seed strategy (Identity portion) | Not started |
 
-Also merged, not part of the original numbered backlog: **Code First EF Core +
-local secrets workflow documentation** ([PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3))
-— made the Code First approach explicit in `AGENTS.md`/`docs/ARCHITECTURE.md`, and
-simplified the local secrets workflow (see "Secrets convention" below).
+Also merged, not part of the original numbered backlog:
+- **Code First EF Core + local secrets workflow documentation**
+  ([PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3)) — made the
+  Code First approach explicit in `AGENTS.md`/`docs/ARCHITECTURE.md`, and
+  simplified the local secrets workflow (see "Secrets convention" below).
+- **This backlog-tracking doc itself**
+  ([PR #4](https://github.com/agurokeendavid/bi-buklod-bimss/pull/4)).
 
 ### BIMSS-003 — CI build/test workflow (Done)
 
@@ -73,11 +76,12 @@ connection strings/API tokens as the app grows. Committed
 below for the full local/deployment workflow — this is a hard rule, confirmed
 with the project owner twice; do not revert to committing real config files.
 
-### BIMSS-004 — EF Core DbContext scaffolding (In branch, not yet merged)
+### BIMSS-004 — EF Core DbContext scaffolding (Done)
 
-Branch: `feature/bimss-004-efcore-dbcontext-foundation`. Implemented and verified
-locally (clean build, full test suite including a real Testcontainers-backed SQL
-Server connectivity test, `dotnet format --verify-no-changes`) but not pushed.
+Merged via [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5).
+Verified locally before merge (clean build, full test suite including a real
+Testcontainers-backed SQL Server connectivity test, `dotnet format
+--verify-no-changes`) and CI passed on the PR.
 
 What it contains:
 - `Bimss.Infrastructure/Persistence/BimssDbContext.cs` — zero entities so far
@@ -105,9 +109,6 @@ What it contains:
   connects `BimssDbContext` to a real SQL Server container via
   `Testcontainers.MsSql` and asserts `CanConnectAsync()`. Requires Docker running
   locally (see "Environment notes").
-
-**Next action for this task**: push the branch and open a PR (was paused mid-flow
-to answer other questions, not because of any problem with the implementation).
 
 ### BIMSS-005 — ASP.NET Core Identity + first migration
 
