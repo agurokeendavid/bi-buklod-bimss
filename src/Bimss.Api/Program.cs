@@ -1,4 +1,5 @@
-﻿using Bimss.Infrastructure.Auditing;
+﻿using Bimss.Api.ExceptionHandling;
+using Bimss.Infrastructure.Auditing;
 using Bimss.Infrastructure.Authorization;
 using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
@@ -12,12 +13,16 @@ builder.Services.AddBimssPersistence(builder.Configuration);
 builder.Services.AddBimssIdentity();
 builder.Services.AddBimssAuthorization();
 builder.Services.AddBimssAuditing();
+builder.Services.AddExceptionHandler<BimssExceptionHandler>();
+builder.Services.AddProblemDetails();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

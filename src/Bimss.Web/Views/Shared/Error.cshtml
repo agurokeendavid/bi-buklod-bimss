@@ -4,7 +4,12 @@
 }
 
 <h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<h2 class="text-danger">@Model.StatusCode @Model.Title</h2>
+
+@if (!string.IsNullOrEmpty(Model.Detail))
+{
+    <p>@Model.Detail</p>
+}
 
 @if (Model.ShowRequestId)
 {
