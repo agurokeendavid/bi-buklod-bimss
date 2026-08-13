@@ -431,7 +431,7 @@ FodyWeavers.xsd
 # Custom Files
 # Real appsettings files may hold secrets/connection strings and must never
 # be committed. Copy the committed appsettings*.json.example templates to
-# their real names locally, and use `dotnet user-secrets` for actual secrets.
+# their real names locally and edit them directly with real values.
 # See docs/REPOSITORY_SETUP.md.
 src/Bimss.Api/appsettings.json
 src/Bimss.Api/appsettings.*.json

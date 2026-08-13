@@ -5,7 +5,9 @@ applyTo: "**/*DbContext*.cs,**/Migrations/**/*.cs,**/*.sql,**/Infrastructure/**/
 # SQL Server / EF Core Instructions
 
 - EF Core 10 + SQL Server is the default persistence stack.
-- Use migrations.
+- Code First: entities and `IEntityTypeConfiguration<T>` classes in C# are the source of truth.
+  Never scaffold entities from an existing database and never hand-edit the schema outside migrations.
+- Use migrations, generated from the model with `dotnet ef migrations add`.
 - Use SQL `decimal` for money and define precision explicitly.
 - Add unique constraints/indexes for business uniqueness and concurrent safety.
 - Use foreign keys and appropriate delete behavior; avoid cascade deletion of financial/audit records.
