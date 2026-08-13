@@ -91,14 +91,48 @@ A simpler GitHub flow with short-lived feature branches directly into `main` is 
 
 ## Environment files
 
-Commit only safe templates such as:
+Real `appsettings.json` and `appsettings.Development.json` files are **never
+committed**, for either `Bimss.Web` or `Bimss.Api`. They are expected to hold
+connection strings, API tokens, and other secrets as the application grows,
+so both are git-ignored outright rather than trusted to stay secret-free.
+
+Commit only safe example templates instead:
 
 ```text
-appsettings.json
-appsettings.Development.json (without secrets)
+appsettings.json.example
+appsettings.Development.json.example
 ```
 
-Use user secrets or approved environment configuration for developer credentials.
+### Local developer setup
+
+1. For both `src/Bimss.Web` and `src/Bimss.Api`, copy each `*.example` file
+   to its real name in the same folder:
+
+   ```powershell
+   Copy-Item src/Bimss.Web/appsettings.json.example src/Bimss.Web/appsettings.json
+   Copy-Item src/Bimss.Web/appsettings.Development.json.example src/Bimss.Web/appsettings.Development.json
+   ```
+
+2. Prefer `dotnet user-secrets` for actual secrets (connection strings, API
+   tokens) so they never touch a file in the repo at all, git-ignored or not:
+
+   ```powershell
+   cd src/Bimss.Web
+   dotnet user-secrets init
+   dotnet user-secrets set "ConnectionStrings:Bimss" "<local dev connection string>"
+   ```
+
+   Repeat for `src/Bimss.Api` if it needs its own local secrets.
+
+3. Non-secret local overrides (e.g. log levels) can go directly in your
+   local, git-ignored `appsettings.Development.json`.
+
+Never add a connection string, API token, or credential to a committed
+`appsettings*.json` or `*.example` file — `.example` files stay placeholder
+templates only. When a feature introduces a new config section (e.g. a
+connection string once EF Core is wired up), add the *key name* with an
+empty/placeholder value to the `.example` template so other developers know
+what to fill in, never the real value.
 
 ## Do not commit
 
