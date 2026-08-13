@@ -1,4 +1,4 @@
-namespace Bimss.Web.Models;
+﻿namespace Bimss.Web.Models;
 
 public class ErrorViewModel
 {

@@ -1,4 +1,4 @@
-namespace Bimss.Api;
+﻿namespace Bimss.Api;
 
 public class WeatherForecast
 {
