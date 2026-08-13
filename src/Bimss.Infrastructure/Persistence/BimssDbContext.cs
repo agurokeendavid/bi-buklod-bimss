@@ -1,4 +1,5 @@
-﻿using Bimss.Infrastructure.Identity;
+﻿using Bimss.Infrastructure.Auditing;
+using Bimss.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,8 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
     : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
+    public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

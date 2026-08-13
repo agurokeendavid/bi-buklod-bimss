@@ -1,4 +1,5 @@
-﻿using Bimss.Infrastructure.Authorization;
+﻿using Bimss.Infrastructure.Auditing;
+using Bimss.Infrastructure.Authorization;
 using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
 
@@ -10,6 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddBimssPersistence(builder.Configuration);
 builder.Services.AddBimssIdentity();
 builder.Services.AddBimssAuthorization();
+builder.Services.AddBimssAuditing();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
