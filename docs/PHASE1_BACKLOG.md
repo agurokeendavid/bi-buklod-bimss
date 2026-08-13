@@ -36,7 +36,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-002 | Safe local configuration (`appsettings*.json.example`) | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2), revised in [PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3) |
 | BIMSS-004 | EF Core DbContext scaffolding | Done — [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5) |
 | BIMSS-005 | ASP.NET Core Identity + first migration | Done — [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7) |
-| BIMSS-006 | Permission/policy authorization model | Not started |
+| BIMSS-006 | Permission/policy authorization model | Done — [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9) |
 | BIMSS-007 | Audit logging foundation | Not started |
 | BIMSS-008 | Global exception handling & typed exceptions | Not started |
 | BIMSS-009 | Validation conventions | Not started |
@@ -158,19 +158,40 @@ Merged via [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7).
   `dotnet test --configuration Release` (7/7 passing, including the two
   Testcontainers-backed integration tests), `dotnet format --verify-no-changes`.
 
-### BIMSS-006 — Permission/policy authorization model
+### BIMSS-006 — Permission/policy authorization model (Done)
 
-- Purpose: `Permission` catalog (constants, not free text), `RolePermission` table,
-  claims transformation at sign-in, named `AuthorizationPolicy` registration.
-  Never `[Authorize(Roles = "...")]` string checks — see `AGENTS.md`.
-- Dependencies: BIMSS-005.
-- Acceptance criteria: a policy-protected action correctly allows/denies based on
-  the signed-in user's role→permission mapping; permission catalog includes all
-  permissions listed in `docs/ARCHITECTURE.md` (most unused until later phases).
-- Tests: unit tests for the policy handler; integration test hitting a protected
-  endpoint as authorized/unauthorized users.
-- Security: verify unauthenticated requests are rejected before handler logic
-  runs; verify server-side enforcement independent of any client-side UI hiding.
+Merged via [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9).
+
+- `Permission` catalog (`Bimss.Domain/Authorization/Permission.cs`) — constants
+  grouped by module, matching `docs/ARCHITECTURE.md`'s list exactly, plus
+  `Permission.All` and the `bimss:permission` claim type. Lives in
+  `Bimss.Domain` (plain constants, no framework dependency, reachable
+  everywhere via the project-reference graph) rather than Infrastructure.
+- `RolePermission` join entity (`Bimss.Infrastructure/Identity/`) — composite
+  key `(RoleId, PermissionName)`, FK to `AspNetRoles` cascade delete.
+  Migration: `AddRolePermissions`.
+- `PermissionClaimsTransformation : IClaimsTransformation` — adds one claim
+  per permission from the signed-in user's role assignments; guards against
+  re-adding claims if it runs more than once per request.
+- `AddBimssAuthorization()` (`Bimss.Infrastructure/Authorization/`) —
+  registers the claims transformation and a named `AuthorizationPolicy` per
+  `Permission.All` entry requiring that permission's claim. Called from both
+  hosts' `Program.cs` after `AddBimssIdentity()`. BIMSS-010 will later fold
+  this together with `AddBimssIdentity`/`AddBimssPersistence` into the
+  consolidated extension methods it describes.
+- `DiagnosticsController.AuthorizedPing` (`GET
+  /api/diagnostics/authorized-ping`) — minimal `[Authorize(Policy =
+  Permission.Audit.View)]` endpoint demonstrating the model end-to-end.
+- Tests: `PermissionCatalogTests`/`AuthorizationPolicyRegistrationTests`
+  (unit), `PermissionClaimsTransformationTests` (Testcontainers-backed —
+  claims correctly derived from seeded role/permission data),
+  `DiagnosticsAuthorizationTests` (`WebApplicationFactory<Program>` +
+  test-only auth scheme — unauthenticated 401, authenticated-without-
+  permission 403, authenticated-with-permission 200). `Bimss.Api/Program.cs`
+  gained `public partial class Program;` so the test host can boot it.
+- No role/permission seeding — that's BIMSS-013.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (17/17 passing) in
+  Release, `dotnet format --verify-no-changes`.
 
 ### BIMSS-007 — Audit logging foundation
 
