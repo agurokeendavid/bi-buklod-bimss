@@ -100,6 +100,22 @@ appsettings.Development.json (without secrets)
 
 Use user secrets or approved environment configuration for developer credentials.
 
+`appsettings.json` and `appsettings.Development.json` are committed for both
+`Bimss.Web` and `Bimss.Api` as safe templates with no secrets or connection
+strings. Set local developer values (e.g. a dev SQL Server connection string,
+once one is needed) with `dotnet user-secrets`, run from each project folder:
+
+```powershell
+cd src/Bimss.Web
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:Bimss" "<local dev connection string>"
+```
+
+Repeat for `src/Bimss.Api` if it needs its own local secrets. Never add a
+connection string or credential directly to a committed `appsettings*.json`
+file. `appsettings.Production.json` and any `appsettings.*.Local.json` file
+are git-ignored and must never be committed.
+
 ## Do not commit
 
 ```text
