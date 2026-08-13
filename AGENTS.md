@@ -35,7 +35,13 @@ If the documentation and implementation disagree, do not silently guess. Preserv
 ## Data access rules
 
 - Use EF Core 10 with the SQL Server provider as the default persistence approach.
-- Use migrations for schema evolution.
+- Use a Code First approach: entities and `IEntityTypeConfiguration<T>` classes in C# are the
+  source of truth for the schema. Never scaffold/reverse-engineer entities from an existing
+  database (`Scaffold-DbContext`/`dotnet ef dbcontext scaffold`), and never hand-edit the
+  database schema outside of migrations.
+- Use migrations for schema evolution. Every schema change is captured as a migration generated
+  from the model (`dotnet ef migrations add`) and committed alongside the entity/configuration
+  change that caused it.
 - Store monetary amounts with SQL `decimal`, never `float` or `real`.
 - Use explicit precision for money values.
 - Use database constraints and unique indexes for invariants that must survive concurrent requests.

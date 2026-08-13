@@ -90,6 +90,12 @@ Use one SQL Server database initially. Organize EF mappings and optionally SQL s
 
 Do not create a separate database for each module unless future operational requirements demand it.
 
+EF Core is used Code First: the database schema is derived from `Bimss.Domain` entities and
+`Bimss.Infrastructure` `IEntityTypeConfiguration<T>` classes, with migrations generated from that
+model (`dotnet ef migrations add`) tracking every schema change alongside its code change. The
+schema is never reverse-engineered from an existing database, and never hand-edited outside a
+migration.
+
 ## API and MVC strategy
 
 MVC is the primary member/admin web UI.

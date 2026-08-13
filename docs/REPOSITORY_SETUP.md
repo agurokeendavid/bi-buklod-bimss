@@ -105,27 +105,35 @@ appsettings.Development.json.example
 
 ### Local developer setup
 
-1. For both `src/Bimss.Web` and `src/Bimss.Api`, copy each `*.example` file
-   to its real name in the same folder:
+For both `src/Bimss.Web` and `src/Bimss.Api`, copy each `*.example` file to
+its real name in the same folder, then edit the real file directly with your
+local values, including connection strings and any other local secrets:
 
-   ```powershell
-   Copy-Item src/Bimss.Web/appsettings.json.example src/Bimss.Web/appsettings.json
-   Copy-Item src/Bimss.Web/appsettings.Development.json.example src/Bimss.Web/appsettings.Development.json
-   ```
+```powershell
+Copy-Item src/Bimss.Web/appsettings.json.example src/Bimss.Web/appsettings.json
+Copy-Item src/Bimss.Web/appsettings.Development.json.example src/Bimss.Web/appsettings.Development.json
+```
 
-2. Prefer `dotnet user-secrets` for actual secrets (connection strings, API
-   tokens) so they never touch a file in the repo at all, git-ignored or not:
+That's the whole setup — no `dotnet user-secrets` step is required. The real
+files are git-ignored (see above), so anything written into them, secrets
+included, never reaches git regardless of where they're edited.
 
-   ```powershell
-   cd src/Bimss.Web
-   dotnet user-secrets init
-   dotnet user-secrets set "ConnectionStrings:Bimss" "<local dev connection string>"
-   ```
+### Deploying to IIS
 
-   Repeat for `src/Bimss.Api` if it needs its own local secrets.
+The same pattern carries over to deployment: the published build never
+includes a real `appsettings*.json`, since those files are git-ignored and
+therefore never part of the repository or the build output pulled from it.
+Place the real, environment-specific file directly on the server as part of
+the deployment step:
 
-3. Non-secret local overrides (e.g. log levels) can go directly in your
-   local, git-ignored `appsettings.Development.json`.
+- Maintain a real `appsettings.Production.json` (or `appsettings.json`) for
+  each server, containing that environment's actual connection strings and
+  secrets, and copy it into the deployed site's folder alongside the
+  published app. ASP.NET Core picks up `appsettings.{Environment}.json`
+  automatically based on `ASPNETCORE_ENVIRONMENT`.
+- Never commit that file, generate it from a committed template with real
+  values filled in via a script, or store it anywhere `git status` would see
+  it inside the repository working tree.
 
 Never add a connection string, API token, or credential to a committed
 `appsettings*.json` or `*.example` file — `.example` files stay placeholder
