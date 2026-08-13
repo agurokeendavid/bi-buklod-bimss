@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Bimss.Contracts\Bimss.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Bimss.Infrastructure\Bimss.Infrastructure.csproj" />
   </ItemGroup>
 
