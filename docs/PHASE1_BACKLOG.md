@@ -35,7 +35,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-001 | Centralize build settings & `.editorconfig` | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2) |
 | BIMSS-002 | Safe local configuration (`appsettings*.json.example`) | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2), revised in [PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3) |
 | BIMSS-004 | EF Core DbContext scaffolding | Done — [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5) |
-| BIMSS-005 | ASP.NET Core Identity + first migration | Not started |
+| BIMSS-005 | ASP.NET Core Identity + first migration | In branch — `feature/bimss-005-identity-initial-migration` |
 | BIMSS-006 | Permission/policy authorization model | Not started |
 | BIMSS-007 | Audit logging foundation | Not started |
 | BIMSS-008 | Global exception handling & typed exceptions | Not started |
@@ -110,21 +110,53 @@ What it contains:
   `Testcontainers.MsSql` and asserts `CanConnectAsync()`. Requires Docker running
   locally (see "Environment notes").
 
-### BIMSS-005 — ASP.NET Core Identity + first migration
+### BIMSS-005 — ASP.NET Core Identity + first migration (In branch)
 
-- Purpose: `ApplicationUser : IdentityUser<Guid>` (nullable `MemberId` link for
-  later), `ApplicationRole`, Identity wired into `BimssDbContext`, first real
-  migration (`InitialIdentity`).
-- Files: `Bimss.Domain` or `Infrastructure/Identity` for the user/role types;
-  `BimssDbContext : IdentityDbContext<...>`; Identity service registration in both
-  hosts' `Program.cs`.
-- Dependencies: BIMSS-004.
-- Acceptance criteria: migration applies cleanly to a fresh dev DB; `AspNetUsers`/
-  `AspNetRoles`/etc. tables created; default Identity password/lockout policy
-  reviewed and tightened.
-- Tests: integration test applying the migration to a throwaway DB and asserting
-  the schema exists.
-- Security: no plaintext credentials anywhere in seed/test code.
+Implemented on `feature/bimss-005-identity-initial-migration`, not yet merged.
+
+- `ApplicationUser : IdentityUser<Guid>` (nullable `MemberId` link, no FK yet —
+  `Member` doesn't exist until BIMSS-015) and `ApplicationRole : IdentityRole<Guid>`
+  live in `Bimss.Infrastructure/Identity/`, not `Bimss.Domain` — Identity types
+  need an ASP.NET Core reference, which `Bimss.Domain` must stay free of for
+  BIMSS-012's planned architecture test.
+- `BimssDbContext` is now `IdentityDbContext<ApplicationUser, ApplicationRole,
+  Guid>`.
+- `Bimss.Infrastructure/Identity/IdentityServiceCollectionExtensions.cs` —
+  `AddBimssIdentity()`, mirroring the existing `AddBimssPersistence` pattern;
+  called from both `Bimss.Web/Program.cs` and `Bimss.Api/Program.cs`, alongside
+  `app.UseAuthentication()` added before `app.UseAuthorization()` in both hosts'
+  middleware pipelines.
+- Password/lockout policy tightened beyond framework defaults: min length 12,
+  digit/lower/upper/non-alphanumeric required, 4 required unique chars, lockout
+  after 5 failed attempts for 15 minutes, unique email required.
+  `SignIn.RequireConfirmedAccount` stays `false` — no email-sending
+  infrastructure exists yet to confirm accounts with; revisit once that lands.
+- `Bimss.Infrastructure.csproj` needed a `FrameworkReference` to
+  `Microsoft.AspNetCore.App` (it's a plain `Microsoft.NET.Sdk` library, not
+  `Sdk.Web`, so `AddIdentity`/`IdentityOptions` aren't available without it) plus
+  the new `Microsoft.AspNetCore.Identity.EntityFrameworkCore` package, pinned to
+  `10.0.11` to match the other EF Core packages. The `FrameworkReference` made
+  the existing explicit `Microsoft.Extensions.Configuration.Json`/
+  `.EnvironmentVariables` package references redundant (now provided
+  transitively); removed them.
+- First real migration: `InitialIdentity`, under
+  `src/Bimss.Infrastructure/Persistence/Migrations/` (generated with
+  `--output-dir Persistence/Migrations` to sit alongside `BimssDbContext`
+  instead of EF's default project-root `Migrations/` folder). Creates
+  `AspNetUsers` (with `MemberId`), `AspNetRoles`, `AspNetUserRoles`,
+  `AspNetUserClaims`, `AspNetRoleClaims`, `AspNetUserLogins`, `AspNetUserTokens`.
+- `tests/Bimss.IntegrationTests/Persistence/InitialIdentityMigrationTests.cs` —
+  same `IAsyncLifetime`/`Testcontainers.MsSql` pattern as
+  `BimssDbContextConnectivityTests.cs`; applies the migration for real and
+  queries `Users`/`Roles`.
+- `tests/Bimss.UnitTests/Identity/IdentityOptionsConfigurationTests.cs` —
+  exercises `ConfigureIdentityOptions` directly against a plain `IdentityOptions`
+  instance (no DB/DI needed); `Bimss.UnitTests.csproj` gained its first project
+  reference (`Bimss.Infrastructure`).
+- No role/permission seeding — that's BIMSS-013.
+- Verified locally: clean rebuild, `dotnet build --configuration Release`,
+  `dotnet test --configuration Release` (7/7 passing, including the two
+  Testcontainers-backed integration tests), `dotnet format --verify-no-changes`.
 
 ### BIMSS-006 — Permission/policy authorization model
 

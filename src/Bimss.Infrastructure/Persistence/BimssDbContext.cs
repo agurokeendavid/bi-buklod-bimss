@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Bimss.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bimss.Infrastructure.Persistence;
 
-public class BimssDbContext(DbContextOptions<BimssDbContext> options) : DbContext(options)
+public class BimssDbContext(DbContextOptions<BimssDbContext> options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
