@@ -38,7 +38,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-005 | ASP.NET Core Identity + first migration | Done — [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7) |
 | BIMSS-006 | Permission/policy authorization model | Done — [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9) |
 | BIMSS-007 | Audit logging foundation | Done — [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10) |
-| BIMSS-008 | Global exception handling & typed exceptions | Not started |
+| BIMSS-008 | Global exception handling & typed exceptions | Done — [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11) |
 | BIMSS-009 | Validation conventions | Not started |
 | BIMSS-010 | DI composition conventions | Not started |
 | BIMSS-011 | Base layout, navigation shell, template cleanup | Not started |
@@ -224,13 +224,46 @@ Merged via [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (29/29 passing) in
   Release, `dotnet format --verify-no-changes`.
 
-### BIMSS-008 — Global exception handling & typed exceptions
+### BIMSS-008 — Global exception handling & typed exceptions (Done)
 
-- Purpose: `IExceptionHandler` + `ProblemDetails` for the API, MVC exception
-  handling, shared typed exception hierarchy (`NotFoundException`,
-  `ConflictException`, `ForbiddenException`, `DomainValidationException`).
-- Acceptance criteria: exceptions map to correct HTTP status codes; no stack
-  traces/internal details leak outside Development.
+Merged via [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11).
+
+- `BimssException` (abstract) + `NotFoundException`/`ConflictException`/
+  `ForbiddenException`/`DomainValidationException` (`Bimss.Domain/Exceptions/`)
+  — zero framework dependency, throwable from any layer.
+  `DomainValidationException` optionally carries field-level errors.
+- `ExceptionClassifier`/`ExceptionClassification`
+  (`Bimss.Infrastructure/ExceptionHandling/`) — single shared exception →
+  (status, title, detail) mapping used by both hosts. Unmapped exceptions
+  always classify to 500 with a fixed generic detail — never the original
+  `.Message`.
+- `Bimss.Api`: `BimssExceptionHandler : IExceptionHandler` writes
+  `ProblemDetails`/`ValidationProblemDetails`; registered via
+  `AddExceptionHandler`/`AddProblemDetails` and `app.UseExceptionHandler()`
+  as the first pipeline middleware. Development-only 500 responses get
+  `exceptionType`/`stackTrace` extensions.
+- `Bimss.Web`: `HomeController.Error()` classifies the original exception
+  (via `IExceptionHandlerPathFeature`) with the same classifier and sets the
+  response status code before rendering `/Home/Error` — only reached outside
+  Development (existing `!IsDevelopment()` gate); Development keeps using the
+  framework's built-in developer exception page.
+- `DiagnosticsController.Throw` (`GET /api/diagnostics/throw?type=...`,
+  `[AllowAnonymous]`) — test-only endpoint throwing each exception type on
+  demand.
+- Also added `tests/Bimss.IntegrationTests/xunit.runner.json`
+  (`parallelizeTestCollections: false`): running the growing set of
+  Testcontainers-backed test classes in parallel exhausted local Docker
+  resources and crashed the test host mid-run
+  (`MSB4166: Child node exited prematurely`). Sequential execution fixed it;
+  BIMSS-012's shared fixture is the real long-term fix.
+- Tests: `ExceptionClassifierTests` (unit); `ExceptionHandlingTests`
+  (`WebApplicationFactory<Program>`) — each typed exception → correct status;
+  an unexpected exception in a `Production`-environment client never leaks
+  its message/type/stack trace, while a `Development`-environment client does
+  get the exception type, proving the environment gate is real.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (40/40 passing,
+  integration tests now ~9 min sequential) in Release,
+  `dotnet format --verify-no-changes`.
 
 ### BIMSS-009 — Validation conventions
 

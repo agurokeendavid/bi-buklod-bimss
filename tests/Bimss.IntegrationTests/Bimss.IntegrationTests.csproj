@@ -22,4 +22,12 @@
     <ProjectReference Include="..\..\src\Bimss.Infrastructure\Bimss.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Multiple test classes here start their own Testcontainers.MsSql
+         container (see BIMSS-012 for the planned shared fixture); running
+         test collections in parallel can spin up several SQL Server
+         containers at once and exhaust local Docker resources. -->
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
