@@ -40,7 +40,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-007 | Audit logging foundation | Done — [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10) |
 | BIMSS-008 | Global exception handling & typed exceptions | Done — [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11) |
 | BIMSS-009 | Validation conventions | Done — [PR #12](https://github.com/agurokeendavid/bi-buklod-bimss/pull/12) |
-| BIMSS-010 | DI composition conventions | Not started |
+| BIMSS-010 | DI composition conventions | Done — [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13) |
 | BIMSS-011 | Base layout, navigation shell, template cleanup | Not started |
 | BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Not started |
 | BIMSS-013 | Synthetic seed strategy (Identity portion) | Not started |
@@ -297,12 +297,48 @@ aggregate exists yet to attach it to permanently (Phase 1B).
   integration ~11 min sequential) in Release,
   `dotnet format --verify-no-changes`.
 
-### BIMSS-010 — DI composition conventions
+### BIMSS-010 — DI composition conventions (Done)
 
-- Purpose: `AddBimssApplication()`, `AddBimssInfrastructure()`,
-  `AddBimssAuthorization()` extension methods, consolidating what BIMSS-004
-  through BIMSS-009 registered piecemeal. No MediatR/CQRS framework.
-- Dependencies: BIMSS-004 through BIMSS-009.
+Merged via [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13).
+
+- `AddBimssInfrastructure(IConfiguration)` (`Bimss.Infrastructure/`) —
+  consolidates `AddBimssPersistence`/`AddBimssIdentity`/`AddBimssAuditing`
+  (the granular methods still exist individually; only the `Program.cs` call
+  sites changed).
+- `AddBimssApplication()` (`Bimss.Application/`, its first DI registration
+  code) — currently a no-op; `IAuditLogger` etc. are still registered by
+  Infrastructure. Placeholder for future Application-layer registrations.
+  `Bimss.Application.csproj` gained a
+  `Microsoft.Extensions.DependencyInjection.Abstractions` reference.
+- `AddBimssAuthorization()` (BIMSS-006) unchanged — stays its own top-level
+  call, per the backlog's naming.
+- Both hosts' `Program.cs`:
+  `AddBimssInfrastructure(configuration)` → `AddBimssApplication()` →
+  `AddBimssAuthorization()`. `Bimss.Api` keeps its own
+  `AddExceptionHandler`/`AddProblemDetails` (API-specific).
+- No MediatR/CQRS framework.
+- Tests: `ServiceCollectionCompositionTests` (unit) — builds a bare
+  `ServiceCollection`, calls all three, resolves `BimssDbContext`,
+  `UserManager<ApplicationUser>`, `RoleManager<ApplicationRole>`,
+  `IAuditLogger`, `IAuthorizationPolicyProvider`. Caught a real gap: the bare
+  collection needs `AddLogging()` itself (the real hosts get it free from
+  `WebApplication.CreateBuilder`) since `UserManager<TUser>` requires
+  `ILogger<>`. All prior integration tests continue passing unchanged,
+  which is meaningful regression coverage for the consolidated registration
+  path.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (51/51 passing) in
+  Release, `dotnet format --verify-no-changes`. Local Docker/WSL2 memory
+  pressure caused several `dotnet test` runs to crash mid-run this session as
+  the Testcontainers-backed test classes multiplied
+  (`MSB4166: Child node exited prematurely`, or the process silently killed);
+  fixed locally each time by freeing memory (`wsl --shutdown`, killing
+  orphaned `dotnet.exe` build-server processes that don't release memory
+  between runs) and splitting verification into filtered batches
+  (Testcontainers classes vs. `WebApplicationFactory` classes run
+  separately). This is a local-machine resource constraint, not a code
+  issue — CI's GitHub-hosted runners have a clean environment each run and
+  aren't affected. BIMSS-012's shared fixture (one container instead of one
+  per test class) is still the real long-term fix.
 
 ### BIMSS-011 — Base layout, navigation shell, template cleanup
 
