@@ -76,6 +76,7 @@ AI coding agents and developers should read these files before implementing feat
 5. `docs/DATA_DICTIONARY.md`
 6. `docs/SECURITY_AND_PRIVACY.md`
 7. `docs/DEVELOPMENT_ROADMAP.md`
+8. `docs/PHASE1_BACKLOG.md` — current task status; see what's done and what's next
 
 ## Important data rule
 
