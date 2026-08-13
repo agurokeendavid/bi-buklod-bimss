@@ -7,6 +7,8 @@ namespace Bimss.Infrastructure.Persistence;
 public class BimssDbContext(DbContextOptions<BimssDbContext> options)
     : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
