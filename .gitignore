@@ -429,7 +429,7 @@ FodyWeavers.xsd
 *.msp
 
 # Custom Files
-src/bimss/bimss.api/appsettings.json
-src/bimss/bimss.api/appsettings.*.json
-src/bimss/bimss.web/appsettings.*.json
-src/bimss/bimss.web/appsettings.*.json
+src/Bimss.Api/appsettings.json
+src/Bimss.Api/appsettings.*.json
+src/Bimss.Web/appsettings.json
+src/Bimss.Web/appsettings.*.json
