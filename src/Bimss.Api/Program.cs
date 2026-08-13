@@ -1,4 +1,5 @@
-﻿using Bimss.Infrastructure.Identity;
+﻿using Bimss.Infrastructure.Authorization;
+using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddBimssPersistence(builder.Configuration);
 builder.Services.AddBimssIdentity();
+builder.Services.AddBimssAuthorization();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -27,3 +29,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Exposed so Bimss.IntegrationTests can boot this host via WebApplicationFactory<Program>.
+public partial class Program;

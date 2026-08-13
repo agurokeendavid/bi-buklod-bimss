@@ -1,4 +1,5 @@
-﻿using Bimss.Infrastructure.Identity;
+﻿using Bimss.Infrastructure.Authorization;
+using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddBimssPersistence(builder.Configuration);
 builder.Services.AddBimssIdentity();
+builder.Services.AddBimssAuthorization();
 
 var app = builder.Build();
 
