@@ -1,8 +1,11 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using Bimss.Infrastructure.Persistence;
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddBimssPersistence(builder.Configuration);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 

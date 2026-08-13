@@ -65,6 +65,26 @@ dotnet add src/Bimss.Infrastructure package Microsoft.EntityFrameworkCore.Design
 
 Pin actual package versions in source control rather than leaving wildcards in the final project.
 
+### EF Core tooling (dotnet-ef)
+
+A local, repo-pinned `dotnet-ef` tool is checked in via `.config/dotnet-tools.json`,
+matching the `Microsoft.EntityFrameworkCore` package version. This avoids relying
+on whatever `dotnet-ef` version (if any) happens to be installed globally on a
+contributor's machine. Restore it once per clone:
+
+```powershell
+dotnet tool restore
+```
+
+`Bimss.Web` is the designated EF Core startup project (it references
+`Microsoft.EntityFrameworkCore.Design` for this purpose); `BimssDbContext` itself
+lives in `Bimss.Infrastructure`. Add/apply migrations with:
+
+```powershell
+dotnet tool run dotnet-ef migrations add <Name> --project src/Bimss.Infrastructure --startup-project src/Bimss.Web --output-dir Persistence/Migrations
+dotnet tool run dotnet-ef database update --project src/Bimss.Infrastructure --startup-project src/Bimss.Web
+```
+
 ## Initial branches
 
 Recommended:
