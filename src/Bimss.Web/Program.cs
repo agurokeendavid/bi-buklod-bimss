@@ -1,16 +1,14 @@
-﻿using Bimss.Infrastructure.Auditing;
+﻿using Bimss.Application;
+using Bimss.Infrastructure;
 using Bimss.Infrastructure.Authorization;
-using Bimss.Infrastructure.Identity;
-using Bimss.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddBimssPersistence(builder.Configuration);
-builder.Services.AddBimssIdentity();
+builder.Services.AddBimssInfrastructure(builder.Configuration);
+builder.Services.AddBimssApplication();
 builder.Services.AddBimssAuthorization();
-builder.Services.AddBimssAuditing();
 
 var app = builder.Build();
 
