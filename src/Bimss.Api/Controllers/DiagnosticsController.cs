@@ -1,4 +1,5 @@
-﻿using Bimss.Domain.Authorization;
+﻿using Bimss.Contracts.Diagnostics;
+using Bimss.Domain.Authorization;
 using Bimss.Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,4 +35,14 @@ public class DiagnosticsController : ControllerBase
             _ => new InvalidOperationException("Sample unexpected failure with sensitive internal detail: password=hunter2"),
         };
     }
+
+    /// <summary>
+    /// Demonstrates DataAnnotations-at-the-API-boundary validation (BIMSS-009).
+    /// [ApiController] short-circuits to a 400 ValidationProblemDetails
+    /// response automatically when the model is invalid — the action body
+    /// never runs.
+    /// </summary>
+    [HttpPost("validate-sample")]
+    [AllowAnonymous]
+    public IActionResult ValidateSample([FromBody] ValidationCheckRequest request) => Ok();
 }

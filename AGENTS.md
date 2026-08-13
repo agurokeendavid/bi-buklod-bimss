@@ -113,6 +113,37 @@ If the documentation and implementation disagree, do not silently guess. Preserv
 - Keep member-only endpoints scoped to the authenticated member.
 - Administrative endpoints must require explicit permissions.
 
+## Validation rules
+
+- At the DTO/API boundary (`Bimss.Contracts` request types), use
+  `System.ComponentModel.DataAnnotations` attributes (`[Required]`,
+  `[StringLength]`, `[Range]`, `[EmailAddress]`, etc.). `[ApiController]`
+  actions get automatic 400 `ValidationProblemDetails` responses for invalid
+  models — no manual `ModelState.IsValid` checks needed in API controllers.
+  No FluentValidation yet; revisit only if rule complexity grows enough to
+  justify it.
+- DataAnnotations catch shape/format errors early, but never replace
+  server-side business-rule enforcement — a request can pass DataAnnotations
+  and still violate a domain invariant, so Domain/Application code must
+  re-validate regardless of what the DTO layer already checked.
+- In Domain/Application code, use the built-in guard-clause helpers
+  (`ArgumentException.ThrowIfNullOrWhiteSpace`, `ArgumentNullException.ThrowIfNull`,
+  `ArgumentOutOfRangeException.ThrowIfNegative`, etc.) for simple single-value
+  argument checks — see `Bimss.Application.Auditing.AuditEntry`'s constructor
+  for a working example. Don't build a custom `Guard` abstraction; the BCL
+  already covers this.
+- For genuine business-rule violations — not just a bad argument — throw the
+  typed exceptions from `Bimss.Domain.Exceptions` (`NotFoundException`,
+  `ConflictException`, `ForbiddenException`, `DomainValidationException`),
+  never a bare `Exception`/`InvalidOperationException`. Use
+  `DomainValidationException` (with its `Errors` dictionary) when multiple
+  field-level violations need to be reported together; use `ConflictException`/
+  `ForbiddenException`/`NotFoundException` for their specific situations
+  rather than `DomainValidationException` as a catch-all. These map to the
+  correct HTTP status codes automatically via the global exception handling
+  from BIMSS-008 — don't hand-roll status-code mapping at the controller
+  level.
+
 ## MVC / UI rules
 
 - Use Bootstrap for layout and responsive structure.

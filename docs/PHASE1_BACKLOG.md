@@ -39,7 +39,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-006 | Permission/policy authorization model | Done — [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9) |
 | BIMSS-007 | Audit logging foundation | Done — [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10) |
 | BIMSS-008 | Global exception handling & typed exceptions | Done — [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11) |
-| BIMSS-009 | Validation conventions | Not started |
+| BIMSS-009 | Validation conventions | Done — [PR #12](https://github.com/agurokeendavid/bi-buklod-bimss/pull/12) |
 | BIMSS-010 | DI composition conventions | Not started |
 | BIMSS-011 | Base layout, navigation shell, template cleanup | Not started |
 | BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Not started |
@@ -265,11 +265,37 @@ Merged via [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11).
   integration tests now ~9 min sequential) in Release,
   `dotnet format --verify-no-changes`.
 
-### BIMSS-009 — Validation conventions
+### BIMSS-009 — Validation conventions (Done)
 
-- Purpose: DataAnnotations at the DTO/API boundary + Domain guard clauses for
-  business rules. No FluentValidation yet — revisit if rule complexity grows.
-- Dependencies: BIMSS-008.
+Merged via [PR #12](https://github.com/agurokeendavid/bi-buklod-bimss/pull/12).
+
+Mostly a documented convention (`AGENTS.md`'s new "Validation rules"
+section) rather than a standalone feature — no real business DTO/Domain
+aggregate exists yet to attach it to permanently (Phase 1B).
+
+- DTO/API boundary: DataAnnotations on `Bimss.Contracts` request types;
+  `[ApiController]`'s automatic 400 `ValidationProblemDetails` means no
+  manual `ModelState.IsValid` checks in API controllers. No FluentValidation
+  yet.
+- DataAnnotations never replace server-side business-rule enforcement.
+- Simple argument guards: BCL `ArgumentException.ThrowIfNullOrWhiteSpace`
+  etc. (precedent: `Bimss.Application.Auditing.AuditEntry`, BIMSS-007) — no
+  custom `Guard` abstraction.
+- Genuine business-rule violations: the BIMSS-008 typed exception hierarchy,
+  never a bare `Exception` — already maps to correct HTTP status codes via
+  BIMSS-008's global exception handling.
+- Concrete demonstration of the DTO-boundary half: `ValidationCheckRequest`
+  is `Bimss.Contracts`' first real content (removed its scaffold
+  `Class1.cs`), validated automatically at
+  `DiagnosticsController.ValidateSample`.
+- Tests: `ValidationCheckRequestTests` (unit, `Validator.TryValidateObject`
+  directly against the DTO) and `ValidationTests` (integration, same cases
+  end-to-end through `WebApplicationFactory<Program>`) — valid request → 200;
+  missing `Name`, out-of-range `Age`, malformed `Email` → 400 with the
+  expected field in `ValidationProblemDetails.Errors`.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (50/50 passing,
+  integration ~11 min sequential) in Release,
+  `dotnet format --verify-no-changes`.
 
 ### BIMSS-010 — DI composition conventions
 
