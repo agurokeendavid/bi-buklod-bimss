@@ -1,7 +1,10 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using Bimss.Infrastructure.Persistence;
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddBimssPersistence(builder.Configuration);
 
 var app = builder.Build();
 
