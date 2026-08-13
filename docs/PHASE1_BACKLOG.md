@@ -37,7 +37,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-004 | EF Core DbContext scaffolding | Done — [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5) |
 | BIMSS-005 | ASP.NET Core Identity + first migration | Done — [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7) |
 | BIMSS-006 | Permission/policy authorization model | Done — [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9) |
-| BIMSS-007 | Audit logging foundation | Not started |
+| BIMSS-007 | Audit logging foundation | Done — [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10) |
 | BIMSS-008 | Global exception handling & typed exceptions | Not started |
 | BIMSS-009 | Validation conventions | Not started |
 | BIMSS-010 | DI composition conventions | Not started |
@@ -193,17 +193,36 @@ Merged via [PR #9](https://github.com/agurokeendavid/bi-buklod-bimss/pull/9).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (17/17 passing) in
   Release, `dotnet format --verify-no-changes`.
 
-### BIMSS-007 — Audit logging foundation
+### BIMSS-007 — Audit logging foundation (Done)
 
-- Purpose: `AuditEvent` entity + `IAuditLogger` service, populated by explicit
-  application-service calls at the point a business action happens (not a generic
-  `SaveChanges` diff interceptor — see `docs/SECURITY_AND_PRIVACY.md`'s ban on
-  beneficiary/address/ballot data in logs).
-- Dependencies: BIMSS-005, BIMSS-004.
-- Acceptance criteria: a sample audit call round-trips with actor, action, object
-  type/id, timestamp, result, remarks.
-- Security: call sites must never pass beneficiary data, ballot content, or full
-  addresses as "safe metadata."
+Merged via [PR #10](https://github.com/agurokeendavid/bi-buklod-bimss/pull/10).
+
+- `AuditResult` enum (`Bimss.Domain/Auditing/`) — shared vocabulary type.
+- `AuditEntry` (`Bimss.Application/Auditing/`) — immutable value object
+  (actor, action, object type/id, result, remarks, optional
+  `IReadOnlyDictionary<string, string>?` metadata); validates
+  `Action`/`ObjectType`/`ObjectId` non-blank at construction.
+- `IAuditLogger` (`Bimss.Application/Auditing/`) — the port an application
+  service calls; its XML doc restates the no-beneficiary/no-ballot/
+  no-full-address rule from `docs/SECURITY_AND_PRIVACY.md`. First real content
+  in `Bimss.Application` — removed its scaffold `Class1.cs`.
+- `AuditEvent` (`Bimss.Infrastructure/Auditing/`) — EF entity, deliberately no
+  FK from `ActorUserId` to `AspNetUsers` so audit history survives identity
+  changes. Migration: `AddAuditEvents`.
+- `AuditLogger` — `IAuditLogger` implementation; persists immediately via its
+  own `SaveChangesAsync` (not bundled into the caller's transaction), using an
+  injected `TimeProvider` for a testable timestamp.
+- `AddBimssAuditing()` — registers `TimeProvider.System` and the logger;
+  called from both hosts' `Program.cs` after `AddBimssAuthorization()`.
+- Tests: `AuditEntryTests` (unit — construction guard clauses; note
+  `Assert.ThrowsAny<ArgumentException>`, not `Assert.Throws`, since
+  `ArgumentException.ThrowIfNullOrWhiteSpace` throws `ArgumentNullException`
+  specifically for `null`), `AuditLoggerTests` (Testcontainers-backed — a full
+  entry round-trips through persistence with metadata correctly serialized to
+  JSON, satisfying the acceptance criterion directly; a failure-result entry
+  with no actor/remarks/metadata persists those fields as null).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (29/29 passing) in
+  Release, `dotnet format --verify-no-changes`.
 
 ### BIMSS-008 — Global exception handling & typed exceptions
 
