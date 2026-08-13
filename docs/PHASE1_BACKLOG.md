@@ -35,7 +35,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-001 | Centralize build settings & `.editorconfig` | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2) |
 | BIMSS-002 | Safe local configuration (`appsettings*.json.example`) | Done — [PR #2](https://github.com/agurokeendavid/bi-buklod-bimss/pull/2), revised in [PR #3](https://github.com/agurokeendavid/bi-buklod-bimss/pull/3) |
 | BIMSS-004 | EF Core DbContext scaffolding | Done — [PR #5](https://github.com/agurokeendavid/bi-buklod-bimss/pull/5) |
-| BIMSS-005 | ASP.NET Core Identity + first migration | In branch — `feature/bimss-005-identity-initial-migration` |
+| BIMSS-005 | ASP.NET Core Identity + first migration | Done — [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7) |
 | BIMSS-006 | Permission/policy authorization model | Not started |
 | BIMSS-007 | Audit logging foundation | Not started |
 | BIMSS-008 | Global exception handling & typed exceptions | Not started |
@@ -110,9 +110,9 @@ What it contains:
   `Testcontainers.MsSql` and asserts `CanConnectAsync()`. Requires Docker running
   locally (see "Environment notes").
 
-### BIMSS-005 — ASP.NET Core Identity + first migration (In branch)
+### BIMSS-005 — ASP.NET Core Identity + first migration (Done)
 
-Implemented on `feature/bimss-005-identity-initial-migration`, not yet merged.
+Merged via [PR #7](https://github.com/agurokeendavid/bi-buklod-bimss/pull/7).
 
 - `ApplicationUser : IdentityUser<Guid>` (nullable `MemberId` link, no FK yet —
   `Member` doesn't exist until BIMSS-015) and `ApplicationRole : IdentityRole<Guid>`
