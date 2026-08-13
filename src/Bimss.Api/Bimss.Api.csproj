@@ -8,7 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
-    <PackageReference Include="Microsoft.OpenApi" Version="3.10.0" />
+    <!-- Pinned: Microsoft.AspNetCore.OpenApi 10.0.10's XML-comment source generator does not
+         compile against the Microsoft.OpenApi 3.x model (IOpenApiMediaType.Example is read-only
+         there). 2.7.5 is the newest Microsoft.OpenApi release that still builds and carries no
+         known vulnerability advisory. Revisit this pin when a compatible AspNetCore.OpenApi/OpenApi
+         pairing ships. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
   </ItemGroup>
 
   <ItemGroup>
