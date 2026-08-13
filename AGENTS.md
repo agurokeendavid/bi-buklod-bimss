@@ -17,8 +17,10 @@ Before implementing a feature, read the relevant project documentation:
 - `docs/DOMAIN_WORKFLOWS.md`
 - `docs/DATA_DICTIONARY.md`
 - `docs/SECURITY_AND_PRIVACY.md`
+- `docs/PHASE1_BACKLOG.md` — current Phase 1 task status; check this first to see
+  what's already done and what's next before starting new work.
 
-If the documentation and implementation disagree, do not silently guess. Preserve existing behavior unless the task explicitly changes it, and update documentation when a design decision changes.
+If the documentation and implementation disagree, do not silently guess. Preserve existing behavior unless the task explicitly changes it, and update documentation when a design decision changes. When a Phase 1 task is completed, update its status in `docs/PHASE1_BACKLOG.md` in the same PR.
 
 ## Architecture rules
 
