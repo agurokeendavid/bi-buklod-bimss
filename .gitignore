@@ -429,11 +429,11 @@ FodyWeavers.xsd
 *.msp
 
 # Custom Files
-# appsettings.json and appsettings.Development.json are committed as safe
-# templates (no secrets/connection strings). Use `dotnet user-secrets` for
-# local developer credentials and connection strings; never commit
-# appsettings.Production.json or any *.Local.json override.
-src/Bimss.Api/appsettings.Production.json
-src/Bimss.Api/appsettings.*.Local.json
-src/Bimss.Web/appsettings.Production.json
-src/Bimss.Web/appsettings.*.Local.json
+# Real appsettings files may hold secrets/connection strings and must never
+# be committed. Copy the committed appsettings*.json.example templates to
+# their real names locally, and use `dotnet user-secrets` for actual secrets.
+# See docs/REPOSITORY_SETUP.md.
+src/Bimss.Api/appsettings.json
+src/Bimss.Api/appsettings.*.json
+src/Bimss.Web/appsettings.json
+src/Bimss.Web/appsettings.*.json
