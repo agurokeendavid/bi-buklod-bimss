@@ -7,8 +7,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="Testcontainers.MsSql" Version="4.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
@@ -19,15 +19,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bimss.Api\Bimss.Api.csproj" />
+    <!-- Aliased: both Bimss.Api and Bimss.Web expose a public top-level-statement
+         "Program" class; without an alias, referencing both makes "Program"
+         ambiguous. Files that need Bimss.Web's Program (for WebApplicationFactory)
+         must start with "extern alias WebHost;". -->
+    <ProjectReference Include="..\..\src\Bimss.Web\Bimss.Web.csproj" Aliases="WebHost" />
     <ProjectReference Include="..\..\src\Bimss.Infrastructure\Bimss.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Multiple test classes here start their own Testcontainers.MsSql
-         container (see BIMSS-012 for the planned shared fixture); running
-         test collections in parallel can spin up several SQL Server
-         containers at once and exhaust local Docker resources. -->
-    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

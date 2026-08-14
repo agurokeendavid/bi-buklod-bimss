@@ -35,3 +35,6 @@ app.MapControllerRoute(
 
 
 app.Run();
+
+// Exposed so Bimss.IntegrationTests can boot this host via WebApplicationFactory<Program>.
+public partial class Program;
