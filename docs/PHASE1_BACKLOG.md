@@ -28,10 +28,11 @@ architecture or security rules that live elsewhere.
 4. Update this file's status/PR link in the same PR that completes the task.
 
 **Current state (2026-08-14): Phase 1A is fully Done** (BIMSS-001 through
-BIMSS-013, all merged). Phase 1B (Membership Domain) is next in table order;
-its blocking business questions were confirmed with Buklod on 2026-08-14 (see
-the note under Phase 1B below and "Confirmed decisions" in
-`docs/DATA_DICTIONARY.md`) — BIMSS-014 is unblocked and ready to start.
+BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
+blocking business questions were confirmed with Buklod on 2026-08-14 (see the
+note under Phase 1B below and "Confirmed decisions" in
+`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables) is
+now Done. BIMSS-015 (Member core aggregate + `MemberStatusHistory`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -437,21 +438,21 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 
 ## Phase 1B — Membership Domain (Not started)
 
-| ID | Title |
-|---|---|
-| BIMSS-014 | Reference/master data tables (CivilStatus, Suffix, OfficeUnit, EducationalAttainment, EligibilityType, RelationshipType, MemberStatusReason) |
-| BIMSS-015 | Member core aggregate + `MemberStatusHistory` |
-| BIMSS-016 | `MemberEmployment` |
-| BIMSS-017 | `MemberContact` & `MemberAddress` |
-| BIMSS-018 | `MemberEducation` & `MemberEligibility` |
-| BIMSS-019 | `MemberFamilyInformation` & `MemberChild` |
-| BIMSS-020 | `MemberPrivacyConsent` |
-| BIMSS-021 | `MemberDocument` metadata + storage abstraction |
-| BIMSS-022 | Member creation use case |
-| BIMSS-023 | Member read/query use cases |
-| BIMSS-024 | Member status transition service |
-| BIMSS-025 | Synthetic membership seed data |
-| BIMSS-026 | Membership schema/constraint integration tests |
+| ID | Title | Status |
+|---|---|---|
+| BIMSS-014 | Reference/master data tables (CivilStatus, Suffix, OfficeUnit, EducationalAttainment, EligibilityType, RelationshipType, MemberStatusReason) | Done — [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18) |
+| BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Not started |
+| BIMSS-016 | `MemberEmployment` | Not started |
+| BIMSS-017 | `MemberContact` & `MemberAddress` | Not started |
+| BIMSS-018 | `MemberEducation` & `MemberEligibility` | Not started |
+| BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Not started |
+| BIMSS-020 | `MemberPrivacyConsent` | Not started |
+| BIMSS-021 | `MemberDocument` metadata + storage abstraction | Not started |
+| BIMSS-022 | Member creation use case | Not started |
+| BIMSS-023 | Member read/query use cases | Not started |
+| BIMSS-024 | Member status transition service | Not started |
+| BIMSS-025 | Synthetic membership seed data | Not started |
+| BIMSS-026 | Membership schema/constraint integration tests | Not started |
 
 **Business questions confirmed with Buklod (2026-08-14)** — see "Confirmed
 decisions" in `docs/DATA_DICTIONARY.md` for full detail: BI Employee Number is
@@ -459,7 +460,55 @@ unique and mandatory (BIMSS-016); self-service direct edit without approval is
 limited to contact info only, everything else requires officer review (affects
 Phase 1E — BIMSS-030 vs. BIMSS-042/044 split); proof of employment is
 mandatory, accepted types PDF/JPG/PNG (BIMSS-021); `MemberChild` requires both
-name and birth date (BIMSS-019). BIMSS-014 is now unblocked.
+name and birth date (BIMSS-019).
+
+### BIMSS-014 — Reference/master data tables (Done)
+
+Merged via [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18).
+
+- `ReferenceDataItem` abstract base (`Bimss.Domain/Membership/ReferenceData/`)
+  — the first Membership domain code in the repo, and the first EF-mapped
+  entity to live in `Bimss.Domain` rather than `Bimss.Infrastructure` (plain
+  POCO, zero EF/AspNetCore dependency, satisfies `LayeringRulesTests`):
+  `Id`/`Code`/`Name`/`IsActive`; constructor guards `Code`/`Name` with
+  `ArgumentException.ThrowIfNullOrWhiteSpace` (same pattern as
+  `Bimss.Application.Auditing.AuditEntry`'s constructor, BIMSS-007);
+  `SetActive(bool)` — reference rows are deactivated, never hard-deleted,
+  once a Member record references them.
+- Seven sealed one-line subclasses: `CivilStatus`, `Suffix`, `OfficeUnit`,
+  `EducationalAttainment`, `EligibilityType`, `RelationshipType`,
+  `MemberStatusReason`. EF Core binds each via its constructor (parameter
+  names match inherited property names) — no parameterless constructor,
+  no incidental public setters.
+- `ReferenceDataItemConfiguration<T>` abstract base
+  (`Bimss.Infrastructure/Membership/ReferenceData/`) — shared
+  `IEntityTypeConfiguration<T>` Fluent API (`Code` required/max 50/unique
+  index, `Name` required/max 200); seven one-line concrete configs each
+  just naming their table (`CivilStatuses`, `Suffixes`, `OfficeUnits`,
+  `EducationalAttainments`, `EligibilityTypes`, `RelationshipTypes`,
+  `MemberStatusReasons`). `BimssDbContext` gained seven matching `DbSet<T>`
+  properties; `ApplyConfigurationsFromAssembly` picked up the new configs
+  with no further wiring.
+- Migration: `AddMembershipReferenceData`, under
+  `src/Bimss.Infrastructure/Persistence/Migrations/` — seven `CreateTable`
+  calls plus a unique index on `Code` per table, no changes to unrelated
+  tables.
+- Scope is schema only, per the task title — no seed rows (BIMSS-025 is the
+  synthetic seed-data task) and no admin UI (not in the Phase 1 backlog).
+- Tests: `ReferenceDataItemTests` (unit — constructor guard clauses via
+  `CivilStatus` as the representative type, `SetActive`, plus a smoke test
+  constructing all seven concrete types); `ReferenceDataConfigurationTests`
+  (unit, `[Theory]` over all seven types — asserts table name, required/max
+  length, and unique index via `DbContext.Model` metadata directly, which
+  works correctly under the InMemory provider even though InMemory doesn't
+  *enforce* unique indexes at runtime — see "Testing convention: EF Core
+  InMemory, not Testcontainers" below); `ReferenceDataPersistenceTests`
+  (integration — round-trip add/reload through `InMemoryBimssDbContextFactory`,
+  plus a `SetActive` persistence check).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (73/73 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (seven tables, matching unique indexes, nothing else touched).
+- Dependencies: BIMSS-004.
 
 ## Phase 1C — Membership Administration (Not started)
 
