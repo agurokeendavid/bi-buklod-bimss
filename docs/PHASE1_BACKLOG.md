@@ -31,8 +31,9 @@ architecture or security rules that live elsewhere.
 BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
 blocking business questions were confirmed with Buklod on 2026-08-14 (see the
 note under Phase 1B below and "Confirmed decisions" in
-`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables) is
-now Done. BIMSS-015 (Member core aggregate + `MemberStatusHistory`) is next.
+`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables) and
+BIMSS-015 (Member core aggregate + `MemberStatusHistory`) are now Done.
+BIMSS-016 (`MemberEmployment`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -441,7 +442,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | ID | Title | Status |
 |---|---|---|
 | BIMSS-014 | Reference/master data tables (CivilStatus, Suffix, OfficeUnit, EducationalAttainment, EligibilityType, RelationshipType, MemberStatusReason) | Done — [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18) |
-| BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Not started |
+| BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Done — [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19) |
 | BIMSS-016 | `MemberEmployment` | Not started |
 | BIMSS-017 | `MemberContact` & `MemberAddress` | Not started |
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Not started |
@@ -509,6 +510,63 @@ Merged via [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (seven tables, matching unique indexes, nothing else touched).
 - Dependencies: BIMSS-004.
+
+### BIMSS-015 — Member core aggregate + `MemberStatusHistory` (Done)
+
+Merged via [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19).
+
+- `Member` (`Bimss.Domain/Membership/`) — the first real Membership
+  aggregate; core personal identity fields from `docs/DATA_DICTIONARY.md`'s
+  Excel mapping (`LastName`, `FirstName`, `MiddleName`, `SuffixId` nullable
+  FK, `DateOfBirth`, `PlaceOfBirth`, `CivilStatusId` required FK,
+  `JoiningReason`). Constructor guards `LastName`/`FirstName`/`PlaceOfBirth`
+  non-blank and `CivilStatusId` non-empty, same
+  `ArgumentException.ThrowIfNullOrWhiteSpace` pattern as `ReferenceDataItem`.
+  A second, private, EF-only constructor exists purely for materialization
+  (see "Environment notes" below — a plain business constructor with an
+  unmapped parameter like `occurredAtUtc` breaks EF's constructor binding).
+- Status lifecycle for Phase 1, confirmed with the user (2026-08-14, since
+  it's still an open question in Buklod's own backlog list — "Are
+  retirees/former employees/honorary members possible?"):
+  `PendingVerification -> Active -> Inactive`, matching the confirmed
+  workflow that proof of employment is mandatory before member verification.
+  `Verify`/`Deactivate`/`Reactivate` validate the current state (throwing
+  `Bimss.Domain.Exceptions.ConflictException`, BIMSS-008, on an invalid
+  transition) and match `Permission.Membership.Verify` and
+  `ARCHITECTURE.md`'s audited "member verification" action.
+  `Deactivate` requires a non-empty `MemberStatusReason` id. Doesn't
+  foreclose retiree/honorary handling later — can be added as a new status
+  or an `Inactive` reason once Buklod confirms.
+- `MemberStatusHistory` (`Bimss.Domain/Membership/`) — one row per
+  transition, including the initial creation row (`FromStatus: null`).
+  `internal` constructor: only `Member` can create one, enforcing that
+  history stays consistent with actual transitions.
+- `MemberConfiguration`/`MemberStatusHistoryConfiguration`
+  (`Bimss.Infrastructure/Membership/`) — `Member`'s FKs to `Suffix`/
+  `CivilStatus` are `DeleteBehavior.Restrict` (reference rows are
+  deactivated, never deleted); `StatusHistory` is a field-backed collection
+  navigation (`UsePropertyAccessMode(PropertyAccessMode.Field)`) that
+  cascade-deletes with its `Member`. No FK from
+  `MemberStatusHistory.ActorUserId` to `AspNetUsers` — same deliberate
+  choice as `AuditEventConfiguration` ("audit records must outlive the
+  identity they reference"), just an index instead.
+- Migration: `AddMemberCoreAggregate` — creates `Members` and
+  `MemberStatusHistory`, with FKs to `CivilStatuses`/`Suffixes`/
+  `MemberStatusReasons`/`Members`.
+- Tests: `MemberTests` (unit — constructor guard clauses; initial state is
+  `PendingVerification` with one history row; each transition method's
+  success/failure paths); `MemberConfigurationTests` (unit, same
+  `DbContext.Model` metadata-inspection style as
+  `ReferenceDataConfigurationTests`); `MemberPersistenceTests` (integration
+  — round-trip through `InMemoryBimssDbContextFactory`; a second test drives
+  `Verify` then `Deactivate` across three separate context reloads and
+  confirms `StatusHistory` accumulates all three rows correctly).
+- Scope is schema/domain-rule only, per the task title — no Application use
+  case, controller, or admin UI (BIMSS-022/023/024, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (95/95 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (two tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-014.
 
 ## Phase 1C — Membership Administration (Not started)
 
@@ -601,3 +659,23 @@ automatically from `ASPNETCORE_ENVIRONMENT`). Full detail in
   `2.7.5`. Don't "helpfully" bump it back to a floating/latest version without
   checking it still compiles — 3.x versions currently break
   `Microsoft.AspNetCore.OpenApi` 10.0.10's XML-comment source generator.
+- **Child entities with client-generated Guid keys added to an already-loaded
+  parent's collection need `ValueGeneratedNever()` on the key** (BIMSS-015,
+  `MemberStatusHistoryConfiguration`). Without it: load a parent (e.g.
+  `Member`) with `.Include(...)` of a collection navigation, append a new
+  child to the backing field (e.g. inside a domain method like
+  `Member.Verify`), call `SaveChangesAsync()` — EF's reachability fixup sees
+  the child's non-default Guid key and assumes it already exists in the
+  database, tracking it as `Modified` instead of `Added`, and the save fails
+  with `DbUpdateConcurrencyException: Attempted to update or delete an
+  entity that does not exist in the store`. This only bites entities
+  discovered via graph/collection fixup rather than an explicit
+  `dbContext.Set<T>().Add(...)` call — `ReferenceDataItem`-derived entities
+  don't hit it because they're always added explicitly. Also a design note
+  for aggregate roots with a business constructor that takes non-persisted
+  parameters (e.g. `Member`'s `occurredAtUtc`, used only to build the
+  initial `MemberStatusHistory` row): EF's constructor-binding at design
+  time fails outright ("No suitable constructor was found") if every
+  constructor has at least one parameter that doesn't map to a mapped
+  property, so such aggregates need a second, private, EF-only constructor
+  whose parameters bind 1:1 to persisted properties.
