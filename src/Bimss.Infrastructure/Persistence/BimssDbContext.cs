@@ -1,4 +1,5 @@
-﻿using Bimss.Domain.Membership.ReferenceData;
+﻿using Bimss.Domain.Membership;
+using Bimss.Domain.Membership.ReferenceData;
 using Bimss.Infrastructure.Auditing;
 using Bimss.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -12,6 +13,10 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+
+    public DbSet<Member> Members => Set<Member>();
+
+    public DbSet<MemberStatusHistory> MemberStatusHistories => Set<MemberStatusHistory>();
 
     public DbSet<CivilStatus> CivilStatuses => Set<CivilStatus>();
 
