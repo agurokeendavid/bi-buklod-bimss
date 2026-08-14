@@ -27,6 +27,12 @@ architecture or security rules that live elsewhere.
    pushing/opening a PR.
 4. Update this file's status/PR link in the same PR that completes the task.
 
+**Current state (2026-08-14): Phase 1A is fully Done** (BIMSS-001 through
+BIMSS-013, all merged). Phase 1B (Membership Domain) is next in table order,
+but its first few tasks depend on business questions only Buklod can answer —
+see "Open business questions" under Phase 1B below before starting BIMSS-014.
+Don't guess at these; ask whoever's driving to get Buklod's answer first.
+
 ## Phase 1A — Platform Foundation
 
 | ID | Title | Status |
@@ -43,7 +49,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-010 | DI composition conventions | Done — [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13) |
 | BIMSS-011 | Base layout, navigation shell, template cleanup | Done — [PR #14](https://github.com/agurokeendavid/bi-buklod-bimss/pull/14) |
 | BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Done — [PR #15](https://github.com/agurokeendavid/bi-buklod-bimss/pull/15) |
-| BIMSS-013 | Synthetic seed strategy (Identity portion) | Not started |
+| BIMSS-013 | Synthetic seed strategy (Identity portion) | Done — [PR #16](https://github.com/agurokeendavid/bi-buklod-bimss/pull/16) |
 
 Also merged, not part of the original numbered backlog:
 - **Code First EF Core + local secrets workflow documentation**
@@ -391,9 +397,42 @@ Merged via [PR #15](https://github.com/agurokeendavid/bi-buklod-bimss/pull/15).
   total, no Docker) in Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-004, BIMSS-005.
 
-### BIMSS-013 — Synthetic seed strategy (Identity portion)
+### BIMSS-013 — Synthetic seed strategy (Identity portion) (Done)
 
-- Purpose: seeding for synthetic roles/permissions/dev accounts, Development-only.
+Merged via [PR #16](https://github.com/agurokeendavid/bi-buklod-bimss/pull/16).
+Last task in the current Phase 1A run — see "Where to pick this up next" below.
+
+- `DevelopmentIdentitySeeder` (`Bimss.Infrastructure/Identity/Seeding/`) —
+  six synthetic roles (`Administrator`, `Member`, `MembershipOfficer`,
+  `FinanceOfficer`, `ElectionCommittee`, `Auditor`) with permission
+  assignments matching `docs/SECURITY_AND_PRIVACY.md`'s own role examples,
+  one synthetic dev account per role (`{role}.dev@bimss.local`, shared
+  documented-synthetic password satisfying BIMSS-005's password policy).
+  Fully idempotent; wired into both hosts' `Program.cs`, strictly gated on
+  `IsDevelopment()`.
+- Found and fixed two real bugs along the way:
+  1. A classic EF Core InMemory gotcha in the seeder's own unit test: an
+     `AddDbContext(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()))`
+     configure lambda generates a **new** GUID per `DbContext` instantiation
+     (once per scope), so the seeding scope and assertion scope silently
+     pointed at two different InMemory databases. Fix: capture the database
+     name once, outside the lambda — the pattern already used correctly
+     elsewhere (`InMemoryBimssDbContextFactory`, `LoginTests`).
+  2. `WebApplicationFactory` defaults to the `"Development"` environment
+     name, so `DiagnosticsApiFactory`'s consumers and `LoginTests` — none of
+     which stand up a real database — started failing once the seeder ran
+     on every Development startup and tried to reach a nonexistent real SQL
+     Server. Fix: `DiagnosticsApiFactory` and `LoginTests` now set
+     environment `"Testing"` instead of leaving the default;
+     `ExceptionHandlingTests.Get_IncludesExceptionDetails_InDevelopment`
+     (which genuinely needs `"Development"` for an unrelated reason) keeps
+     it but adds an InMemory `DbContext` override for the seeder to target.
+- Tests: `DevelopmentIdentitySeederTests` — each role has its expected exact
+  permission set; each dev user exists, is assigned its role, and its
+  password validates; a second `SeedAsync` call is a true no-op.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (55/55 passing, run
+  twice to rule out startup-seeding flakiness) in Release,
+  `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-005, BIMSS-006.
 
 ## Phase 1B — Membership Domain (Not started)
