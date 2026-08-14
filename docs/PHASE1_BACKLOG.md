@@ -42,7 +42,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-009 | Validation conventions | Done — [PR #12](https://github.com/agurokeendavid/bi-buklod-bimss/pull/12) |
 | BIMSS-010 | DI composition conventions | Done — [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13) |
 | BIMSS-011 | Base layout, navigation shell, template cleanup | Done — [PR #14](https://github.com/agurokeendavid/bi-buklod-bimss/pull/14) |
-| BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Not started |
+| BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Done — [PR #15](https://github.com/agurokeendavid/bi-buklod-bimss/pull/15) |
 | BIMSS-013 | Synthetic seed strategy (Identity portion) | Not started |
 
 Also merged, not part of the original numbered backlog:
@@ -367,15 +367,28 @@ Merged via [PR #14](https://github.com/agurokeendavid/bi-buklod-bimss/pull/14).
   configured, so the actual login submission was verified via `LoginTests`
   instead, not live in the browser).
 
-### BIMSS-012 — Testing foundation
+### BIMSS-012 — Testing foundation (Done)
 
-- Purpose: `NetArchTest.Rules`-based architecture tests enforcing dependency
-  direction (Domain has no EF/ASP.NET Core reference, Application has no
-  Infrastructure reference); shared helpers for the EF Core InMemory-based
-  test setup now used across `Bimss.IntegrationTests` (see "Testing
-  convention: EF Core InMemory, not Testcontainers" in Environment notes —
-  this superseded the originally-planned Testcontainers.MsSql collection
-  fixture).
+Merged via [PR #15](https://github.com/agurokeendavid/bi-buklod-bimss/pull/15).
+
+- `LayeringRulesTests` (`Bimss.ArchitectureTests`, `NetArchTest.Rules`) —
+  `Bimss.Domain` has no `Microsoft.EntityFrameworkCore`/`Microsoft.AspNetCore`
+  dependency; `Bimss.Application` has no `Bimss.Infrastructure` dependency.
+  First real content in `Bimss.ArchitectureTests` — removed its scaffold
+  `UnitTest1.cs`; added project references to Domain/Application/Infrastructure
+  so the tests can inspect those assemblies. Sanity-checked the Domain rule
+  actually catches a violation (temporarily added an EF Core dependency to
+  `Bimss.Domain`, confirmed it doesn't silently pass, fully reverted).
+- `InMemoryBimssDbContextFactory` (`Bimss.IntegrationTests/Support/`) —
+  shared helper extracting the repeated `UseInMemoryDatabase(name)`
+  construction from `PermissionClaimsTransformationTests`,
+  `AuditLoggerTests`, and `LoginTests`'s seeding context. This is the
+  "shared, reusable" half of this task's original scope, adapted to
+  InMemory (see "Testing convention: EF Core InMemory, not Testcontainers"
+  above — the originally-planned Testcontainers.MsSql collection fixture
+  was superseded in BIMSS-011).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (52/52 passing, ~2s
+  total, no Docker) in Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-004, BIMSS-005.
 
 ### BIMSS-013 — Synthetic seed strategy (Identity portion)

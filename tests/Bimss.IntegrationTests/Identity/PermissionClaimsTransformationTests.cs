@@ -2,8 +2,8 @@
 using Bimss.Domain.Authorization;
 using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
+using Bimss.IntegrationTests.Support;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Bimss.IntegrationTests.Identity;
 
@@ -80,11 +80,5 @@ public class PermissionClaimsTransformationTests
         Assert.Empty(transformed.FindAll(Permission.ClaimType));
     }
 
-    private BimssDbContext CreateDbContext()
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<BimssDbContext>()
-            .UseInMemoryDatabase(_databaseName);
-
-        return new BimssDbContext(optionsBuilder.Options);
-    }
+    private BimssDbContext CreateDbContext() => InMemoryBimssDbContextFactory.Create(_databaseName);
 }
