@@ -1,7 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using Bimss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Bimss.IntegrationTests.Api;
 
@@ -51,8 +56,22 @@ public class ExceptionHandlingTests : IClassFixture<DiagnosticsApiFactory>
     [Fact]
     public async Task Get_IncludesExceptionDetails_InDevelopment()
     {
+        // Development triggers DevelopmentIdentitySeeder on startup, so this
+        // (unlike the base DiagnosticsApiFactory, which uses the "Testing"
+        // environment to avoid that) needs a real DbContext for it to seed
+        // into — InMemory, same pattern as LoginTests.
+        var databaseName = Guid.NewGuid().ToString();
         using var developmentClient = _factory
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Development"))
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Development");
+                builder.ConfigureServices(services =>
+                {
+                    services.RemoveAll<DbContextOptions<BimssDbContext>>();
+                    services.RemoveAll<IDbContextOptionsConfiguration<BimssDbContext>>();
+                    services.AddDbContext<BimssDbContext>(options => options.UseInMemoryDatabase(databaseName));
+                });
+            })
             .CreateClient();
 
         var response = await developmentClient.GetAsync("/api/diagnostics/throw?type=unexpected");

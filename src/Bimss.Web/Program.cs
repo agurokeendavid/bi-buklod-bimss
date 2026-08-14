@@ -1,6 +1,7 @@
 ﻿using Bimss.Application;
 using Bimss.Infrastructure;
 using Bimss.Infrastructure.Authorization;
+using Bimss.Infrastructure.Identity.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,11 @@ builder.Services.AddBimssApplication();
 builder.Services.AddBimssAuthorization();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await DevelopmentIdentitySeeder.SeedAsync(app.Services);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
 using Bimss.IntegrationTests.Support;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,11 @@ public class LoginTests : IDisposable
     {
         _factory = new WebApplicationFactory<WebProgram>().WithWebHostBuilder(builder =>
         {
+            // Avoid WebApplicationFactory's default "Development" environment
+            // triggering DevelopmentIdentitySeeder — this test seeds its own
+            // single user and doesn't need the six dev accounts too.
+            builder.UseEnvironment("Testing");
+
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<BimssDbContext>>();
