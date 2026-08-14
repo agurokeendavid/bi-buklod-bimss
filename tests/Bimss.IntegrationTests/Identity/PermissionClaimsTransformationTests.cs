@@ -4,23 +4,12 @@ using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.MsSql;
 
 namespace Bimss.IntegrationTests.Identity;
 
-public class PermissionClaimsTransformationTests : IAsyncLifetime
+public class PermissionClaimsTransformationTests
 {
-    private readonly MsSqlContainer _sqlContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
-
-    public async Task InitializeAsync()
-    {
-        await _sqlContainer.StartAsync();
-
-        await using var dbContext = CreateDbContext();
-        await dbContext.Database.MigrateAsync();
-    }
-
-    public Task DisposeAsync() => _sqlContainer.DisposeAsync().AsTask();
+    private readonly string _databaseName = Guid.NewGuid().ToString();
 
     [Fact]
     public async Task TransformAsync_AddsPermissionClaims_ForUsersRoleAssignments()
@@ -94,7 +83,7 @@ public class PermissionClaimsTransformationTests : IAsyncLifetime
     private BimssDbContext CreateDbContext()
     {
         var optionsBuilder = new DbContextOptionsBuilder<BimssDbContext>()
-            .UseSqlServer(_sqlContainer.GetConnectionString());
+            .UseInMemoryDatabase(_databaseName);
 
         return new BimssDbContext(optionsBuilder.Options);
     }
