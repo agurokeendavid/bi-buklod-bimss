@@ -60,7 +60,7 @@ Raw/normalized values from the migration source before approval.
 | 9 | Place of Birth | `Member.PlaceOfBirth` | nvarchar |
 | 10 | Civil Status | `Member.CivilStatusId` | reference table |
 | 11 | Spouse's Full Name (If Married) | `MemberFamilyInformation.SpouseFullName` | nullable nvarchar |
-| 12 | BI Employee Number | `MemberEmployment.EmployeeNumber` | nvarchar business identifier; unique after policy confirmation |
+| 12 | BI Employee Number | `MemberEmployment.EmployeeNumber` | nvarchar business identifier; unique and mandatory (confirmed 2026-08-14) |
 | 13 | Position/Designation | `MemberEmployment.PositionDesignation` | nvarchar/reference candidate |
 | 14 | Division/Section/Unit | `MemberEmployment.OfficeUnitId` | reference table preferred |
 | 15 | Date of Permanent Appointment | `MemberEmployment.PermanentAppointmentDate` | nullable date |
@@ -172,17 +172,31 @@ Audit
   AuditEvents
 ```
 
+## Confirmed decisions (Buklod, 2026-08-14)
+
+1. **BI Employee Number** is unique and mandatory for all Buklod members.
+   `MemberEmployment.EmployeeNumber` gets a database-level unique constraint;
+   member creation requires a value. (Resolves former question 1; feeds
+   BIMSS-016.)
+2. **Self-service direct edit** (no officer approval) is limited to contact
+   information only (phone, email, mailing address). All other profile
+   fields — name, BI Employee Number, employment, civil status, etc. — go
+   through the officer review/approval workflow. (Resolves former question
+   3; scopes Phase 1E's `MemberUpdateRequest` vs. direct-edit split —
+   BIMSS-030 vs. BIMSS-042/044.)
+3. **Proof of employment** is mandatory before member verification; accepted
+   file types are PDF, JPG, and PNG. (Resolves former question 4; feeds
+   BIMSS-021's file validation rules.)
+4. **MemberChild** records require both name and birth date; birth date is
+   not optional. (Resolves former question 5; feeds BIMSS-019.)
+
 ## Questions to confirm with Buklod before final schema
 
-1. Is BI Employee Number unique and mandatory for all Buklod members?
-2. Are retirees/former employees/honorary members possible?
-3. Which profile fields may a member change without approval?
-4. Is proof of permanent employment mandatory and what file types are accepted?
-5. Should children be stored individually with birth dates, or is a names-only list sufficient?
-6. Are beneficiary percentages/shares required?
-7. Can a member have unlimited beneficiaries?
-8. Does changing beneficiaries require officer approval?
-9. What contribution amount/rules vary by member or year?
-10. What official loan products, interest rules, terms, penalties, and eligibility rules exist?
-11. What election positions and voting rules apply, including abstention and number of selections per position?
-12. What record-retention rules apply after membership ends?
+1. Are retirees/former employees/honorary members possible?
+2. Are beneficiary percentages/shares required?
+3. Can a member have unlimited beneficiaries?
+4. Does changing beneficiaries require officer approval?
+5. What contribution amount/rules vary by member or year?
+6. What official loan products, interest rules, terms, penalties, and eligibility rules exist?
+7. What election positions and voting rules apply, including abstention and number of selections per position?
+8. What record-retention rules apply after membership ends?

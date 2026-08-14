@@ -28,10 +28,10 @@ architecture or security rules that live elsewhere.
 4. Update this file's status/PR link in the same PR that completes the task.
 
 **Current state (2026-08-14): Phase 1A is fully Done** (BIMSS-001 through
-BIMSS-013, all merged). Phase 1B (Membership Domain) is next in table order,
-but its first few tasks depend on business questions only Buklod can answer —
-see "Open business questions" under Phase 1B below before starting BIMSS-014.
-Don't guess at these; ask whoever's driving to get Buklod's answer first.
+BIMSS-013, all merged). Phase 1B (Membership Domain) is next in table order;
+its blocking business questions were confirmed with Buklod on 2026-08-14 (see
+the note under Phase 1B below and "Confirmed decisions" in
+`docs/DATA_DICTIONARY.md`) — BIMSS-014 is unblocked and ready to start.
 
 ## Phase 1A — Platform Foundation
 
@@ -453,12 +453,13 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-025 | Synthetic membership seed data |
 | BIMSS-026 | Membership schema/constraint integration tests |
 
-Open business questions that block/shape some of these (needs Buklod
-confirmation — see `docs/DATA_DICTIONARY.md`): whether BI Employee Number is
-unique/mandatory (BIMSS-016), which profile fields a member may change without
-approval (affects Phase 1E), whether proof of employment is mandatory and what
-file types are accepted (BIMSS-021), whether children need birth dates or names
-only (BIMSS-019).
+**Business questions confirmed with Buklod (2026-08-14)** — see "Confirmed
+decisions" in `docs/DATA_DICTIONARY.md` for full detail: BI Employee Number is
+unique and mandatory (BIMSS-016); self-service direct edit without approval is
+limited to contact info only, everything else requires officer review (affects
+Phase 1E — BIMSS-030 vs. BIMSS-042/044 split); proof of employment is
+mandatory, accepted types PDF/JPG/PNG (BIMSS-021); `MemberChild` requires both
+name and birth date (BIMSS-019). BIMSS-014 is now unblocked.
 
 ## Phase 1C — Membership Administration (Not started)
 
