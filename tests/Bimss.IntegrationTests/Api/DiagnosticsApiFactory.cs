@@ -10,6 +10,14 @@ public class DiagnosticsApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // WebApplicationFactory defaults to the "Development" environment,
+        // which would trigger DevelopmentIdentitySeeder's real-database seeding
+        // on startup. These tests don't stand up a real database, so use a
+        // distinct environment name — tests that specifically need
+        // Development/Production behavior (see ExceptionHandlingTests)
+        // override this via WithWebHostBuilder.
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureServices(services =>
         {
             // The claims transformation queries a real database on every authenticated
