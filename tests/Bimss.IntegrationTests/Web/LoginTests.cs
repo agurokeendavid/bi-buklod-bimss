@@ -4,6 +4,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
+using Bimss.IntegrationTests.Support;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -117,13 +118,7 @@ public class LoginTests : IDisposable
         dbContext.SaveChanges();
     }
 
-    private BimssDbContext CreateDbContext()
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<BimssDbContext>()
-            .UseInMemoryDatabase(_databaseName);
-
-        return new BimssDbContext(optionsBuilder.Options);
-    }
+    private BimssDbContext CreateDbContext() => InMemoryBimssDbContextFactory.Create(_databaseName);
 
     private static string ExtractAntiForgeryToken(string html)
     {

@@ -2,6 +2,7 @@
 using Bimss.Domain.Auditing;
 using Bimss.Infrastructure.Auditing;
 using Bimss.Infrastructure.Persistence;
+using Bimss.IntegrationTests.Support;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bimss.IntegrationTests.Auditing;
@@ -72,13 +73,7 @@ public class AuditLoggerTests
         Assert.Null(persisted.MetadataJson);
     }
 
-    private BimssDbContext CreateDbContext()
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<BimssDbContext>()
-            .UseInMemoryDatabase(_databaseName);
-
-        return new BimssDbContext(optionsBuilder.Options);
-    }
+    private BimssDbContext CreateDbContext() => InMemoryBimssDbContextFactory.Create(_databaseName);
 
     private sealed class FakeTimeProvider(DateTimeOffset fixedTime) : TimeProvider
     {
