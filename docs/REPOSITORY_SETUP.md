@@ -138,6 +138,28 @@ That's the whole setup — no `dotnet user-secrets` step is required. The real
 files are git-ignored (see above), so anything written into them, secrets
 included, never reaches git regardless of where they're edited.
 
+### Common local connection error: SSL certificate chain
+
+```text
+A connection was successfully established with the server, but then an error
+occurred during the login process. (provider: SSL Provider, error: 0 - The
+certificate chain was issued by an authority that is not trusted.)
+```
+
+`Microsoft.Data.SqlClient` 3.x+ defaults to `Encrypt=True` and validates the
+server's TLS certificate. A local SQL Server (LocalDB, Developer Edition, a
+Docker container) typically presents a self-signed certificate, which fails
+that validation. Add `TrustServerCertificate=True` to the local
+`ConnectionStrings:Bimss` value in your real, git-ignored
+`appsettings.Development.json`:
+
+```text
+Server=localhost;Database=Bimss;Trusted_Connection=True;TrustServerCertificate=True;
+```
+
+Local-dev only — a real production connection string should have a properly
+trusted certificate instead of bypassing validation.
+
 ### Deploying to IIS
 
 The same pattern carries over to deployment: the published build never
