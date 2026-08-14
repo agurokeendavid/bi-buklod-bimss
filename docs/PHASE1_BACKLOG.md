@@ -41,7 +41,7 @@ architecture or security rules that live elsewhere.
 | BIMSS-008 | Global exception handling & typed exceptions | Done — [PR #11](https://github.com/agurokeendavid/bi-buklod-bimss/pull/11) |
 | BIMSS-009 | Validation conventions | Done — [PR #12](https://github.com/agurokeendavid/bi-buklod-bimss/pull/12) |
 | BIMSS-010 | DI composition conventions | Done — [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13) |
-| BIMSS-011 | Base layout, navigation shell, template cleanup | Not started |
+| BIMSS-011 | Base layout, navigation shell, template cleanup | Done — [PR #14](https://github.com/agurokeendavid/bi-buklod-bimss/pull/14) |
 | BIMSS-012 | Testing foundation (architecture tests, shared integration fixture) | Not started |
 | BIMSS-013 | Synthetic seed strategy (Identity portion) | Not started |
 
@@ -340,19 +340,42 @@ Merged via [PR #13](https://github.com/agurokeendavid/bi-buklod-bimss/pull/13).
   aren't affected. BIMSS-012's shared fixture (one container instead of one
   per test class) is still the real long-term fix.
 
-### BIMSS-011 — Base layout, navigation shell, template cleanup
+### BIMSS-011 — Base layout, navigation shell, template cleanup (Done)
 
-- Purpose: Bootstrap layout, auth-aware nav, login/logout; remove
-  `WeatherForecastController` and default MVC scaffold content.
-- Dependencies: BIMSS-005/006.
+Merged via [PR #14](https://github.com/agurokeendavid/bi-buklod-bimss/pull/14).
+
+- `AccountController` (`Bimss.Web/Controllers/`) — `Login` (GET/POST via
+  `SignInManager<ApplicationUser>.PasswordSignInAsync`, generic "Invalid
+  username or password." on failure — no username enumeration) and `Logout`
+  (POST, anti-forgery protected, never a GET).
+- `LoginViewModel` — DataAnnotations-validated, per BIMSS-009's convention.
+- `_LoginPartial.cshtml` in `_Layout.cshtml`'s nav — "Hello, {UserName}! |
+  Logout" when signed in, "Login" link otherwise.
+- BIMSS branding replaces default template scaffold; `WeatherForecastController`/
+  `WeatherForecast` removed from `Bimss.Api`.
+- No self-service registration — BIMSS-013 (seed strategy) creates dev/test
+  accounts instead.
+- **Also dropped Docker/Testcontainers from `Bimss.IntegrationTests`
+  entirely**, at the user's explicit request — see "Testing convention: EF
+  Core InMemory, not Testcontainers" under Environment notes below for the
+  full rationale, the accepted trade-off, and the DI-override pattern
+  `LoginTests` needed. Production code (`Bimss.Web`/`Bimss.Api`) is
+  unaffected — still real SQL Server via `AddBimssPersistence`.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (51/51 passing, ~1.5s
+  total — no Docker) in Release, `dotnet format --verify-no-changes`. Live
+  browser check of the rendered home/login/privacy pages (no local dev DB
+  configured, so the actual login submission was verified via `LoginTests`
+  instead, not live in the browser).
 
 ### BIMSS-012 — Testing foundation
 
 - Purpose: `NetArchTest.Rules`-based architecture tests enforcing dependency
   direction (Domain has no EF/ASP.NET Core reference, Application has no
-  Infrastructure reference); a **shared, reusable** integration test fixture
-  (Testcontainers.MsSql collection fixture) — generalizing the one-off container
-  setup BIMSS-004's connectivity test used.
+  Infrastructure reference); shared helpers for the EF Core InMemory-based
+  test setup now used across `Bimss.IntegrationTests` (see "Testing
+  convention: EF Core InMemory, not Testcontainers" in Environment notes —
+  this superseded the originally-planned Testcontainers.MsSql collection
+  fixture).
 - Dependencies: BIMSS-004, BIMSS-005.
 
 ### BIMSS-013 — Synthetic seed strategy (Identity portion)
@@ -439,10 +462,39 @@ automatically from `ASPNETCORE_ENVIRONMENT`). Full detail in
   once per clone and use `dotnet tool run dotnet-ef ...` (or `dotnet ef ...` after
   restore makes it the default) rather than relying on whatever's installed
   globally.
-- **Docker required for integration tests**: `Bimss.IntegrationTests` uses
-  `Testcontainers.MsSql`, which needs a running Docker engine (Docker Desktop on
-  Windows). Check `docker info` if integration tests fail to start — a
-  `DockerUnavailableException` means the daemon isn't running, not a code problem.
+- **Testing convention: EF Core InMemory, not Testcontainers.** `Bimss.IntegrationTests`
+  used `Testcontainers.MsSql` (real SQL Server via Docker) through BIMSS-010,
+  chosen specifically so unique-index/FK/concurrency-token tests would be
+  meaningful. It was replaced with the EF Core InMemory provider during
+  BIMSS-011 (2026-08-14): repeated local Docker/WSL2 memory exhaustion made
+  the dev loop unreliable (see BIMSS-010/011's verification notes above for
+  what that looked like), and spinning up a fresh SQL Server container per
+  test class was slow even when it worked. No test in the repo needs Docker
+  anymore — `dotnet test` runs standalone. **Known trade-off, accepted
+  deliberately**: EF Core InMemory does not enforce real SQL unique
+  indexes/FK constraints and does not support `Database.MigrateAsync()`
+  (there's no relational migrations pipeline), so tests that specifically
+  verified those — `BimssDbContextConnectivityTests` (real SqlServer
+  connectivity) and `InitialIdentityMigrationTests` (migration applies
+  cleanly) — were removed outright rather than ported, since InMemory can't
+  meaningfully stand in for what they checked. If schema-level correctness
+  (constraint enforcement, migration application) needs testing again later,
+  that requires a real SQL Server target again — LocalDB or a
+  CI-workflow-level SQL Server service container are lower-overhead options
+  than re-adding Testcontainers.
+  - Pattern for tests needing a `BimssDbContext`: give each test its own
+    `Guid.NewGuid().ToString()` database name passed to `UseInMemoryDatabase(...)`
+    for isolation; no `IAsyncLifetime`/async setup needed.
+  - Pattern for `WebApplicationFactory`-based tests needing a real
+    `BimssDbContext` behind the app (e.g. `LoginTests`): in
+    `ConfigureServices`, `RemoveAll<DbContextOptions<BimssDbContext>>()` **and**
+    `RemoveAll<IDbContextOptionsConfiguration<BimssDbContext>>()` before
+    re-adding with `UseInMemoryDatabase(...)` — removing only the first still
+    leaves the app's original `UseSqlServer` configuration accumulated
+    alongside the override (EF Core's `AddDbContext` composes configuration
+    via `IDbContextOptionsConfiguration<TContext>` rather than replacing it),
+    which throws "Services for database providers ... have been registered"
+    at first use.
 - **`Microsoft.OpenApi` pin**: `Bimss.Api.csproj` pins `Microsoft.OpenApi` to
   `2.7.5`. Don't "helpfully" bump it back to a floating/latest version without
   checking it still compiles — 3.x versions currently break
