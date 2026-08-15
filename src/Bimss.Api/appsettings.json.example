@@ -5,5 +5,15 @@
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "AllowedHosts": "*"
+  "AllowedHosts": "*",
+  "Jwt": {
+    "SigningKey": "",
+    "Issuer": "Bimss",
+    "Audience": "Bimss",
+    "AccessTokenMinutes": 15,
+    "RefreshTokenDays": 14
+  },
+  "Cors": {
+    "AllowedOrigins": []
+  }
 }

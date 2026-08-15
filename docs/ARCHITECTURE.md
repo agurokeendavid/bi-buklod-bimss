@@ -11,10 +11,12 @@ The system is one business platform and should initially remain one deployable s
 ```text
 src/
   Bimss.Web/
-    MVC controllers, Razor views, static web assets, UI composition
+    Retired as a UI host (frontend pivot, see docs/PHASE1_BACKLOG.md) —
+    kept only until its retirement cleanup task lands.
 
   Bimss.Api/
-    REST API controllers and integration endpoints
+    REST API controllers and integration endpoints — the only backend
+    presentation layer the frontend talks to.
 
   Bimss.Application/
     Use cases, commands/queries, application services, validation,
@@ -34,6 +36,11 @@ tests/
   Bimss.UnitTests/
   Bimss.IntegrationTests/
   Bimss.ArchitectureTests/
+
+frontend/
+  Next.js + React (TypeScript), shadcn/ui + Tailwind CSS. A separate app,
+  not part of the .NET solution, consuming Bimss.Api over REST with JWT
+  bearer auth.
 
 e2e/
   Bimss.E2E/
@@ -74,15 +81,21 @@ Security/business audit events.
 ## Dependency direction
 
 ```text
-Web/API
+Api
   -> Application
       -> Domain
 
 Infrastructure
   -> Application/Domain abstractions
 
-Domain must not depend on Infrastructure, MVC, EF Core, DevExtreme, or JavaScript.
+Frontend (separate process/app)
+  -> Api (over REST, JWT bearer)
 ```
+
+Domain must not depend on Infrastructure, ASP.NET Core, EF Core, or
+JavaScript. The frontend is a separate process, not an in-process consumer
+of `Application` — it only ever reaches business logic through `Bimss.Api`'s
+HTTP contracts, never by referencing .NET assemblies directly.
 
 ## Database strategy
 
@@ -96,23 +109,32 @@ model (`dotnet ef migrations add`) tracking every schema change alongside its co
 schema is never reverse-engineered from an existing database, and never hand-edited outside a
 migration.
 
-## API and MVC strategy
+## API strategy
 
-MVC is the primary member/admin web UI.
+`Bimss.Api` is the single backend presentation layer. The Next.js frontend
+(member/admin UI) consumes it over REST with JWT bearer auth, the same way
+any future approved external consumer or integration would — there is no
+separate, privileged "internal" API surface for the frontend.
 
-The Web API supports:
-- DevExtreme data operations where appropriate
-- future integrations
-- asynchronous UI operations
-- approved external consumers
-
-Do not duplicate business logic between MVC and API. Both call the same Application use cases.
+Do not duplicate business logic in API controllers. Controllers coordinate
+requests; the same `Bimss.Application` use cases are the single place
+business rules live, regardless of which client calls them.
 
 ## Authentication direction
 
-Use ASP.NET Core Identity or an approved BI single-sign-on integration.
+ASP.NET Core Identity (`UserManager`/`SignInManager`) remains the credential
+store and password/lockout policy engine. `Bimss.Api` issues short-lived JWT
+access tokens plus rotating refresh tokens (BIMSS-046) rather than cookies —
+see `docs/SECURITY_AND_PRIVACY.md`'s "Authentication and token handling" for
+the token-lifecycle/storage details. An approved BI single-sign-on
+integration remains an option to layer in later without changing this
+downstream contract.
 
-Authorization should be based on permissions/policies rather than scattered role string checks.
+Authorization is based on permissions/policies rather than scattered role
+string checks, and is enforced identically regardless of authentication
+scheme — `PermissionClaimsTransformation` derives permission claims from the
+authenticated user's roles on every request, whether that user authenticated
+via a JWT or (for any remaining cookie-based host) a cookie.
 
 Example permissions:
 

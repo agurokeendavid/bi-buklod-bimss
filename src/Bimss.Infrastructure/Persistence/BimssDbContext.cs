@@ -12,6 +12,8 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 {
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     public DbSet<Member> Members => Set<Member>();
