@@ -110,7 +110,63 @@ public class MembersControllerTests : IDisposable
         Assert.Empty(members!);
     }
 
-    private async Task SeedMemberAsync(string lastName, string firstName, string employeeNumber)
+    [Fact]
+    public async Task GetById_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/members/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.GetAsync($"/api/members/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsNotFound_WhenMemberDoesNotExist()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.GetAsync($"/api/members/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsMemberDetail_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.GetAsync($"/api/members/{memberId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var member = await response.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(member);
+        Assert.Equal(memberId, member!.Id);
+        Assert.Equal("Dela Cruz", member.LastName);
+        Assert.Equal("Juan", member.FirstName);
+        Assert.Equal("Manila", member.PlaceOfBirth);
+        Assert.Equal("BI-00123", member.EmployeeNumber);
+        Assert.Equal("Immigration Officer I", member.PositionDesignation);
+        Assert.Equal("PendingVerification", member.Status);
+    }
+
+    private async Task<Guid> SeedMemberAsync(string lastName, string firstName, string employeeNumber)
     {
         await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);
 
@@ -122,5 +178,7 @@ public class MembersControllerTests : IDisposable
             new MemberEmployment(Guid.NewGuid(), member.Id, employeeNumber, "Immigration Officer I", Guid.NewGuid(), null));
 
         await dbContext.SaveChangesAsync();
+
+        return member.Id;
     }
 }
