@@ -37,8 +37,10 @@ note under Phase 1B below and "Confirmed decisions" in
 `MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
 BIMSS-020 (`MemberPrivacyConsent`), BIMSS-021 (`MemberDocument` metadata +
 storage abstraction), BIMSS-022 (Member creation use case), BIMSS-023
-(Member read/query use cases), and BIMSS-024 (Member status transition
-service) are now Done. BIMSS-025 (Synthetic membership seed data) is next.
+(Member read/query use cases), BIMSS-024 (Member status transition service),
+and BIMSS-025 (Synthetic membership seed data) are now Done. BIMSS-026
+(Membership schema/constraint integration tests) is next — the last Phase 1B
+task.
 
 ## Phase 1A — Platform Foundation
 
@@ -457,7 +459,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-022 | Member creation use case | Done — [PR #26](https://github.com/agurokeendavid/bi-buklod-bimss/pull/26) |
 | BIMSS-023 | Member read/query use cases | Done — [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27) |
 | BIMSS-024 | Member status transition service | Done — [PR #28](https://github.com/agurokeendavid/bi-buklod-bimss/pull/28) |
-| BIMSS-025 | Synthetic membership seed data | Not started |
+| BIMSS-025 | Synthetic membership seed data | Done — [PR #29](https://github.com/agurokeendavid/bi-buklod-bimss/pull/29) |
 | BIMSS-026 | Membership schema/constraint integration tests | Not started |
 
 **Business questions confirmed with Buklod (2026-08-14)** — see "Confirmed
@@ -927,6 +929,34 @@ Merged via [PR #28](https://github.com/agurokeendavid/bi-buklod-bimss/pull/28).
   Release, `dotnet format --verify-no-changes`. No schema change, no
   migration.
 - Dependencies: BIMSS-015.
+
+### BIMSS-025 — Synthetic membership seed data (Done)
+
+Merged via [PR #29](https://github.com/agurokeendavid/bi-buklod-bimss/pull/29).
+
+- `DevelopmentMembershipSeeder` (`Bimss.Infrastructure/Membership/Seeding/`)
+  — mirrors `DevelopmentIdentitySeeder`'s idempotent, `IsDevelopment()`-gated
+  pattern (BIMSS-013).
+- Seeds the seven reference/master data tables with a small synthetic set —
+  scope explicitly deferred from BIMSS-014 to this task.
+- Seeds three synthetic members **via the existing
+  `MemberCreationService`/`MemberStatusTransitionService` Application
+  services**, not direct `DbContext` inserts — spanning the full status
+  lifecycle (`PendingVerification`, `Active`, `Inactive`). Going through the
+  real Application services means seed data exercises the same business
+  rules and audit trail as real usage. Idempotency checked via
+  `EmployeeNumber`.
+- Wired into both hosts' `Program.cs`, right after `DevelopmentIdentitySeeder`.
+  Uses only clearly-synthetic data (`DEV-00001`–`DEV-00003`), never real
+  Buklod member data.
+- Tests: `DevelopmentMembershipSeederTests` — expected reference-data
+  counts/codes, correct member statuses, idempotent across repeated calls.
+  Confirmed the existing Development-environment `ExceptionHandlingTests`
+  test (which now also triggers this seeder) still passes.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (228/228 passing) in
+  Release, `dotnet format --verify-no-changes`. No schema change, no
+  migration.
+- Dependencies: BIMSS-014, BIMSS-022, BIMSS-024.
 
 ## Phase 1C — Membership Administration (Not started)
 
