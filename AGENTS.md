@@ -25,7 +25,7 @@ If the documentation and implementation disagree, do not silently guess. Preserv
 ## Architecture rules
 
 - Use a modular monolith.
-- Keep domain logic out of MVC controllers, API controllers, Razor views, JavaScript files, and EF Core configurations.
+- Keep domain logic out of API controllers, frontend components/pages, and EF Core configurations.
 - Controllers coordinate requests; Application services/use cases execute workflows; Domain objects enforce business invariants; Infrastructure handles persistence and external services.
 - Avoid introducing microservices, message brokers, distributed caches, CQRS frameworks, or other infrastructure unless a concrete requirement justifies them.
 - Prefer simple dependency injection and explicit interfaces.
@@ -95,8 +95,8 @@ If the documentation and implementation disagree, do not silently guess. Preserv
 ## Security rules
 
 - Authorization is server-side and policy/permission based.
-- Never trust hidden inputs, disabled inputs, client-side validation, or DevExtreme filters as authorization.
-- Add anti-forgery protection to state-changing browser form requests.
+- Never trust hidden inputs, disabled inputs, client-side validation, or client-side filters as authorization.
+- The frontend authenticates via short-lived JWT access tokens (`Authorization: Bearer`), not cookies/anti-forgery tokens — see `docs/SECURITY_AND_PRIVACY.md`'s "Authentication and token handling" section for the storage/refresh/CSRF-tradeoff details.
 - Validate uploaded files by extension, content type, size, storage policy, and authorization.
 - Never place secrets or production credentials in source control.
 - Never log passwords, access tokens, full government/employee identifiers, full addresses, beneficiary details, ballot contents, or sensitive loan data.
@@ -144,15 +144,17 @@ If the documentation and implementation disagree, do not silently guess. Preserv
   from BIMSS-008 — don't hand-roll status-code mapping at the controller
   level.
 
-## MVC / UI rules
+## Frontend rules
 
-- Use Bootstrap for layout and responsive structure.
-- Use DevExtreme jQuery for data-heavy grids, lookup controls, reports, and administrative screens where it adds value.
-- Do not use DevExtreme merely to replace simple semantic HTML.
-- Keep JavaScript modular; do not put large business rules in Razor views.
-- Prefer unobtrusive event handling over inline JavaScript.
+- The frontend is a separate Next.js + React (TypeScript) app under `frontend/`, consuming `Bimss.Api` over REST with JWT bearer auth. It is not part of the .NET solution and does not share a process with the backend.
+- Use Tailwind CSS for layout/styling and shadcn/ui (Radix-based) for components — this replaced Bootstrap/jQuery/DevExtreme (see `docs/PHASE1_BACKLOG.md` for why).
+- Use a data-table library (e.g. TanStack Table) for data-heavy grids, filtering, and administrative screens where it adds value; do not reach for a heavy grid component merely to replace simple semantic HTML.
+- Keep client-side business logic minimal; authoritative decisions belong on the server. Do not compute authoritative totals, balances, or eligibility client-side.
+- Prefer server components/data-fetching patterns where the framework supports them; keep client components focused on interactivity.
 - Keep accessibility in mind: labels, keyboard operation, focus behavior, validation messages, and adequate contrast.
-- Server-side authorization must determine which actions succeed even if buttons are hidden.
+- **Server-side authorization must determine which actions succeed even if buttons/menu items are hidden client-side** — this principle is unchanged by the stack switch.
+- The access token lives in memory only (never `localStorage`/`sessionStorage`); the refresh token is an httpOnly cookie the frontend never reads directly. See `docs/SECURITY_AND_PRIVACY.md`.
+- Add or update Playwright coverage for critical UI workflows, run it when available before declaring UI work complete.
 
 ## Testing requirements
 

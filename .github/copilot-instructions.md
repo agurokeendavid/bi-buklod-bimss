@@ -6,8 +6,8 @@ Read `AGENTS.md` and the relevant files under `docs/` before implementing non-tr
 
 Key rules:
 
-- Use ASP.NET Core MVC + Web API, C#, EF Core 10, SQL Server, Bootstrap, jQuery, and DevExtreme jQuery.
-- Keep business logic in Domain/Application layers, not controllers/views/JavaScript.
+- Use ASP.NET Core Web API (JWT bearer auth), C#, EF Core 10, SQL Server on the backend; Next.js, React, shadcn/ui, and Tailwind CSS on the frontend (a separate app under `frontend/`, consuming `Bimss.Api` over REST).
+- Keep business logic in Domain/Application layers, not controllers/frontend components/JavaScript.
 - Use DTOs for API contracts; do not return EF entities.
 - Use policy/permission-based authorization.
 - Use server-side validation for all business rules.

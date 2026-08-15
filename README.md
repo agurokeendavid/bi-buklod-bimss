@@ -24,15 +24,13 @@ Member-facing branding may use **MyBuklod**.
 ## Planned technology stack
 
 - .NET 10
-- ASP.NET Core MVC
-- ASP.NET Core Web API
+- ASP.NET Core Web API (JWT bearer auth)
 - C#
 - SQL Server / MSSQL
 - Entity Framework Core 10 as the default application ORM
-- Bootstrap
-- jQuery
-- DevExtreme jQuery
-- IIS deployment
+- Next.js + React (TypeScript)
+- shadcn/ui + Tailwind CSS
+- IIS deployment (API); Node hosting for the frontend
 - GitHub
 - GitHub Actions
 - Claude Code
@@ -41,14 +39,16 @@ Member-facing branding may use **MyBuklod**.
 
 ## Architecture direction
 
-Use a **modular monolith**. Keep one solution and one primary SQL Server database, while separating domain modules in code.
+Use a **modular monolith** on the backend. Keep one solution and one primary
+SQL Server database, while separating domain modules in code. The frontend is
+a separate decoupled Next.js app consuming `Bimss.Api` over REST.
 
 Suggested projects:
 
 ```text
 Bimss.sln
 src/
-  Bimss.Web/
+  Bimss.Web/            (retired as a UI host — see docs/PHASE1_BACKLOG.md)
   Bimss.Api/
   Bimss.Application/
   Bimss.Domain/
@@ -58,12 +58,14 @@ tests/
   Bimss.UnitTests/
   Bimss.IntegrationTests/
   Bimss.ArchitectureTests/
+frontend/                (Next.js + React + shadcn/ui + Tailwind)
 e2e/
   Bimss.E2E/
 docs/
 ```
 
-The Web and API projects are separate presentation layers but must reuse the same Application, Domain, and Infrastructure rules.
+`Bimss.Api` is now the only backend presentation layer — the frontend calls
+it directly over REST with JWT bearer auth instead of a same-process MVC UI.
 
 ## Start here
 

@@ -50,11 +50,47 @@ Every endpoint that receives an ID must validate that the current user is allowe
 
 Never assume an ID is safe because it came from the UI.
 
-## CSRF and browser security
+## Authentication and token handling
 
-State-changing MVC/browser operations require anti-forgery protection.
+The frontend (Next.js, a separate decoupled app) authenticates against
+`Bimss.Api`'s JWT endpoints (`POST /api/auth/login`, `/refresh`, `/logout`
+— BIMSS-046), not ASP.NET Core Identity's cookie flow. This has a different
+threat model than the classic MVC/form-based CSRF that used anti-forgery
+tokens:
 
-Use secure cookie settings and the application's approved HTTPS/TLS configuration.
+- **Access token**: short-lived (15 minutes), returned in the login/refresh
+  JSON response body, sent as `Authorization: Bearer <token>`. The frontend
+  keeps it in memory only — never `localStorage`/`sessionStorage` — to
+  reduce exposure if an XSS vulnerability is ever found. A bearer token in
+  an `Authorization` header is not vulnerable to classic CSRF (a
+  cross-site form/image/script cannot set a custom header), which is the
+  main reason this flow doesn't need anti-forgery tokens the way
+  cookie-authenticated form posts did.
+- **Refresh token**: longer-lived (14 days), returned as an `httpOnly`,
+  `Secure`, `SameSite=None` cookie — never readable by client-side JS.
+  `SameSite=None` is required because the frontend and `Bimss.Api` are
+  different origins; this is the one place a CSRF-*style* risk remains:
+  a malicious site can trigger a cross-site `POST /api/auth/refresh` (the
+  browser sends the cookie), rotating a legitimate user's refresh token
+  without being able to read the response (blocked by CORS). Accepted,
+  documented tradeoff for Phase 1 — the impact is a wasted token rotation,
+  not token theft, since the attacker never sees the new token pair. If
+  the frontend and API ever end up served from the same site/subdomain in
+  production, switch this cookie to `SameSite=Strict`.
+- **Refresh rotation**: every successful `/api/auth/refresh` call revokes
+  the presented token and issues a new pair; a revoked token cannot be
+  reused. This is the standard mitigation for a leaked refresh token being
+  replayed silently.
+- Server-side, `Bimss.Api` validates every bearer token's signature,
+  issuer, audience, and expiry (`Microsoft.AspNetCore.Authentication.JwtBearer`,
+  `Bimss.Infrastructure.Identity.JwtAuthenticationServiceCollectionExtensions`)
+  before any `[Authorize]`/permission-policy check runs — the existing
+  permission-claim derivation (`PermissionClaimsTransformation`) is
+  unchanged by the auth-scheme switch.
+
+Use secure cookie settings (`httpOnly`, `Secure`, appropriate `SameSite`)
+and the application's approved HTTPS/TLS configuration for the refresh-token
+cookie specifically; the access token is never a cookie.
 
 ## File uploads
 

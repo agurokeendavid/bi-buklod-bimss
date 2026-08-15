@@ -992,14 +992,43 @@ Last Phase 1B task — Phase 1B is now fully Done.
 
 ## Phase 1C — Membership Administration (Not started)
 
+**Frontend pivot (2026-08-15)**: the user decided to replace the planned
+Bootstrap/jQuery/DevExtreme MVC (`Bimss.Web`) admin UI with a decoupled
+Next.js + React frontend (shadcn/ui + Tailwind CSS, JWT bearer auth via
+`Bimss.Api`) — triggered by a DevExtreme licensing question with no
+resolution path at the time. See "Frontend pivot" notes below the table for
+the full rationale and scope. This replaces `Bimss.Web`'s UI role entirely
+(Phase 1C and the future Phase 1E self-service portal), not just BIMSS-027.
+`Bimss.Web` itself is not deleted yet — it stays in the solution, unused,
+until BIMSS-027 is proven working on the new stack, then a dedicated
+cleanup task removes it. BIMSS-011 ("Base layout, navigation shell,
+template cleanup") is **superseded** by BIMSS-047 below — its Bootstrap/Razor
+layout work is no longer the frontend's base layout.
+
+Two new prerequisite tasks (IDs assigned after the original Phase
+1A–1E numbering was written, listed first since everything else in this
+phase depends on them):
+
 | ID | Title | Depends on |
 |---|---|---|
-| BIMSS-027 | Membership admin list (DevExtreme grid) | BIMSS-023 |
-| BIMSS-028 | Member details view | BIMSS-023 |
-| BIMSS-029 | Create member (admin UI) | BIMSS-022, BIMSS-011 |
-| BIMSS-030 | Edit permitted information (officer-direct-edit) | BIMSS-022 |
-| BIMSS-031 | Activate/Deactivate/status UI | BIMSS-024 |
-| BIMSS-032 | Verification workflow UI + audit/history panel | BIMSS-024, BIMSS-007 |
+| BIMSS-046 | JWT authentication backend (`Bimss.Api`) | BIMSS-005, BIMSS-006 |
+| BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | BIMSS-046 |
+| BIMSS-027 | Membership admin list (data table) | BIMSS-023, BIMSS-046, BIMSS-047 |
+| BIMSS-028 | Member details view | BIMSS-023, BIMSS-047 |
+| BIMSS-029 | Create member (admin UI) | BIMSS-022, BIMSS-047 |
+| BIMSS-030 | Edit permitted information (officer-direct-edit) | BIMSS-022, BIMSS-047 |
+| BIMSS-031 | Activate/Deactivate/status UI | BIMSS-024, BIMSS-047 |
+| BIMSS-032 | Verification workflow UI + audit/history panel | BIMSS-024, BIMSS-007, BIMSS-047 |
+
+BIMSS-028–032's dependency on BIMSS-011 is dropped (superseded, see above);
+BIMSS-047 is their real UI-shell prerequisite now. Each task's detailed
+scope is still worked out when it's actually started, same as every prior
+task in this backlog — not pre-designed in bulk here.
+
+Phase 1D (BIMSS-033–038) and Phase 1E (BIMSS-039–045)'s UI-facing tasks
+(especially BIMSS-038 and all of Phase 1E) will need the same "was
+Razor/MVC, now Next.js" scope treatment once they're reached. No
+renumbering needed there yet — just a heads-up for whoever picks them up.
 
 ## Phase 1D — Existing Member Import (Not started)
 
