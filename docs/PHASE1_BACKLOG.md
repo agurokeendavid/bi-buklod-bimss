@@ -33,8 +33,9 @@ questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
 in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
 BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
-scaffold), BIMSS-027 (Membership admin list), and BIMSS-028 (Member details
-view) are all Done. BIMSS-029 (Create member admin UI) is next.
+scaffold), BIMSS-027 (Membership admin list), BIMSS-028 (Member details
+view), and BIMSS-029 (Create member admin UI) are all Done. BIMSS-030
+(Edit permitted information) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1018,7 +1019,7 @@ phase depends on them):
 | BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Done — [PR #32](https://github.com/agurokeendavid/bi-buklod-bimss/pull/32) | BIMSS-046 |
 | BIMSS-027 | Membership admin list (data table) | Done — [PR #33](https://github.com/agurokeendavid/bi-buklod-bimss/pull/33) | BIMSS-023, BIMSS-046, BIMSS-047 |
 | BIMSS-028 | Member details view | Done — [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34) | BIMSS-023, BIMSS-047 |
-| BIMSS-029 | Create member (admin UI) | Not started | BIMSS-022, BIMSS-047 |
+| BIMSS-029 | Create member (admin UI) | Done — [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35) | BIMSS-022, BIMSS-047 |
 | BIMSS-030 | Edit permitted information (officer-direct-edit) | Not started | BIMSS-022, BIMSS-047 |
 | BIMSS-031 | Activate/Deactivate/status UI | Not started | BIMSS-024, BIMSS-047 |
 | BIMSS-032 | Verification workflow UI + audit/history panel | Not started | BIMSS-024, BIMSS-007, BIMSS-047 |
@@ -1192,6 +1193,55 @@ Merged via [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34).
 - Verified: `dotnet build`/`dotnet test` (258/258 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-023, BIMSS-047.
+
+### BIMSS-029 — Create member (admin UI) (Done)
+
+Merged via [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35).
+
+- New `IReferenceDataQueryService`/`ReferenceDataQueryService`
+  (`Bimss.Application`/`Bimss.Infrastructure`) — Phase 1B (BIMSS-014) never
+  built a query layer over the 7 reference/master-data tables, they were
+  schema-only. Deliberately scoped to only the 3 types this form needs
+  (CivilStatus, Suffix, OfficeUnit), not all 7 — the other 4 get their own
+  query methods when a task actually needs them.
+- `ReferenceDataController` (`GET /api/reference-data/{civil-statuses,
+  suffixes, office-units}`) and `MembersController.Create` (`POST
+  /api/members`), both gated on `Permission.Membership.Manage`. `Create`
+  maps `CreateMemberRequest` (`Bimss.Contracts`, DataAnnotations-validated)
+  to the existing `CreateMemberCommand`/`MemberCreationService`
+  (BIMSS-022) — no new domain logic, just the first caller of a service
+  that had been sitting unused behind no endpoint since BIMSS-022 shipped.
+- `/dashboard/members/new` (frontend) — full create-member form
+  (shadcn `Select`/`Textarea`), loads reference data in parallel on mount,
+  redirects to the new member's detail page on success, surfaces a
+  specific message on a 409 (duplicate employee number). Required fields
+  are now visually marked (`*`) with a legend note, matching server-side
+  `[Required]` validation — added after live verification showed no way
+  to tell which fields were mandatory before submitting.
+- **Bug found and fixed during verification**: Base UI's
+  `Select`/`SelectValue` resolves a selected value's label by looking it
+  up in the popup's registered items, but items only register once the
+  popup has actually opened — so any `Select` with a non-empty default
+  value (Suffix defaults to a "None" sentinel) rendered the raw stored
+  value (`__none__`, or a GUID once an option was picked) instead of its
+  label until the dropdown was opened once. Fixed by giving `SelectValue`
+  an explicit children render function that resolves the label from the
+  already-loaded reference-data array, on all three selects on this form.
+  Worth remembering for any future `Select` with a pre-set default value
+  in this frontend.
+- Tests: `ReferenceDataQueryServiceTests` (unit, EF InMemory),
+  `ReferenceDataControllerTests` (integration — 401/403/200 per reference
+  type), `MembersControllerTests` gained `Create_*` coverage (401, 403,
+  400 missing required field, 201 created and persisted, 409 duplicate
+  employee number).
+- **Verified live**: ran the real `Bimss.Api` + local SQL Server + dev
+  seed data, logged in as `admin.dev`, filled out and submitted the
+  create-member form (including picking real Civil status/Office unit/
+  Suffix values), confirmed the member was created and rendered correctly
+  on both the detail page and the members list.
+- Verified: `dotnet build`/`dotnet test` (271/271 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-022, BIMSS-047.
 
 ## Phase 1D — Existing Member Import (Not started)
 
