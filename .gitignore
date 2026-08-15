@@ -437,3 +437,8 @@ src/Bimss.Api/appsettings.json
 src/Bimss.Api/appsettings.*.json
 src/Bimss.Web/appsettings.json
 src/Bimss.Web/appsettings.*.json
+
+# Local-disk member document storage (LocalFileMemberDocumentStorage default
+# root). Uploaded member documents must never be committed — see
+# docs/REPOSITORY_SETUP.md's "Do not commit" list.
+App_Data/

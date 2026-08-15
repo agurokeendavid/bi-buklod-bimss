@@ -1,5 +1,6 @@
 ﻿using Bimss.Infrastructure.Auditing;
 using Bimss.Infrastructure.Identity;
+using Bimss.Infrastructure.Membership;
 using Bimss.Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBimssPersistence(configuration);
         services.AddBimssIdentity();
         services.AddBimssAuditing();
+        services.AddBimssMemberDocumentStorage(configuration);
 
         return services;
     }
