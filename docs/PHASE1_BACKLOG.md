@@ -32,9 +32,10 @@ architecture or security rules that live elsewhere.
 questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
 in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
-BIMSS-046 (JWT authentication backend) and BIMSS-047 (Next.js frontend
-scaffold) are both Done. BIMSS-027 (Membership admin list) is next — the
-first real Membership screen on the new stack.
+BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
+scaffold), and BIMSS-027 (Membership admin list — the first real Membership
+screen on the new stack) are all Done. BIMSS-028 (Member details view) is
+next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1016,7 +1017,7 @@ phase depends on them):
 |---|---|---|---|
 | BIMSS-046 | JWT authentication backend (`Bimss.Api`) | Done — [PR #31](https://github.com/agurokeendavid/bi-buklod-bimss/pull/31) | BIMSS-005, BIMSS-006 |
 | BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Done — [PR #32](https://github.com/agurokeendavid/bi-buklod-bimss/pull/32) | BIMSS-046 |
-| BIMSS-027 | Membership admin list (data table) | Not started | BIMSS-023, BIMSS-046, BIMSS-047 |
+| BIMSS-027 | Membership admin list (data table) | Done — [PR #33](https://github.com/agurokeendavid/bi-buklod-bimss/pull/33) | BIMSS-023, BIMSS-046, BIMSS-047 |
 | BIMSS-028 | Member details view | Not started | BIMSS-023, BIMSS-047 |
 | BIMSS-029 | Create member (admin UI) | Not started | BIMSS-022, BIMSS-047 |
 | BIMSS-030 | Edit permitted information (officer-direct-edit) | Not started | BIMSS-022, BIMSS-047 |
@@ -1125,6 +1126,44 @@ Direct replacement for BIMSS-011's now-superseded Bootstrap/Razor layout work.
 - `dotnet build`/`dotnet test` unaffected (250/250 passing) — this task
   touches no .NET code. `npm run lint`/`npm run build` both clean.
 - Dependencies: BIMSS-046.
+
+### BIMSS-027 — Membership admin list (data table) (Done)
+
+Merged via [PR #33](https://github.com/agurokeendavid/bi-buklod-bimss/pull/33).
+First real Membership screen on the new stack.
+
+- `MembersController` (`Bimss.Api`) — `GET /api/members`, gated on
+  `Permission.Membership.Manage`, returns `MemberSummaryResponse[]`
+  (`Bimss.Contracts/Membership/`) mapped from the existing
+  `IMemberQueryService.ListAsync()` projection (BIMSS-023). `Status` is a
+  plain `string` (`member.Status.ToString()`), not a reference to
+  `Bimss.Domain.Membership.MemberStatus` — `Bimss.Contracts` has zero
+  project references by design, and this keeps the wire contract decoupled
+  from Domain internals.
+- `/dashboard/members` (frontend) — a TanStack Table + shadcn/ui data table
+  (`MembersTable`) with a status `Badge` color-coded per status.
+  `/dashboard` now redirects to `/dashboard/members`; `NavHeader` gained a
+  "Members" link, the first entry in what grows into a real admin nav as
+  Phase 1C adds more screens.
+- **Version decision**: `@tanstack/react-table` had just released a v9
+  major by default via `npm install` — a genuine API rewrite
+  (`useTable`/feature-composition model instead of v8's
+  `useReactTable`/`getCoreRowModel()`) with no reliable training-data
+  grounding. Since this is the first use of the library and sets the
+  pattern every future admin grid in Phase 1C/1D/1E follows, pinned to
+  `^8` (stable, well-documented) instead of guessing at v9.
+- Tests: `MembersControllerTests` (integration, `WebApplicationFactory` +
+  InMemory DB + `TestAuthHandler`, mirroring `DiagnosticsAuthorizationTests`)
+  — 401 unauthenticated, 403 without the permission, 200 with real seeded
+  data (including the enum-to-string mapping), empty array when no members
+  exist.
+- **Verified live**: ran the real `Bimss.Api` + local SQL Server + dev seed
+  data, logged in via the browser as `admin.dev`, confirmed all three
+  seeded members render with correct names, employee numbers, and
+  color-coded status badges.
+- Verified: `dotnet build`/`dotnet test` (254/254 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-023, BIMSS-046, BIMSS-047.
 
 ## Phase 1D — Existing Member Import (Not started)
 
