@@ -9,14 +9,21 @@ namespace Bimss.Api.Controllers;
 
 [ApiController]
 [Route("api/members")]
-[Authorize(Policy = Permission.Membership.Manage)]
+// No class-level [Authorize] — Verify uses Permission.Membership.Verify
+// while every other action uses Permission.Membership.Manage. Stacking a
+// class-level policy with a different method-level policy would require
+// BOTH to succeed (ASP.NET Core AND-combines Authorize attributes), which
+// would wrongly require Manage for Verify too. Each action states its own
+// policy explicitly instead.
 public class MembersController(
     IMemberQueryService memberQueryService,
     MemberCreationService memberCreationService,
-    MemberProfileUpdateService memberProfileUpdateService)
+    MemberProfileUpdateService memberProfileUpdateService,
+    MemberStatusTransitionService memberStatusTransitionService)
     : ControllerBase
 {
     [HttpGet]
+    [Authorize(Policy = Permission.Membership.Manage)]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
         var members = await memberQueryService.ListAsync(cancellationToken);
@@ -35,6 +42,7 @@ public class MembersController(
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = Permission.Membership.Manage)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var member = await memberQueryService.GetByIdAsync(id, cancellationToken);
@@ -47,6 +55,7 @@ public class MembersController(
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = Permission.Membership.Manage)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMemberRequest request, CancellationToken cancellationToken)
     {
         var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
@@ -91,6 +100,7 @@ public class MembersController(
     };
 
     [HttpPost]
+    [Authorize(Policy = Permission.Membership.Manage)]
     public async Task<IActionResult> Create([FromBody] CreateMemberRequest request, CancellationToken cancellationToken)
     {
         var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
@@ -114,5 +124,47 @@ public class MembersController(
         var result = await memberCreationService.CreateAsync(command, actorUserId, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = result.MemberId }, new CreateMemberResponse { Id = result.MemberId });
+    }
+
+    [HttpPost("{id:guid}/verify")]
+    [Authorize(Policy = Permission.Membership.Verify)]
+    public async Task<IActionResult> Verify(Guid id, [FromBody] VerifyMemberRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
+            ? parsedActorUserId
+            : (Guid?)null;
+
+        await memberStatusTransitionService.VerifyAsync(id, actorUserId, request.Remarks, cancellationToken);
+
+        var member = await memberQueryService.GetByIdAsync(id, cancellationToken);
+        return Ok(ToDetailResponse(member!));
+    }
+
+    [HttpPost("{id:guid}/deactivate")]
+    [Authorize(Policy = Permission.Membership.Manage)]
+    public async Task<IActionResult> Deactivate(Guid id, [FromBody] DeactivateMemberRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
+            ? parsedActorUserId
+            : (Guid?)null;
+
+        await memberStatusTransitionService.DeactivateAsync(id, request.ReasonId, actorUserId, request.Remarks, cancellationToken);
+
+        var member = await memberQueryService.GetByIdAsync(id, cancellationToken);
+        return Ok(ToDetailResponse(member!));
+    }
+
+    [HttpPost("{id:guid}/reactivate")]
+    [Authorize(Policy = Permission.Membership.Manage)]
+    public async Task<IActionResult> Reactivate(Guid id, [FromBody] ReactivateMemberRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
+            ? parsedActorUserId
+            : (Guid?)null;
+
+        await memberStatusTransitionService.ReactivateAsync(id, actorUserId, request.Remarks, cancellationToken);
+
+        var member = await memberQueryService.GetByIdAsync(id, cancellationToken);
+        return Ok(ToDetailResponse(member!));
     }
 }

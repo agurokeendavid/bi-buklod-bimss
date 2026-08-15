@@ -133,4 +133,25 @@ public class ReferenceDataControllerTests : IDisposable
         Assert.NotNull(items);
         Assert.Single(items!);
     }
+
+    [Fact]
+    public async Task ListMemberStatusReasons_ReturnsActiveItems_WithThePermission()
+    {
+        await using (var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            dbContext.MemberStatusReasons.Add(new MemberStatusReason(Guid.NewGuid(), "RESIGNED", "Resigned from BI"));
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.GetAsync("/api/reference-data/member-status-reasons");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var items = await response.Content.ReadFromJsonAsync<List<ReferenceDataItemResponse>>();
+        Assert.NotNull(items);
+        Assert.Single(items!);
+    }
 }

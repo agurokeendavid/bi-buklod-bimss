@@ -23,6 +23,10 @@ public class ReferenceDataController(IReferenceDataQueryService referenceDataQue
     public async Task<IActionResult> ListOfficeUnits(CancellationToken cancellationToken)
         => Ok(await MapAsync(referenceDataQueryService.ListOfficeUnitsAsync(cancellationToken)));
 
+    [HttpGet("member-status-reasons")]
+    public async Task<IActionResult> ListMemberStatusReasons(CancellationToken cancellationToken)
+        => Ok(await MapAsync(referenceDataQueryService.ListMemberStatusReasonsAsync(cancellationToken)));
+
     private static async Task<IEnumerable<ReferenceDataItemResponse>> MapAsync(
         Task<IReadOnlyList<ReferenceDataSummary>> itemsTask)
     {
