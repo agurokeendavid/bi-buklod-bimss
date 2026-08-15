@@ -76,6 +76,27 @@ public class ReferenceDataQueryServiceTests
         Assert.Equal("Head Office", item.Name);
     }
 
+    [Fact]
+    public async Task ListMemberStatusReasonsAsync_ReturnsActiveItems()
+    {
+        var databaseName = Guid.NewGuid().ToString();
+
+        await using (var writeContext = CreateDbContext(databaseName))
+        {
+            writeContext.MemberStatusReasons.Add(new MemberStatusReason(Guid.NewGuid(), "RESIGNED", "Resigned from BI"));
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = CreateDbContext(databaseName);
+        var service = new ReferenceDataQueryService(readContext);
+
+        var result = await service.ListMemberStatusReasonsAsync(CancellationToken.None);
+
+        var item = Assert.Single(result);
+        Assert.Equal("RESIGNED", item.Code);
+        Assert.Equal("Resigned from BI", item.Name);
+    }
+
     private static BimssDbContext CreateDbContext(string databaseName)
     {
         var optionsBuilder = new DbContextOptionsBuilder<BimssDbContext>().UseInMemoryDatabase(databaseName);

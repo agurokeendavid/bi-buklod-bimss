@@ -318,6 +318,195 @@ public class MembersControllerTests : IDisposable
         Assert.Equal("Senior Immigration Officer", persisted.PositionDesignation);
     }
 
+    [Fact]
+    public async Task Verify_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync($"/api/members/{Guid.NewGuid()}/verify", new VerifyMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verify_ReturnsForbidden_WithoutTheVerifyPermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        // Manage alone is not enough for Verify — it's gated on its own
+        // dedicated Membership.Verify permission (Verify is not a superset
+        // action of Manage; see MembersController's authorization comment).
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync($"/api/members/{Guid.NewGuid()}/verify", new VerifyMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verify_ReturnsNotFound_WhenMemberDoesNotExist()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+
+        var response = await client.PostAsJsonAsync($"/api/members/{Guid.NewGuid()}/verify", new VerifyMemberRequest());
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verify_ReturnsOk_AndTransitionsToActive_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{memberId}/verify", new VerifyMemberRequest { Remarks = "Documents checked" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var member = await response.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(member);
+        Assert.Equal("Active", member!.Status);
+    }
+
+    [Fact]
+    public async Task Verify_ReturnsConflict_WhenNotPendingVerification()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+
+        await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest());
+        var response = await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Deactivate_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{Guid.NewGuid()}/deactivate", new DeactivateMemberRequest { ReasonId = Guid.NewGuid() });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Deactivate_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{Guid.NewGuid()}/deactivate", new DeactivateMemberRequest { ReasonId = Guid.NewGuid() });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Deactivate_ReturnsOk_AndTransitionsToInactive_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+        await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest());
+
+        client.DefaultRequestHeaders.Remove(TestAuthHandler.PermissionsHeader);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{memberId}/deactivate",
+            new DeactivateMemberRequest { ReasonId = Guid.NewGuid(), Remarks = "Resigned from BI" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var member = await response.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(member);
+        Assert.Equal("Inactive", member!.Status);
+    }
+
+    [Fact]
+    public async Task Deactivate_ReturnsConflict_WhenNotActive()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{memberId}/deactivate", new DeactivateMemberRequest { ReasonId = Guid.NewGuid() });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reactivate_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync($"/api/members/{Guid.NewGuid()}/reactivate", new ReactivateMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reactivate_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.PostAsJsonAsync($"/api/members/{Guid.NewGuid()}/reactivate", new ReactivateMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reactivate_ReturnsOk_AndTransitionsToActive_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+        await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest());
+
+        client.DefaultRequestHeaders.Remove(TestAuthHandler.PermissionsHeader);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+        await client.PostAsJsonAsync($"/api/members/{memberId}/deactivate", new DeactivateMemberRequest { ReasonId = Guid.NewGuid() });
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/members/{memberId}/reactivate", new ReactivateMemberRequest { Remarks = "Rejoined" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var member = await response.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(member);
+        Assert.Equal("Active", member!.Status);
+    }
+
+    [Fact]
+    public async Task Reactivate_ReturnsConflict_WhenNotInactive()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync($"/api/members/{memberId}/reactivate", new ReactivateMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
     private static UpdateMemberRequest CreateValidUpdateRequest()
     {
         return new UpdateMemberRequest

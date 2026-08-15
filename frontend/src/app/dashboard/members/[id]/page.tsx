@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import type { MemberDetail } from "@/lib/types/member";
+import type { MemberDetail, MemberStatus, ReferenceDataItem } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-const statusBadgeVariant: Record<MemberDetail["status"], "default" | "secondary" | "outline"> = {
+const statusBadgeVariant: Record<MemberStatus, "default" | "secondary" | "outline"> = {
   PendingVerification: "secondary",
   Active: "default",
   Inactive: "outline",
+};
+
+type StatusAction = "verify" | "deactivate" | "reactivate";
+
+const actionLabel: Record<StatusAction, string> = {
+  verify: "Verify",
+  deactivate: "Deactivate",
+  reactivate: "Reactivate",
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -31,30 +43,42 @@ export default function MemberDetailPage() {
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusReasons, setStatusReasons] = useState<ReferenceDataItem[]>([]);
+
+  const [activeAction, setActiveAction] = useState<StatusAction | null>(null);
+  const [remarks, setRemarks] = useState("");
+  const [reasonId, setReasonId] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadMember() {
-      const response = await fetchWithAuth(`/api/members/${params.id}`);
+      const [memberResponse, reasonsResponse] = await Promise.all([
+        fetchWithAuth(`/api/members/${params.id}`),
+        fetchWithAuth("/api/reference-data/member-status-reasons"),
+      ]);
 
       if (cancelled) {
         return;
       }
 
-      if (response.status === 404) {
+      if (memberResponse.status === 404) {
         setNotFound(true);
         return;
       }
 
-      if (!response.ok) {
-        setError(`Failed to load member (${response.status}).`);
+      if (!memberResponse.ok) {
+        setError(`Failed to load member (${memberResponse.status}).`);
         return;
       }
 
-      const body = (await response.json()) as MemberDetail;
-      if (!cancelled) {
-        setMember(body);
+      const body = (await memberResponse.json()) as MemberDetail;
+      setMember(body);
+
+      if (reasonsResponse.ok) {
+        setStatusReasons((await reasonsResponse.json()) as ReferenceDataItem[]);
       }
     }
 
@@ -64,6 +88,64 @@ export default function MemberDetailPage() {
       cancelled = true;
     };
   }, [fetchWithAuth, params.id]);
+
+  function openAction(action: StatusAction) {
+    setActiveAction(action);
+    setRemarks("");
+    setReasonId("");
+    setActionError(null);
+  }
+
+  function closeAction() {
+    setActiveAction(null);
+    setActionError(null);
+  }
+
+  async function handleActionSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!activeAction) {
+      return;
+    }
+
+    setActionError(null);
+    setIsSubmitting(true);
+
+    try {
+      const endpoint = `/api/members/${params.id}/${activeAction}`;
+      const body =
+        activeAction === "deactivate"
+          ? { reasonId, remarks: remarks || null }
+          : { remarks: remarks || null };
+
+      const response = await fetchWithAuth(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (response.status === 403) {
+        setActionError("You do not have permission to perform this action.");
+        return;
+      }
+
+      if (response.status === 409) {
+        setActionError("This member's status has already changed. Reload the page and try again.");
+        return;
+      }
+
+      if (!response.ok) {
+        setActionError(`Failed to ${actionLabel[activeAction].toLowerCase()} member (${response.status}).`);
+        return;
+      }
+
+      const updated = (await response.json()) as MemberDetail;
+      setMember(updated);
+      toast.success(`Member ${actionLabel[activeAction].toLowerCase()}d.`);
+      setActiveAction(null);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,34 +160,102 @@ export default function MemberDetailPage() {
             <CardDescription>Core identity and employment information.</CardDescription>
           </div>
           {member ? (
-            <Link href={`/dashboard/members/${params.id}/edit`} className={cn(buttonVariants({ size: "sm" }))}>
-              Edit
-            </Link>
+            <div className="flex gap-2">
+              {member.status === "PendingVerification" ? (
+                <Button size="sm" variant="outline" onClick={() => openAction("verify")}>
+                  Verify
+                </Button>
+              ) : null}
+              {member.status === "Active" ? (
+                <Button size="sm" variant="outline" onClick={() => openAction("deactivate")}>
+                  Deactivate
+                </Button>
+              ) : null}
+              {member.status === "Inactive" ? (
+                <Button size="sm" variant="outline" onClick={() => openAction("reactivate")}>
+                  Reactivate
+                </Button>
+              ) : null}
+              <Link href={`/dashboard/members/${params.id}/edit`} className={cn(buttonVariants({ size: "sm" }))}>
+                Edit
+              </Link>
+            </div>
           ) : null}
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           {notFound ? (
             <p className="text-sm text-muted-foreground">Member not found.</p>
           ) : error ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : member ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <Field label="Last name" value={member.lastName} />
-              <Field label="First name" value={member.firstName} />
-              <Field label="Middle name" value={member.middleName ?? "—"} />
-              <Field label="Date of birth" value={member.dateOfBirth} />
-              <Field label="Place of birth" value={member.placeOfBirth} />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">Status</span>
-                <Badge variant={statusBadgeVariant[member.status]} className="w-fit">
-                  {member.status}
-                </Badge>
+            <>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <Field label="Last name" value={member.lastName} />
+                <Field label="First name" value={member.firstName} />
+                <Field label="Middle name" value={member.middleName ?? "—"} />
+                <Field label="Date of birth" value={member.dateOfBirth} />
+                <Field label="Place of birth" value={member.placeOfBirth} />
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Status</span>
+                  <Badge variant={statusBadgeVariant[member.status]} className="w-fit">
+                    {member.status}
+                  </Badge>
+                </div>
+                <Field label="Employee number" value={member.employeeNumber ?? "—"} />
+                <Field label="Position / designation" value={member.positionDesignation ?? "—"} />
+                <Field label="Permanent appointment date" value={member.permanentAppointmentDate ?? "—"} />
+                <Field label="Joining reason" value={member.joiningReason ?? "—"} />
               </div>
-              <Field label="Employee number" value={member.employeeNumber ?? "—"} />
-              <Field label="Position / designation" value={member.positionDesignation ?? "—"} />
-              <Field label="Permanent appointment date" value={member.permanentAppointmentDate ?? "—"} />
-              <Field label="Joining reason" value={member.joiningReason ?? "—"} />
-            </div>
+
+              {activeAction ? (
+                <form
+                  className="flex flex-col gap-3 rounded-lg border border-border p-4"
+                  onSubmit={handleActionSubmit}
+                >
+                  <p className="text-sm font-medium">{actionLabel[activeAction]} this member</p>
+
+                  {activeAction === "deactivate" ? (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="reasonId">Reason</Label>
+                      <Select value={reasonId} onValueChange={(value) => setReasonId(value ?? "")} required>
+                        <SelectTrigger id="reasonId">
+                          <SelectValue placeholder="Select a reason">
+                            {(value) => statusReasons.find((item) => item.id === value)?.name ?? "Select a reason"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusReasons.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="remarks">Remarks (optional)</Label>
+                    <Textarea id="remarks" value={remarks} onChange={(event) => setRemarks(event.target.value)} />
+                  </div>
+
+                  {actionError ? (
+                    <p role="alert" className="text-sm text-destructive">
+                      {actionError}
+                    </p>
+                  ) : null}
+
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving…" : `Confirm ${actionLabel[activeAction].toLowerCase()}`}
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={closeAction} disabled={isSubmitting}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}

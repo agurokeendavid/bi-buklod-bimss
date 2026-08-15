@@ -16,6 +16,9 @@ public sealed class ReferenceDataQueryService(BimssDbContext dbContext) : IRefer
     public Task<IReadOnlyList<ReferenceDataSummary>> ListOfficeUnitsAsync(CancellationToken cancellationToken)
         => ListActiveAsync(dbContext.OfficeUnits, cancellationToken);
 
+    public Task<IReadOnlyList<ReferenceDataSummary>> ListMemberStatusReasonsAsync(CancellationToken cancellationToken)
+        => ListActiveAsync(dbContext.MemberStatusReasons, cancellationToken);
+
     // Only active rows — inactive reference rows are kept for the
     // historical FK integrity of members that already reference them, but
     // shouldn't be selectable for new member creation going forward.
