@@ -16,6 +16,7 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddBimssApplication(this IServiceCollection services)
     {
         services.AddScoped<MemberCreationService>();
+        services.AddScoped<MemberStatusTransitionService>();
 
         return services;
     }

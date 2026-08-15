@@ -42,6 +42,7 @@ public class ServiceCollectionCompositionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IMemberRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IMemberQueryService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<MemberCreationService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<MemberStatusTransitionService>());
         Assert.NotNull(provider.GetRequiredService<IAuthorizationPolicyProvider>());
     }
 }
