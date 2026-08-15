@@ -35,9 +35,9 @@ note under Phase 1B below and "Confirmed decisions" in
 `MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
 (`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
 `MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
-BIMSS-020 (`MemberPrivacyConsent`), and BIMSS-021 (`MemberDocument` metadata
-+ storage abstraction) are now Done. BIMSS-022 (Member creation use case) is
-next.
+BIMSS-020 (`MemberPrivacyConsent`), BIMSS-021 (`MemberDocument` metadata +
+storage abstraction), and BIMSS-022 (Member creation use case) are now Done.
+BIMSS-023 (Member read/query use cases) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -453,7 +453,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Done — [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23) |
 | BIMSS-020 | `MemberPrivacyConsent` | Done — [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24) |
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Done — [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25) |
-| BIMSS-022 | Member creation use case | Not started |
+| BIMSS-022 | Member creation use case | Done — [PR #26](https://github.com/agurokeendavid/bi-buklod-bimss/pull/26) |
 | BIMSS-023 | Member read/query use cases | Not started |
 | BIMSS-024 | Member status transition service | Not started |
 | BIMSS-025 | Synthetic membership seed data | Not started |
@@ -811,6 +811,56 @@ Merged via [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (one table, expected FK/indexes, nothing else touched).
 - Dependencies: BIMSS-015.
+
+### BIMSS-022 — Member creation use case (Done)
+
+Merged via [PR #26](https://github.com/agurokeendavid/bi-buklod-bimss/pull/26).
+First real Application-layer use case in Phase 1B — BIMSS-014–021 were
+schema/domain-rule only.
+
+- **Scope decision**: `CreateMemberCommand` bundles core `Member` fields +
+  `MemberEmployment` fields only, not the full Google Form field set
+  (contact, address, education, eligibility, family, children, privacy
+  consent, documents). BI Employee Number is the only child field with a
+  confirmed "required at creation" decision; everything else is added
+  afterward through its own operation (the officer-review edit workflow,
+  Phase 1E), keeping this task from becoming a single command coupled to
+  every Phase 1B table.
+- `MemberCreationService` (`Bimss.Application/Membership/`) — pre-checks
+  `EmployeeNumber` uniqueness for a friendly `ConflictException` (the unique
+  index remains the authoritative, concurrency-safe guard — a same-instant
+  race would surface as an unmapped 500, an accepted Phase 1 tradeoff),
+  constructs `Member` + `MemberEmployment`, persists both via one
+  `IMemberRepository.AddAsync` call (one `SaveChangesAsync`/transaction), and
+  logs a `"Member.Create"` audit entry via the existing `IAuditLogger`.
+- `IMemberRepository` (`Bimss.Application/Membership/`) — narrow,
+  use-case-specific port, not a generic repository (`AGENTS.md` explicitly
+  warns against that); the real need is that `Bimss.Application` cannot
+  reference `Bimss.Infrastructure`/`BimssDbContext` per the enforced
+  layering rule. Implemented by `MemberRepository`
+  (`Bimss.Infrastructure/Membership/`).
+- DI: new `AddBimssMembership()` (registers `IMemberRepository`) folded into
+  `AddBimssInfrastructure`; `MemberCreationService` registered in
+  `AddBimssApplication()` — its first real content since BIMSS-010 left it a
+  documented no-op.
+- Extended `ServiceCollectionCompositionTests` (BIMSS-010) to resolve
+  `IMemberDocumentStorage` (BIMSS-021, previously unverified through DI),
+  `IMemberRepository`, and `MemberCreationService` — closes a real gap where
+  nothing exercised those registrations end to end.
+- Tests: `MemberCreationServiceTests` (unit — hand-rolled fakes for
+  `IMemberRepository`/`IAuditLogger`/`TimeProvider`, since this repo uses no
+  mocking library: success path, duplicate-employee-number conflict with no
+  side effects, null-command guard); `MemberRepositoryTests` (integration —
+  the real EF-backed repository via `InMemoryBimssDbContextFactory`).
+- No controller/UI in this task (BIMSS-029, Phase 1C) — no admin "create
+  member" screen exists yet, so who's authorized to call this service is
+  deferred to whichever task adds the endpoint (`Permission.Membership.Manage`
+  already exists for this).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (211/211 passing) in
+  Release, `dotnet format --verify-no-changes`. Architecture tests confirm
+  `Bimss.Application` still has zero `Bimss.Infrastructure` dependency
+  despite the new port/service. No schema change, no migration.
+- Dependencies: BIMSS-015, BIMSS-016, BIMSS-007.
 
 ## Phase 1C — Membership Administration (Not started)
 
