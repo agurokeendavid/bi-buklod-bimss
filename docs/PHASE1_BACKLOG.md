@@ -30,8 +30,10 @@ architecture or security rules that live elsewhere.
 **Current state (2026-08-15): Phase 1A and Phase 1B are fully Done**
 (BIMSS-001 through BIMSS-026, all merged). Phase 1B's blocking business
 questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
-in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is next —
-start with BIMSS-027 (depends on BIMSS-023, which is Done).
+in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
+in progress on the new frontend pivot (see the note under Phase 1C below):
+BIMSS-046 (JWT authentication backend) is Done. BIMSS-047 (Next.js frontend
+scaffold) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1009,16 +1011,16 @@ Two new prerequisite tasks (IDs assigned after the original Phase
 1A–1E numbering was written, listed first since everything else in this
 phase depends on them):
 
-| ID | Title | Depends on |
-|---|---|---|
-| BIMSS-046 | JWT authentication backend (`Bimss.Api`) | BIMSS-005, BIMSS-006 |
-| BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | BIMSS-046 |
-| BIMSS-027 | Membership admin list (data table) | BIMSS-023, BIMSS-046, BIMSS-047 |
-| BIMSS-028 | Member details view | BIMSS-023, BIMSS-047 |
-| BIMSS-029 | Create member (admin UI) | BIMSS-022, BIMSS-047 |
-| BIMSS-030 | Edit permitted information (officer-direct-edit) | BIMSS-022, BIMSS-047 |
-| BIMSS-031 | Activate/Deactivate/status UI | BIMSS-024, BIMSS-047 |
-| BIMSS-032 | Verification workflow UI + audit/history panel | BIMSS-024, BIMSS-007, BIMSS-047 |
+| ID | Title | Status | Depends on |
+|---|---|---|---|
+| BIMSS-046 | JWT authentication backend (`Bimss.Api`) | Done — [PR #31](https://github.com/agurokeendavid/bi-buklod-bimss/pull/31) | BIMSS-005, BIMSS-006 |
+| BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Not started | BIMSS-046 |
+| BIMSS-027 | Membership admin list (data table) | Not started | BIMSS-023, BIMSS-046, BIMSS-047 |
+| BIMSS-028 | Member details view | Not started | BIMSS-023, BIMSS-047 |
+| BIMSS-029 | Create member (admin UI) | Not started | BIMSS-022, BIMSS-047 |
+| BIMSS-030 | Edit permitted information (officer-direct-edit) | Not started | BIMSS-022, BIMSS-047 |
+| BIMSS-031 | Activate/Deactivate/status UI | Not started | BIMSS-024, BIMSS-047 |
+| BIMSS-032 | Verification workflow UI + audit/history panel | Not started | BIMSS-024, BIMSS-007, BIMSS-047 |
 
 BIMSS-028–032's dependency on BIMSS-011 is dropped (superseded, see above);
 BIMSS-047 is their real UI-shell prerequisite now. Each task's detailed
@@ -1029,6 +1031,62 @@ Phase 1D (BIMSS-033–038) and Phase 1E (BIMSS-039–045)'s UI-facing tasks
 (especially BIMSS-038 and all of Phase 1E) will need the same "was
 Razor/MVC, now Next.js" scope treatment once they're reached. No
 renumbering needed there yet — just a heads-up for whoever picks them up.
+
+### BIMSS-046 — JWT authentication backend (Done)
+
+Merged via [PR #31](https://github.com/agurokeendavid/bi-buklod-bimss/pull/31).
+First task of the frontend pivot.
+
+- `AuthController` (`Bimss.Api`) — `POST /api/auth/login`, `/refresh`,
+  `/logout`. Login uses `SignInManager.CheckPasswordSignInAsync` (not
+  `PasswordSignInAsync`, cookie-oriented) so no cookie is issued; failures
+  return a generic "Invalid username or password." (no username
+  enumeration), matching `AccountController`'s existing convention.
+- Access tokens: short-lived JWTs (15 min, HMAC-SHA256), returned in the
+  response body. Refresh tokens: opaque, hashed (SHA-256) at rest —
+  never the raw value — returned as an `httpOnly`/`Secure`/`SameSite=None`
+  cookie the frontend never touches directly; every refresh **rotates**
+  (the presented token is revoked immediately, reuse rejected).
+- `PermissionClaimsTransformation` needed **zero changes** — confirmed by
+  reading it directly, it's scheme-agnostic and already re-derives
+  permission claims from `RolePermissions` on every request via
+  `ClaimTypes.NameIdentifier`, which the JWT's `sub` claim auto-maps to.
+  Every existing `[Authorize(Policy = Permission.X)]` action keeps working
+  unchanged.
+- `AddBimssJwtAuthentication` (`Bimss.Infrastructure/Identity/`) registers
+  JWT Bearer as `Bimss.Api`'s default scheme only; `Bimss.Web` keeps its
+  cookie scheme untouched (it isn't deleted yet).
+- **Real bug found and fixed via the new tests**: `JwtBearerOptions` must
+  resolve the signing key lazily through `IOptions<JwtOptions>`, not by
+  reading `IConfiguration` eagerly inside `AddBimssJwtAuthentication` —
+  `WebApplicationFactory`-based tests layer config overrides onto the host
+  *after* `Program.cs`'s synchronous top-level statements (including that
+  registration call) already ran, so an eagerly-captured value missed them
+  entirely (manifested as every JWT-authenticated request 500ing with
+  `SymmetricSecurityKey`'s "key.Length == 0" until fixed). Diagnosed by
+  temporarily switching a test to the `Development` environment to expose
+  the real exception detail (BIMSS-008), then reverted once found.
+- Migration: `AddRefreshTokens` — one table, FK to `AspNetUsers` (cascade —
+  deliberately different from `AuditEvent`'s "no FK to AspNetUsers"
+  convention: a refresh token is meaningless without its user and has no
+  audit purpose to outlive it), unique index on the token hash.
+- CORS added to `Bimss.Api` for the future Next.js origin
+  (`Cors:AllowedOrigins` config, credentialed for the refresh cookie flow).
+- Tests: `JwtTokenServiceTests` (unit — issuance, hashed storage, rotation,
+  reuse-rejection, revocation); `RefreshTokenConfigurationTests` (unit);
+  `AuthControllerTests` (integration, `WebApplicationFactory` + InMemory
+  DB — login success/failure, refresh/rotation/reuse-rejection, logout,
+  and a protected endpoint correctly authenticating a valid bearer token
+  while still enforcing its permission policy).
+- Bundled the full frontend-pivot documentation update into this PR — see
+  `AGENTS.md` ("Frontend rules"), `docs/ARCHITECTURE.md`,
+  `docs/SECURITY_AND_PRIVACY.md` ("Authentication and token handling",
+  replacing the old CSRF section), `README.md`,
+  `.github/copilot-instructions.md`, and a full rewrite of
+  `.github/instructions/frontend.instructions.md`.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (250/250 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed.
+- Dependencies: BIMSS-005, BIMSS-006.
 
 ## Phase 1D — Existing Member Import (Not started)
 
