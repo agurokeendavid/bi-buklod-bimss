@@ -27,16 +27,17 @@ architecture or security rules that live elsewhere.
    pushing/opening a PR.
 4. Update this file's status/PR link in the same PR that completes the task.
 
-**Current state (2026-08-15): Phase 1A and Phase 1B are fully Done**
-(BIMSS-001 through BIMSS-026, all merged). Phase 1B's blocking business
-questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
-in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
-in progress on the new frontend pivot (see the note under Phase 1C below):
-BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
-scaffold), BIMSS-027 (Membership admin list), BIMSS-028 (Member details
-view), BIMSS-029 (Create member admin UI), BIMSS-030 (Edit permitted
-information), and BIMSS-031 (Activate/Deactivate/status UI) are all Done.
-BIMSS-032 (Verification workflow UI + audit/history panel) is next.
+**Current state (2026-08-16): Phase 1A, Phase 1B, and Phase 1C are fully
+Done** (BIMSS-001 through BIMSS-032, plus the frontend-pivot prerequisites
+BIMSS-046/047, all merged). Phase 1B's blocking business questions were
+confirmed with Buklod on 2026-08-14 (see "Confirmed decisions" in
+`docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) shipped
+on the new frontend pivot (see the note under Phase 1C below) — the
+Next.js admin UI now covers the full member lifecycle: list, detail,
+create, edit, activate/deactivate/verify with a document-upload gate, and
+status/audit history. Phase 1D (Existing Member Import) is next; it still
+needs the same "was Razor, now Next.js" re-scoping treatment Phase 1C got
+before work starts on BIMSS-038 (Import batch admin UI).
 
 ## Phase 1A — Platform Foundation
 
@@ -995,7 +996,7 @@ Last Phase 1B task — Phase 1B is now fully Done.
   confirmed 62/62 integration tests passing against the real database.
 - Dependencies: BIMSS-014 through BIMSS-021.
 
-## Phase 1C — Membership Administration (Not started)
+## Phase 1C — Membership Administration (Done)
 
 **Frontend pivot (2026-08-15)**: the user decided to replace the planned
 Bootstrap/jQuery/DevExtreme MVC (`Bimss.Web`) admin UI with a decoupled
@@ -1023,7 +1024,7 @@ phase depends on them):
 | BIMSS-029 | Create member (admin UI) | Done — [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35) | BIMSS-022, BIMSS-047 |
 | BIMSS-030 | Edit permitted information (officer-direct-edit) | Done — [PR #36](https://github.com/agurokeendavid/bi-buklod-bimss/pull/36) | BIMSS-022, BIMSS-047 |
 | BIMSS-031 | Activate/Deactivate/status UI | Done — [PR #37](https://github.com/agurokeendavid/bi-buklod-bimss/pull/37) | BIMSS-024, BIMSS-047 |
-| BIMSS-032 | Verification workflow UI + audit/history panel | Not started | BIMSS-024, BIMSS-007, BIMSS-047 |
+| BIMSS-032 | Verification workflow UI + audit/history panel | Done — [PR #38](https://github.com/agurokeendavid/bi-buklod-bimss/pull/38) | BIMSS-024, BIMSS-007, BIMSS-047 |
 
 BIMSS-028–032's dependency on BIMSS-011 is dropped (superseded, see above);
 BIMSS-047 is their real UI-shell prerequisite now. Each task's detailed
@@ -1336,6 +1337,67 @@ Merged via [PR #37](https://github.com/agurokeendavid/bi-buklod-bimss/pull/37).
 - Verified: `dotnet build`/`dotnet test` (300/300 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-024, BIMSS-047.
+
+### BIMSS-032 — Verification workflow UI + audit/history panel (Done)
+
+Merged via [PR #38](https://github.com/agurokeendavid/bi-buklod-bimss/pull/38).
+Closes the last two Phase 1C gaps: `docs/DATA_DICTIONARY.md`'s confirmed
+"proof of employment mandatory before verification" decision was never
+enforced anywhere, and `MemberStatusHistory` (populated since BIMSS-015)
+was never queried back out.
+
+- **Scope decision**: "audit/history panel" means a member-scoped history
+  (status transitions for this member), not a system-wide audit log
+  browser — `IAuditLogger` is write-only with no read capability
+  anywhere, and no Auditor-role UI exists or is planned this phase. A
+  general audit browser is a separate, bigger future task if Buklod asks
+  for it.
+- `MemberDocumentUploadService`/`IMemberDocumentQueryService`
+  (`Bimss.Application`/`Bimss.Infrastructure`) are the first real callers
+  of `IMemberDocumentStorage`/`MemberDocument` (BIMSS-021) — no
+  controller had ever wired them up. New `MemberDocumentsController`
+  (`api/members/{id}/documents`): `POST` (multipart upload, 10 MB
+  `[RequestSizeLimit]` — no size limit was documented anywhere in this
+  repo before now), `GET` (list), `GET /{documentId}/download` (streams
+  via `OpenReadAsync`). Extension allowlist enforced at the API boundary
+  in addition to `MemberDocument`'s own content-type check.
+- **`MemberStatusTransitionService.VerifyAsync`** now requires at least
+  one uploaded document, throwing `ConflictException` otherwise. Checks
+  for *any* document rather than a specific `DocumentType` match —
+  `DocumentType` is deliberately free text with no reference table
+  (BIMSS-021), so the officer reviewing the document list before
+  verifying is the real safeguard for type correctness, not a fragile
+  string comparison. Confirmed with the user before implementing.
+- `GET /api/members/{id}/status-history` (new
+  `IMemberQueryService.ListStatusHistoryAsync`) backs a new Status
+  history panel on the member detail page; a new Documents panel handles
+  list/upload/authenticated download (via `fetchWithAuth` → blob → a
+  temporary `<a download>`, since bearer-token auth can't be attached to
+  a plain `<a href>`).
+- **Fixed a latent UX gap while here**: the status-action error handler
+  previously hardcoded a generic message on any failure. Since
+  `BimssExceptionHandler` already puts the real exception message in
+  `ProblemDetails.Detail`, it now parses and shows that — so the new
+  verification-gate message actually reaches the user instead of a
+  generic "status has already changed" string.
+- `DevelopmentMembershipSeeder` uploads a synthetic document for each
+  `Active`/`Inactive` seed member before verifying them (the seeder now
+  goes through the same gate); the `PendingVerification` seed member
+  deliberately stays without one so the gate is visible out of the box.
+- Tests: `MemberDocumentUploadServiceTests`, `MemberDocumentQueryServiceTests`,
+  `MemberDocumentsControllerTests` (integration — real
+  `LocalFileMemberDocumentStorage` against a temp directory: upload →
+  list → download round-trip, rejected extension, 404 on missing
+  document), extended `MemberStatusTransitionServiceTests`/
+  `MembersControllerTests` for the gate and the status-history endpoint,
+  extended `DevelopmentMembershipSeederTests`.
+- **Verified live** (by the user): created a fresh member, confirmed
+  Verify was blocked with the new document-required message, uploaded a
+  PDF, downloaded it back successfully, verified successfully afterward,
+  confirmed the status-history panel showed the transition.
+- Verified: `dotnet build`/`dotnet test` (316/316 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-024, BIMSS-007, BIMSS-047.
 
 ## Phase 1D — Existing Member Import (Not started)
 
