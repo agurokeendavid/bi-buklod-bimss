@@ -138,6 +138,50 @@ That's the whole setup — no `dotnet user-secrets` step is required. The real
 files are git-ignored (see above), so anything written into them, secrets
 included, never reaches git regardless of where they're edited.
 
+## Frontend setup (Next.js)
+
+The frontend (`frontend/`) is a separate Next.js + React app, not part of
+the .NET solution — it consumes `Bimss.Api` over REST with JWT bearer auth
+(see `docs/ARCHITECTURE.md` and `docs/SECURITY_AND_PRIVACY.md`'s
+"Authentication and token handling").
+
+### Local developer setup
+
+```powershell
+cd frontend
+npm install
+Copy-Item .env.example .env.local
+```
+
+Edit `.env.local` and set `NEXT_PUBLIC_API_BASE_URL` to your local
+`Bimss.Api` URL — use the **https** launch profile
+(`https://localhost:7247` by default; see
+`src/Bimss.Api/Properties/launchSettings.json`), not http. The refresh-token
+cookie `Bimss.Api` issues requires `Secure`, which only works over HTTPS.
+
+`Bimss.Api` also needs `Jwt:SigningKey` and `Cors:AllowedOrigins` set in its
+own real, git-ignored `appsettings.Development.json` (see `appsettings.Development.json.example`
+for the keys) — `Cors:AllowedOrigins` must include the frontend's local
+origin (`http://localhost:3000` by default) or the browser will reject the
+frontend's requests.
+
+Run both sides for local development:
+
+```powershell
+# Terminal 1 — from src/Bimss.Api
+dotnet run --launch-profile https
+
+# Terminal 2 — from frontend
+npm run dev
+```
+
+### CI
+
+`.github/workflows/ci.yml` runs a separate `frontend` job (`npm ci`, lint,
+build) alongside the .NET `build-and-test` job — a frontend-only change
+doesn't need the SQL Server service container, and a backend-only change
+doesn't need Node.
+
 ### Common local connection error: SSL certificate chain
 
 ```text

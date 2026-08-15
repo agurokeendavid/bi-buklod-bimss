@@ -67,3 +67,29 @@ jobs:
         run: dotnet test Bimss.slnx --no-build --configuration Release
         env:
           BIMSS_TEST_SQLSERVER_CONNECTION_STRING: "Server=127.0.0.1,1433;User Id=sa;Password=Bimss-Ci-Only-Passw0rd!23;TrustServerCertificate=True;Encrypt=False;"
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
