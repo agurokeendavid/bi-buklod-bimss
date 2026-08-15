@@ -36,9 +36,9 @@ note under Phase 1B below and "Confirmed decisions" in
 (`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
 `MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
 BIMSS-020 (`MemberPrivacyConsent`), BIMSS-021 (`MemberDocument` metadata +
-storage abstraction), BIMSS-022 (Member creation use case), and BIMSS-023
-(Member read/query use cases) are now Done. BIMSS-024 (Member status
-transition service) is next.
+storage abstraction), BIMSS-022 (Member creation use case), BIMSS-023
+(Member read/query use cases), and BIMSS-024 (Member status transition
+service) are now Done. BIMSS-025 (Synthetic membership seed data) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -456,7 +456,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Done — [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25) |
 | BIMSS-022 | Member creation use case | Done — [PR #26](https://github.com/agurokeendavid/bi-buklod-bimss/pull/26) |
 | BIMSS-023 | Member read/query use cases | Done — [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27) |
-| BIMSS-024 | Member status transition service | Not started |
+| BIMSS-024 | Member status transition service | Done — [PR #28](https://github.com/agurokeendavid/bi-buklod-bimss/pull/28) |
 | BIMSS-025 | Synthetic membership seed data | Not started |
 | BIMSS-026 | Membership schema/constraint integration tests | Not started |
 
@@ -893,6 +893,40 @@ Merged via [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27).
   Release, `dotnet format --verify-no-changes`. No schema change, no
   migration.
 - Dependencies: BIMSS-015, BIMSS-016.
+
+### BIMSS-024 — Member status transition service (Done)
+
+Merged via [PR #28](https://github.com/agurokeendavid/bi-buklod-bimss/pull/28).
+
+- `MemberStatusTransitionService` (`Bimss.Application/Membership/`) —
+  `VerifyAsync`/`DeactivateAsync`/`ReactivateAsync`: load the member
+  (tracked), call the corresponding `Member` domain method, persist, then log
+  a `"Member.Verify"`/`"Member.Deactivate"`/`"Member.Reactivate"` audit
+  entry — matching `docs/ARCHITECTURE.md`'s explicit "member verification"
+  audit requirement. Unknown member id → `NotFoundException`. An invalid
+  transition throws `ConflictException` from the domain method itself
+  *before* `SaveChangesAsync`/audit logging run, so a rejected transition
+  leaves no partial persistence or audit trail. Authorization stays the
+  future controller's job (`Permission.Membership.Verify`/`Manage` already
+  exist), same convention as `MemberCreationService` (BIMSS-022).
+- `IMemberRepository` gained `GetTrackedByIdAsync` (loads a `Member` with
+  `StatusHistory` included, for mutation via its own domain methods —
+  distinct from `IMemberQueryService`'s untracked projections) and
+  `SaveChangesAsync`, implemented in `MemberRepository`.
+- Registered in `AddBimssApplication()`; extended
+  `ServiceCollectionCompositionTests` to resolve it through DI.
+- Tests: `MemberStatusTransitionServiceTests` (unit, hand-rolled fakes) —
+  each transition's success + audit-entry content, not-found, and that an
+  invalid transition calls neither `SaveChangesAsync` nor the audit logger;
+  `MemberStatusTransitionPersistenceTests` (integration) — the real
+  EF-backed repository: not-found, and verify → save → reload confirming
+  both `Status` and accumulated `StatusHistory` persist correctly.
+- No controller/UI in this task — no admin verify/deactivate/reactivate
+  screen exists yet (BIMSS-031/032, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (225/225 passing) in
+  Release, `dotnet format --verify-no-changes`. No schema change, no
+  migration.
+- Dependencies: BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
 
