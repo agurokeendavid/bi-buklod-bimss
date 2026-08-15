@@ -3,6 +3,7 @@ using Bimss.Application;
 using Bimss.Infrastructure;
 using Bimss.Infrastructure.Authorization;
 using Bimss.Infrastructure.Identity.Seeding;
+using Bimss.Infrastructure.Membership.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     await DevelopmentIdentitySeeder.SeedAsync(app.Services);
+    await DevelopmentMembershipSeeder.SeedAsync(app.Services);
 }
 
 // Configure the HTTP request pipeline.
