@@ -166,6 +166,93 @@ public class MembersControllerTests : IDisposable
         Assert.Equal("PendingVerification", member.Status);
     }
 
+    [Fact]
+    public async Task Create_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/members", CreateValidRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.PostAsJsonAsync("/api/members", CreateValidRequest());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsBadRequest_WhenLastNameIsMissing()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var request = CreateValidRequest();
+        request.LastName = string.Empty;
+
+        var response = await client.PostAsJsonAsync("/api/members", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsCreated_AndPersistsTheMember_WithThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync("/api/members", CreateValidRequest());
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<CreateMemberResponse>();
+        Assert.NotNull(body);
+        Assert.NotEqual(Guid.Empty, body!.Id);
+
+        var getResponse = await client.GetAsync($"/api/members/{body.Id}");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var member = await getResponse.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(member);
+        Assert.Equal("Dela Cruz", member!.LastName);
+        Assert.Equal("BI-00999", member.EmployeeNumber);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsConflict_WhenEmployeeNumberAlreadyRegistered()
+    {
+        await SeedMemberAsync("Existing", "Member", "BI-00999");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PostAsJsonAsync("/api/members", CreateValidRequest());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    private static CreateMemberRequest CreateValidRequest()
+    {
+        return new CreateMemberRequest
+        {
+            LastName = "Dela Cruz",
+            FirstName = "Juan",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            PlaceOfBirth = "Manila",
+            CivilStatusId = Guid.NewGuid(),
+            EmployeeNumber = "BI-00999",
+            PositionDesignation = "Immigration Officer I",
+            OfficeUnitId = Guid.NewGuid(),
+        };
+    }
+
     private async Task<Guid> SeedMemberAsync(string lastName, string firstName, string employeeNumber)
     {
         await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);
