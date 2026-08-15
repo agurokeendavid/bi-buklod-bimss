@@ -32,6 +32,22 @@ public sealed class MemberRepository(BimssDbContext dbContext) : IMemberReposito
             .SingleOrDefaultAsync(employment => employment.MemberId == memberId, cancellationToken);
     }
 
+    public Task<bool> ExistsAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return dbContext.Members.AnyAsync(member => member.Id == memberId, cancellationToken);
+    }
+
+    public async Task AddDocumentAsync(MemberDocument document, CancellationToken cancellationToken)
+    {
+        dbContext.MemberDocuments.Add(document);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> HasAnyDocumentAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return dbContext.MemberDocuments.AnyAsync(document => document.MemberId == memberId, cancellationToken);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await dbContext.SaveChangesAsync(cancellationToken);

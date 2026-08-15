@@ -1,4 +1,5 @@
 ﻿using Bimss.Application;
+using Bimss.Application.Membership;
 using Bimss.Domain.Membership;
 using Bimss.Infrastructure.Auditing;
 using Bimss.Infrastructure.Membership;
@@ -6,11 +7,24 @@ using Bimss.Infrastructure.Membership.Seeding;
 using Bimss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Bimss.UnitTests.Membership;
 
-public class DevelopmentMembershipSeederTests
+public class DevelopmentMembershipSeederTests : IDisposable
 {
+    private readonly string _documentStorageRootPath = Path.Combine(Path.GetTempPath(), "bimss-tests", Guid.NewGuid().ToString());
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_documentStorageRootPath))
+        {
+            Directory.Delete(_documentStorageRootPath, recursive: true);
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
     [Fact]
     public async Task SeedAsync_CreatesExpectedReferenceData()
     {
@@ -57,6 +71,14 @@ public class DevelopmentMembershipSeederTests
         var inactive = await dbContext.MemberEmployments.SingleAsync(e => e.EmployeeNumber == "DEV-00003");
         var inactiveMember = await dbContext.Members.SingleAsync(m => m.Id == inactive.MemberId);
         Assert.Equal(MemberStatus.Inactive, inactiveMember.Status);
+
+        // DEV-00001 stays PendingVerification with no document, demonstrating
+        // BIMSS-032's verification-gate; DEV-00002/DEV-00003 each got one
+        // seeded before being verified.
+        Assert.Equal(2, await dbContext.MemberDocuments.CountAsync());
+        Assert.False(await dbContext.MemberDocuments.AnyAsync(d => d.MemberId == pendingMember.Id));
+        Assert.True(await dbContext.MemberDocuments.AnyAsync(d => d.MemberId == activeMember.Id));
+        Assert.True(await dbContext.MemberDocuments.AnyAsync(d => d.MemberId == inactiveMember.Id));
     }
 
     [Fact]
@@ -75,7 +97,7 @@ public class DevelopmentMembershipSeederTests
         Assert.Equal(3, await dbContext.MemberEmployments.CountAsync());
     }
 
-    private static ServiceProvider BuildProvider()
+    private ServiceProvider BuildProvider()
     {
         var databaseName = Guid.NewGuid().ToString();
 
@@ -85,6 +107,8 @@ public class DevelopmentMembershipSeederTests
         services.AddBimssMembership();
         services.AddBimssAuditing();
         services.AddBimssApplication();
+        services.AddSingleton<IMemberDocumentStorage>(
+            new LocalFileMemberDocumentStorage(Options.Create(new MemberDocumentStorageOptions { RootPath = _documentStorageRootPath })));
 
         return services.BuildServiceProvider();
     }

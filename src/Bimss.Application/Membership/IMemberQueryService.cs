@@ -8,4 +8,6 @@ public interface IMemberQueryService
     Task<MemberDetail?> GetByIdAsync(Guid memberId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<MemberSummary>> ListAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<MemberStatusHistoryEntry>> ListStatusHistoryAsync(Guid memberId, CancellationToken cancellationToken);
 }

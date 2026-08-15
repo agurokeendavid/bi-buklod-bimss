@@ -101,6 +101,15 @@ public class MemberProfileUpdateServiceTests
         public Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
             => Task.FromResult(Employment);
 
+        public Task<bool> ExistsAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
+        public Task AddDocumentAsync(MemberDocument document, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
+        public Task<bool> HasAnyDocumentAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             SaveChangesCalled = true;

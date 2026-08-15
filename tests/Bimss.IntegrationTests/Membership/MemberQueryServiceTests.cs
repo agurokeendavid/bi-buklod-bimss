@@ -122,4 +122,40 @@ public class MemberQueryServiceTests
 
         Assert.Empty(summaries);
     }
+
+    [Fact]
+    public async Task ListStatusHistoryAsync_ReturnsTransitionsInOrder_ForThatMemberOnly()
+    {
+        var memberId = Guid.NewGuid();
+        var actorUserId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var member = new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 1), "Manila",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            member.Verify(actorUserId, OccurredAt.AddDays(1), "Documents checked");
+            writeContext.Members.Add(member);
+
+            var otherMember = new Member(
+                Guid.NewGuid(), "Santos", "Maria", middleName: null, suffixId: null, new DateOnly(1992, 2, 2), "Cebu",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            writeContext.Members.Add(otherMember);
+
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+
+        var history = await queryService.ListStatusHistoryAsync(memberId, CancellationToken.None);
+
+        Assert.Equal(2, history.Count);
+        Assert.Null(history[0].FromStatus);
+        Assert.Equal(MemberStatus.PendingVerification, history[0].ToStatus);
+        Assert.Equal(MemberStatus.PendingVerification, history[1].FromStatus);
+        Assert.Equal(MemberStatus.Active, history[1].ToStatus);
+        Assert.Equal(actorUserId, history[1].ActorUserId);
+        Assert.Equal("Documents checked", history[1].Remarks);
+    }
 }

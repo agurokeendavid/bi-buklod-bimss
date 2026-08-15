@@ -24,5 +24,12 @@ public interface IMemberRepository
     // row/table, not a navigation property on Member.
     Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken);
 
+    // BIMSS-032: document upload/verification-gate support.
+    Task<bool> ExistsAsync(Guid memberId, CancellationToken cancellationToken);
+
+    Task AddDocumentAsync(MemberDocument document, CancellationToken cancellationToken);
+
+    Task<bool> HasAnyDocumentAsync(Guid memberId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

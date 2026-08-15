@@ -18,6 +18,15 @@ public sealed class MemberStatusTransitionService(
     {
         var member = await LoadMemberAsync(memberId, cancellationToken);
 
+        // Proof of employment is mandatory before verification (confirmed
+        // with Buklod, docs/DATA_DICTIONARY.md). Checked here rather than on
+        // Member itself — it requires querying MemberDocument, a different
+        // table Member has no navigation property to (BIMSS-032).
+        if (!await memberRepository.HasAnyDocumentAsync(memberId, cancellationToken))
+        {
+            throw new ConflictException("Cannot verify a member with no uploaded documents. Upload proof of employment first.");
+        }
+
         member.Verify(actorUserId, timeProvider.GetUtcNow(), remarks);
 
         await memberRepository.SaveChangesAsync(cancellationToken);

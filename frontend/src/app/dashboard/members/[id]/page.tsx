@@ -5,13 +5,16 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import type { MemberDetail, MemberStatus, ReferenceDataItem } from "@/lib/types/member";
+import type { MemberDetail, MemberDocument, MemberStatus, MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { MemberDocumentsPanel } from "@/components/member-documents-panel";
+import { MemberStatusHistoryPanel } from "@/components/member-status-history-panel";
 import { cn } from "@/lib/utils";
 
 const statusBadgeVariant: Record<MemberStatus, "default" | "secondary" | "outline"> = {
@@ -44,6 +47,8 @@ export default function MemberDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusReasons, setStatusReasons] = useState<ReferenceDataItem[]>([]);
+  const [documents, setDocuments] = useState<MemberDocument[]>([]);
+  const [statusHistory, setStatusHistory] = useState<MemberStatusHistoryEntry[]>([]);
 
   const [activeAction, setActiveAction] = useState<StatusAction | null>(null);
   const [remarks, setRemarks] = useState("");
@@ -51,13 +56,22 @@ export default function MemberDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  async function loadStatusHistory() {
+    const response = await fetchWithAuth(`/api/members/${params.id}/status-history`);
+    if (response.ok) {
+      setStatusHistory((await response.json()) as MemberStatusHistoryEntry[]);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadMember() {
-      const [memberResponse, reasonsResponse] = await Promise.all([
+      const [memberResponse, reasonsResponse, documentsResponse, historyResponse] = await Promise.all([
         fetchWithAuth(`/api/members/${params.id}`),
         fetchWithAuth("/api/reference-data/member-status-reasons"),
+        fetchWithAuth(`/api/members/${params.id}/documents`),
+        fetchWithAuth(`/api/members/${params.id}/status-history`),
       ]);
 
       if (cancelled) {
@@ -79,6 +93,14 @@ export default function MemberDetailPage() {
 
       if (reasonsResponse.ok) {
         setStatusReasons((await reasonsResponse.json()) as ReferenceDataItem[]);
+      }
+
+      if (documentsResponse.ok) {
+        setDocuments((await documentsResponse.json()) as MemberDocument[]);
+      }
+
+      if (historyResponse.ok) {
+        setStatusHistory((await historyResponse.json()) as MemberStatusHistoryEntry[]);
       }
     }
 
@@ -123,23 +145,16 @@ export default function MemberDetailPage() {
         body: JSON.stringify(body),
       });
 
-      if (response.status === 403) {
-        setActionError("You do not have permission to perform this action.");
-        return;
-      }
-
-      if (response.status === 409) {
-        setActionError("This member's status has already changed. Reload the page and try again.");
-        return;
-      }
-
       if (!response.ok) {
-        setActionError(`Failed to ${actionLabel[activeAction].toLowerCase()} member (${response.status}).`);
+        const problem = await response.json().catch(() => null);
+        const detail = problem?.detail as string | undefined;
+        setActionError(detail ?? `Failed to ${actionLabel[activeAction].toLowerCase()} member (${response.status}).`);
         return;
       }
 
       const updated = (await response.json()) as MemberDetail;
       setMember(updated);
+      await loadStatusHistory();
       toast.success(`Member ${actionLabel[activeAction].toLowerCase()}d.`);
       setActiveAction(null);
     } finally {
@@ -255,6 +270,16 @@ export default function MemberDetailPage() {
                   </div>
                 </form>
               ) : null}
+
+              <Separator />
+              <MemberDocumentsPanel
+                memberId={params.id}
+                documents={documents}
+                onUploaded={(doc) => setDocuments((current) => [doc, ...current])}
+              />
+
+              <Separator />
+              <MemberStatusHistoryPanel history={statusHistory} statusReasons={statusReasons} />
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Loading…</p>

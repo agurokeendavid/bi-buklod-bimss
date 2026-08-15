@@ -68,3 +68,25 @@ export interface UpdateMemberRequest {
   officeUnitId: string;
   permanentAppointmentDate: string | null;
 }
+
+// Mirrors Bimss.Contracts.Membership.MemberDocumentSummaryResponse.
+export interface MemberDocument {
+  id: string;
+  documentType: string;
+  originalFileName: string;
+  contentType: string;
+  fileSizeBytes: number;
+  uploadedAtUtc: string;
+  uploadedByUserId: string | null;
+}
+
+// Mirrors Bimss.Contracts.Membership.MemberStatusHistoryResponse.
+export interface MemberStatusHistoryEntry {
+  id: string;
+  fromStatus: MemberStatus | null;
+  toStatus: MemberStatus;
+  reasonId: string | null;
+  actorUserId: string | null;
+  occurredAtUtc: string;
+  remarks: string | null;
+}

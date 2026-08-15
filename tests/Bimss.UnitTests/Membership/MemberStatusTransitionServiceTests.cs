@@ -58,6 +58,21 @@ public class MemberStatusTransitionServiceTests
     }
 
     [Fact]
+    public async Task VerifyAsync_Throws_Conflict_WhenMemberHasNoDocuments()
+    {
+        var member = CreateMember();
+        var repository = new FakeMemberRepository { Member = member, HasDocument = false };
+        var auditLogger = new FakeAuditLogger();
+        var service = new MemberStatusTransitionService(repository, auditLogger, new FixedTimeProvider(Now));
+
+        await Assert.ThrowsAsync<ConflictException>(() => service.VerifyAsync(member.Id, Guid.NewGuid(), null));
+
+        Assert.Equal(MemberStatus.PendingVerification, member.Status);
+        Assert.False(repository.SaveChangesCalled);
+        Assert.Null(auditLogger.LoggedEntry);
+    }
+
+    [Fact]
     public async Task DeactivateAsync_Succeeds_AndLogsAudit()
     {
         var member = CreateMember();
@@ -136,6 +151,17 @@ public class MemberStatusTransitionServiceTests
 
         public Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
             => Task.FromResult<MemberEmployment?>(null);
+
+        public bool HasDocument { get; set; } = true;
+
+        public Task<bool> ExistsAsync(Guid memberId, CancellationToken cancellationToken)
+            => Task.FromResult(Member is not null);
+
+        public Task AddDocumentAsync(MemberDocument document, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberStatusTransitionService.");
+
+        public Task<bool> HasAnyDocumentAsync(Guid memberId, CancellationToken cancellationToken)
+            => Task.FromResult(HasDocument);
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {

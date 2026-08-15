@@ -51,4 +51,15 @@ public sealed class MemberQueryService(BimssDbContext dbContext) : IMemberQueryS
                 employment != null ? employment.EmployeeNumber : null))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<MemberStatusHistoryEntry>> ListStatusHistoryAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return await dbContext.MemberStatusHistories
+            .AsNoTracking()
+            .Where(entry => entry.MemberId == memberId)
+            .OrderBy(entry => entry.OccurredAtUtc)
+            .Select(entry => new MemberStatusHistoryEntry(
+                entry.Id, entry.FromStatus, entry.ToStatus, entry.ReasonId, entry.ActorUserId, entry.OccurredAtUtc, entry.Remarks))
+            .ToListAsync(cancellationToken);
+    }
 }
