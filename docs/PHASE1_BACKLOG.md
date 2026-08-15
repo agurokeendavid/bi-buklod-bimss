@@ -36,8 +36,9 @@ note under Phase 1B below and "Confirmed decisions" in
 (`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
 `MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
 BIMSS-020 (`MemberPrivacyConsent`), BIMSS-021 (`MemberDocument` metadata +
-storage abstraction), and BIMSS-022 (Member creation use case) are now Done.
-BIMSS-023 (Member read/query use cases) is next.
+storage abstraction), BIMSS-022 (Member creation use case), and BIMSS-023
+(Member read/query use cases) are now Done. BIMSS-024 (Member status
+transition service) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -454,7 +455,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-020 | `MemberPrivacyConsent` | Done — [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24) |
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Done — [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25) |
 | BIMSS-022 | Member creation use case | Done — [PR #26](https://github.com/agurokeendavid/bi-buklod-bimss/pull/26) |
-| BIMSS-023 | Member read/query use cases | Not started |
+| BIMSS-023 | Member read/query use cases | Done — [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27) |
 | BIMSS-024 | Member status transition service | Not started |
 | BIMSS-025 | Synthetic membership seed data | Not started |
 | BIMSS-026 | Membership schema/constraint integration tests | Not started |
@@ -861,6 +862,37 @@ schema/domain-rule only.
   `Bimss.Application` still has zero `Bimss.Infrastructure` dependency
   despite the new port/service. No schema change, no migration.
 - Dependencies: BIMSS-015, BIMSS-016, BIMSS-007.
+
+### BIMSS-023 — Member read/query use cases (Done)
+
+Merged via [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27).
+
+- `MemberDetail`/`MemberSummary` (`Bimss.Application/Membership/`) —
+  projection records for a future detail view and grid (BIMSS-027/028,
+  Phase 1C); never the `Member`/`MemberEmployment` EF entities directly
+  (`AGENTS.md`'s data access rules).
+- `IMemberQueryService` (`Bimss.Application/Membership/`) — `GetByIdAsync`
+  (nullable — a controller decides whether "not found" becomes 404) and
+  `ListAsync`. Kept separate from `IMemberRepository` (write-focused),
+  matching the BIMSS-022/023 split.
+- `MemberQueryService` (`Bimss.Infrastructure/Membership/`) — EF-backed.
+  `Member` and `MemberEmployment` have no navigation property between them by
+  design, so both queries use an explicit LINQ left join (`GroupJoin` +
+  `DefaultIfEmpty`) to stay a single SQL statement each rather than querying
+  per-member — avoids the N+1 pattern `AGENTS.md` warns against. Employment
+  fields are nullable in the projection since the join is optional.
+- Registered via the existing `AddBimssMembership()`; extended
+  `ServiceCollectionCompositionTests` to resolve `IMemberQueryService`
+  through DI.
+- Tests: `MemberQueryServiceTests` (integration) — detail with/without an
+  employment record, not-found returns null, list returns all members,
+  empty list. Confirms the left-join projection actually executes correctly
+  under the EF Core InMemory provider, not just that it compiles.
+- No controller/UI in this task — no admin list/detail screen exists yet.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (216/216 passing) in
+  Release, `dotnet format --verify-no-changes`. No schema change, no
+  migration.
+- Dependencies: BIMSS-015, BIMSS-016.
 
 ## Phase 1C — Membership Administration (Not started)
 
