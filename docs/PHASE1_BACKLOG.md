@@ -32,9 +32,10 @@ BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
 blocking business questions were confirmed with Buklod on 2026-08-14 (see the
 note under Phase 1B below and "Confirmed decisions" in
 `docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
-`MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), and BIMSS-017
-(`MemberContact` & `MemberAddress`) are now Done. BIMSS-018 (`MemberEducation`
-& `MemberEligibility`) is next.
+`MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
+(`MemberContact` & `MemberAddress`), and BIMSS-018 (`MemberEducation` &
+`MemberEligibility`) are now Done. BIMSS-019 (`MemberFamilyInformation` &
+`MemberChild`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -446,7 +447,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Done — [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19) |
 | BIMSS-016 | `MemberEmployment` | Done — [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20) |
 | BIMSS-017 | `MemberContact` & `MemberAddress` | Done — [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21) |
-| BIMSS-018 | `MemberEducation` & `MemberEligibility` | Not started |
+| BIMSS-018 | `MemberEducation` & `MemberEligibility` | Done — [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22) |
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Not started |
 | BIMSS-020 | `MemberPrivacyConsent` | Not started |
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Not started |
@@ -646,6 +647,44 @@ Merged via [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (two tables, expected FKs/indexes, nothing else touched).
 - Dependencies: BIMSS-015.
+
+### BIMSS-018 — `MemberEducation` & `MemberEligibility` (Done)
+
+Merged via [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22).
+
+- `MemberEducation` (`Bimss.Domain/Membership/`) — `HighestAttainmentId`
+  (required FK to the existing `EducationalAttainment` reference table) +
+  free-text `DegreeCourse`. One record per member (unique index on
+  `MemberId`), same "no navigation, unique-index-per-member" style as
+  `MemberEmployment`/`MemberContact`.
+- `MemberEligibility` (`Bimss.Domain/Membership/`) — `EligibilityTypeId`
+  (required FK to the existing `EligibilityType` reference table) + free-text
+  `Details` (per `docs/DATA_DICTIONARY.md`: "do not assume numeric" — license
+  numbers can contain letters/formatting). Unlike every other Phase 1B child
+  entity so far, this is a genuine one-to-many: a member can hold more than
+  one eligibility (e.g. both Civil Service Professional and a PRC license),
+  so `MemberId` is indexed for lookups but **not** unique — the
+  configuration test explicitly asserts this to guard against copy-pasting
+  the 1:1 pattern by mistake.
+- Both `MemberEducationConfiguration`/`MemberEligibilityConfiguration`
+  (`Bimss.Infrastructure/Membership/`) use `Cascade` delete to `Member` and
+  `Restrict` delete to their reference tables, consistent with every prior
+  Membership task.
+- Migration: `AddMemberEducationAndEligibility` — two tables, the FKs/indexes
+  above.
+- Tests: `MemberEducationTests`/`MemberEligibilityTests` (unit — constructor/
+  update-method guard clauses); `MemberEducationConfigurationTests`/
+  `MemberEligibilityConfigurationTests` (unit, `DbContext.Model`
+  metadata-inspection style, including the not-unique assertion above);
+  `MemberEducationPersistenceTests`/`MemberEligibilityPersistenceTests`
+  (integration — round-trips, including two eligibility rows for one member,
+  and updates persisting across reloads).
+- Scope is schema/domain-rule only — no Application use case, controller, or
+  admin UI (BIMSS-022 onward, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (152/152 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (two tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-014, BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
 
