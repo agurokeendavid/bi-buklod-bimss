@@ -35,8 +35,9 @@ note under Phase 1B below and "Confirmed decisions" in
 `MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
 (`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
 `MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
-and BIMSS-020 (`MemberPrivacyConsent`) are now Done. BIMSS-021
-(`MemberDocument` metadata + storage abstraction) is next.
+BIMSS-020 (`MemberPrivacyConsent`), and BIMSS-021 (`MemberDocument` metadata
++ storage abstraction) are now Done. BIMSS-022 (Member creation use case) is
+next.
 
 ## Phase 1A — Platform Foundation
 
@@ -451,7 +452,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Done — [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22) |
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Done — [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23) |
 | BIMSS-020 | `MemberPrivacyConsent` | Done — [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24) |
-| BIMSS-021 | `MemberDocument` metadata + storage abstraction | Not started |
+| BIMSS-021 | `MemberDocument` metadata + storage abstraction | Done — [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25) |
 | BIMSS-022 | Member creation use case | Not started |
 | BIMSS-023 | Member read/query use cases | Not started |
 | BIMSS-024 | Member status transition service | Not started |
@@ -757,6 +758,58 @@ Merged via [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (181/181 passing) in
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (one table, expected FK/index, nothing else touched).
+- Dependencies: BIMSS-015.
+
+### BIMSS-021 — `MemberDocument` metadata + storage abstraction (Done)
+
+Merged via [PR #25](https://github.com/agurokeendavid/bi-buklod-bimss/pull/25).
+
+- `MemberDocument` (`Bimss.Domain/Membership/`) — metadata only, immutable
+  (no update method — a corrected document is a new upload; old metadata
+  stays for audit trail). `DocumentType` (free text — no reference table
+  exists for it yet), `OriginalFileName` (display only, **never** trusted as
+  a storage path per `docs/SECURITY_AND_PRIVACY.md`'s file-upload rules),
+  `ContentType` (validated in the constructor against the confirmed accepted
+  set — PDF/JPG/PNG — as a domain invariant, defense in depth beyond
+  whatever API-level validation a future upload endpoint adds),
+  server-generated `StorageKey`, `FileSizeBytes` (must be positive, via
+  `ArgumentOutOfRangeException.ThrowIfLessThanOrEqual`), `UploadedAtUtc`,
+  `UploadedByUserId` (nullable, no FK to `AspNetUsers` — same reasoning as
+  `MemberStatusHistory.ActorUserId`). A member can upload multiple documents,
+  so `MemberId` is indexed but not unique.
+- `IMemberDocumentStorage` (`Bimss.Application/Membership/`) — the storage
+  port, first real content besides `IAuditLogger` in `Bimss.Application`:
+  `SaveAsync`/`OpenReadAsync`/`DeleteAsync` keyed by an opaque,
+  server-generated storage key. Its doc comment states the "never trust
+  caller input for storage names" rule directly.
+- `LocalFileMemberDocumentStorage` (`Bimss.Infrastructure/Membership/`) —
+  local-disk implementation. Storage keys are always GUIDs generated
+  server-side, so a crafted key can't path-traverse. Root path is
+  configurable (`DocumentStorage:RootPath`), defaulting to
+  `App_Data/MemberDocuments` — outside `wwwroot`/executable locations.
+  Registered as a singleton (stateless, no scoped dependencies) via
+  `AddBimssMemberDocumentStorage`, folded into `AddBimssInfrastructure`.
+  `.gitignore` gained `App_Data/` since uploaded documents must never be
+  committed.
+- Migration: `AddMemberDocument` — one table, unique index on `StorageKey`,
+  non-unique index on `MemberId`, FK to `Members` (cascade).
+- Tests: `MemberDocumentTests` (unit — constructor guard clauses, every
+  accepted content type, rejection of an unaccepted type);
+  `MemberDocumentConfigurationTests` (unit, `DbContext.Model`
+  metadata-inspection style); `LocalFileMemberDocumentStorageTests`
+  (integration — real disk I/O against a temp directory cleaned up via
+  `IDisposable`: save/read round-trip, delete, distinct keys per save);
+  `MemberDocumentPersistenceTests` (integration — round-trip, multiple
+  documents per member). `Bimss.ArchitectureTests`' existing layering rule
+  incidentally confirms the port/implementation split is real (Application
+  still has no Infrastructure dependency).
+- Scope is schema/domain-rule/storage-abstraction only — no Application use
+  case, controller, or admin UI (BIMSS-022 onward, Phase 1C); there is no
+  upload endpoint yet, so upload/download authorization is deferred to
+  whichever task adds one.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (205/205 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (one table, expected FK/indexes, nothing else touched).
 - Dependencies: BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
