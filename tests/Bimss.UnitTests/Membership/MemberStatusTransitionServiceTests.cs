@@ -134,6 +134,9 @@ public class MemberStatusTransitionServiceTests
         public Task<Member?> GetTrackedByIdAsync(Guid memberId, CancellationToken cancellationToken)
             => Task.FromResult(Member);
 
+        public Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => Task.FromResult<MemberEmployment?>(null);
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             SaveChangesCalled = true;

@@ -101,6 +101,9 @@ public class MemberCreationServiceTests
         public Task<Member?> GetTrackedByIdAsync(Guid memberId, CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by MemberCreationService.");
 
+        public Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by MemberCreationService.");
     }

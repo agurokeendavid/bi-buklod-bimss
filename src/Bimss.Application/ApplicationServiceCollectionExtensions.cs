@@ -17,6 +17,7 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddScoped<MemberCreationService>();
         services.AddScoped<MemberStatusTransitionService>();
+        services.AddScoped<MemberProfileUpdateService>();
 
         return services;
     }

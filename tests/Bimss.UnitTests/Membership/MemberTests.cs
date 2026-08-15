@@ -70,6 +70,60 @@ public class MemberTests
     }
 
     [Fact]
+    public void UpdateProfile_UpdatesAllMutableFields()
+    {
+        var member = CreateMember();
+        var newCivilStatusId = Guid.NewGuid();
+        var newSuffixId = Guid.NewGuid();
+        var newDateOfBirth = new DateOnly(1985, 5, 20);
+
+        member.UpdateProfile(
+            "Reyes", "Maria", "Santos", newSuffixId, newDateOfBirth, "Cebu", newCivilStatusId, "Updated reason");
+
+        Assert.Equal("Reyes", member.LastName);
+        Assert.Equal("Maria", member.FirstName);
+        Assert.Equal("Santos", member.MiddleName);
+        Assert.Equal(newSuffixId, member.SuffixId);
+        Assert.Equal(newDateOfBirth, member.DateOfBirth);
+        Assert.Equal("Cebu", member.PlaceOfBirth);
+        Assert.Equal(newCivilStatusId, member.CivilStatusId);
+        Assert.Equal("Updated reason", member.JoiningReason);
+    }
+
+    [Fact]
+    public void UpdateProfile_DoesNotChangeStatusOrHistory()
+    {
+        var member = CreateMember();
+
+        member.UpdateProfile(
+            "Reyes", "Maria", middleName: null, suffixId: null, new DateOnly(1985, 5, 20), "Cebu", Guid.NewGuid(), joiningReason: null);
+
+        Assert.Equal(MemberStatus.PendingVerification, member.Status);
+        Assert.Single(member.StatusHistory);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void UpdateProfile_Throws_WhenLastNameIsMissing(string? lastName)
+    {
+        var member = CreateMember();
+
+        Assert.ThrowsAny<ArgumentException>(() => member.UpdateProfile(
+            lastName!, "Maria", middleName: null, suffixId: null, new DateOnly(1985, 5, 20), "Cebu", Guid.NewGuid(), joiningReason: null));
+    }
+
+    [Fact]
+    public void UpdateProfile_Throws_WhenCivilStatusIdIsEmpty()
+    {
+        var member = CreateMember();
+
+        Assert.Throws<ArgumentException>(() => member.UpdateProfile(
+            "Reyes", "Maria", middleName: null, suffixId: null, new DateOnly(1985, 5, 20), "Cebu", Guid.Empty, joiningReason: null));
+    }
+
+    [Fact]
     public void Verify_TransitionsToActive_AndRecordsHistory()
     {
         var member = CreateMember();

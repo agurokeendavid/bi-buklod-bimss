@@ -26,6 +26,12 @@ public sealed class MemberRepository(BimssDbContext dbContext) : IMemberReposito
             .SingleOrDefaultAsync(member => member.Id == memberId, cancellationToken);
     }
 
+    public Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return dbContext.MemberEmployments
+            .SingleOrDefaultAsync(employment => employment.MemberId == memberId, cancellationToken);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await dbContext.SaveChangesAsync(cancellationToken);

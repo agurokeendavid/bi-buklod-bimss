@@ -90,6 +90,34 @@ public sealed class Member
 
     public IReadOnlyCollection<MemberStatusHistory> StatusHistory => _statusHistory;
 
+    public void UpdateProfile(
+        string lastName,
+        string firstName,
+        string? middleName,
+        Guid? suffixId,
+        DateOnly dateOfBirth,
+        string placeOfBirth,
+        Guid civilStatusId,
+        string? joiningReason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(placeOfBirth);
+        if (civilStatusId == Guid.Empty)
+        {
+            throw new ArgumentException("Civil status is required.", nameof(civilStatusId));
+        }
+
+        LastName = lastName;
+        FirstName = firstName;
+        MiddleName = middleName;
+        SuffixId = suffixId;
+        DateOfBirth = dateOfBirth;
+        PlaceOfBirth = placeOfBirth;
+        CivilStatusId = civilStatusId;
+        JoiningReason = joiningReason;
+    }
+
     public void Verify(Guid? actorUserId, DateTimeOffset occurredAtUtc, string? remarks = null)
     {
         if (Status != MemberStatus.PendingVerification)

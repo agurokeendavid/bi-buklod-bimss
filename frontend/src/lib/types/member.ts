@@ -52,3 +52,19 @@ export interface CreateMemberRequest {
   officeUnitId: string;
   permanentAppointmentDate: string | null;
 }
+
+// Mirrors Bimss.Contracts.Membership.UpdateMemberRequest. EmployeeNumber is
+// a business identifier and not editable through this request.
+export interface UpdateMemberRequest {
+  lastName: string;
+  firstName: string;
+  middleName: string | null;
+  suffixId: string | null;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  civilStatusId: string;
+  joiningReason: string | null;
+  positionDesignation: string;
+  officeUnitId: string;
+  permanentAppointmentDate: string | null;
+}
