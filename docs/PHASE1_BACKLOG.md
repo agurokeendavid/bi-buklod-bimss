@@ -31,9 +31,9 @@ architecture or security rules that live elsewhere.
 BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
 blocking business questions were confirmed with Buklod on 2026-08-14 (see the
 note under Phase 1B below and "Confirmed decisions" in
-`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables) and
-BIMSS-015 (Member core aggregate + `MemberStatusHistory`) are now Done.
-BIMSS-016 (`MemberEmployment`) is next.
+`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
+`MemberStatusHistory`), and BIMSS-016 (`MemberEmployment`) are now Done.
+BIMSS-017 (`MemberContact` & `MemberAddress`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -443,7 +443,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 |---|---|---|
 | BIMSS-014 | Reference/master data tables (CivilStatus, Suffix, OfficeUnit, EducationalAttainment, EligibilityType, RelationshipType, MemberStatusReason) | Done — [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18) |
 | BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Done — [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19) |
-| BIMSS-016 | `MemberEmployment` | Not started |
+| BIMSS-016 | `MemberEmployment` | Done — [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20) |
 | BIMSS-017 | `MemberContact` & `MemberAddress` | Not started |
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Not started |
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Not started |
@@ -567,6 +567,48 @@ Merged via [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (two tables, expected FKs/indexes, nothing else touched).
 - Dependencies: BIMSS-014.
+
+### BIMSS-016 — `MemberEmployment` (Done)
+
+Merged via [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20).
+
+- `MemberEmployment` (`Bimss.Domain/Membership/`) — BI employment data,
+  standalone entity referencing `Member` by FK rather than a nested child in
+  `Member`'s aggregate graph (unlike `MemberStatusHistory`): its updates flow
+  through a separate officer-review workflow (Phase 1E), not through `Member`'s
+  own domain methods, so it doesn't need `Member` to own its lifecycle.
+  `EmployeeNumber` (required, unique — confirmed mandatory/unique business
+  identifier), `PositionDesignation` (required free text — no reference table
+  exists for it yet, per `docs/DATA_DICTIONARY.md`'s "reference candidate"
+  note being deferred), `OfficeUnitId` (required FK to `OfficeUnit`, restrict
+  delete), `PermanentAppointmentDate` (nullable — a `PendingVerification`
+  member may not have one yet). All constructor parameters map 1:1 to
+  persisted properties, so (unlike `Member`) no second EF-only constructor
+  was needed. `UpdateDetails(...)` guarded mutator for position/office/
+  appointment-date changes; `EmployeeNumber` itself is not mutable through
+  this entity.
+- `MemberEmploymentConfiguration` (`Bimss.Infrastructure/Membership/`) — one
+  employment record per member, enforced via a unique index on `MemberId`
+  (following the existing "no navigation property, reference by ID" style
+  used for `Suffix`/`CivilStatus`/`OfficeUnit` elsewhere, rather than a
+  formal EF one-to-one relationship). FK to `Member` is `Cascade` (the row
+  is meaningless without its member, same reasoning as `MemberStatusHistory`);
+  FK to `OfficeUnit` is `Restrict` (reference data is deactivated, never
+  deleted).
+- Migration: `AddMemberEmployment` — one table, two unique indexes
+  (`EmployeeNumber`, `MemberId`), FKs to `Members` (cascade) and
+  `OfficeUnits` (restrict).
+- Tests: `MemberEmploymentTests` (unit — constructor/`UpdateDetails` guard
+  clauses and success paths); `MemberEmploymentConfigurationTests` (unit,
+  same `DbContext.Model` metadata-inspection style as prior Membership
+  configuration tests); `MemberEmploymentPersistenceTests` (integration —
+  round-trip add/reload, `UpdateDetails` persists across reloads).
+- Scope is schema/domain-rule only, per the task title — no Application use
+  case, controller, or admin UI (BIMSS-022 onward, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (111/111 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (one table, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-014, BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
 
