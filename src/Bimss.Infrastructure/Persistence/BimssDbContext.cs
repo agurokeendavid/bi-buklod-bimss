@@ -28,6 +28,10 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 
     public DbSet<MemberEligibility> MemberEligibilities => Set<MemberEligibility>();
 
+    public DbSet<MemberFamilyInformation> MemberFamilyInformation => Set<MemberFamilyInformation>();
+
+    public DbSet<MemberChild> MemberChildren => Set<MemberChild>();
+
     public DbSet<CivilStatus> CivilStatuses => Set<CivilStatus>();
 
     public DbSet<Suffix> Suffixes => Set<Suffix>();
