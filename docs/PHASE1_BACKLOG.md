@@ -34,9 +34,9 @@ in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
 BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
 scaffold), BIMSS-027 (Membership admin list), BIMSS-028 (Member details
-view), BIMSS-029 (Create member admin UI), and BIMSS-030 (Edit permitted
-information) are all Done. BIMSS-031 (Activate/Deactivate/status UI) is
-next.
+view), BIMSS-029 (Create member admin UI), BIMSS-030 (Edit permitted
+information), and BIMSS-031 (Activate/Deactivate/status UI) are all Done.
+BIMSS-032 (Verification workflow UI + audit/history panel) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1022,7 +1022,7 @@ phase depends on them):
 | BIMSS-028 | Member details view | Done — [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34) | BIMSS-023, BIMSS-047 |
 | BIMSS-029 | Create member (admin UI) | Done — [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35) | BIMSS-022, BIMSS-047 |
 | BIMSS-030 | Edit permitted information (officer-direct-edit) | Done — [PR #36](https://github.com/agurokeendavid/bi-buklod-bimss/pull/36) | BIMSS-022, BIMSS-047 |
-| BIMSS-031 | Activate/Deactivate/status UI | Not started | BIMSS-024, BIMSS-047 |
+| BIMSS-031 | Activate/Deactivate/status UI | Done — [PR #37](https://github.com/agurokeendavid/bi-buklod-bimss/pull/37) | BIMSS-024, BIMSS-047 |
 | BIMSS-032 | Verification workflow UI + audit/history panel | Not started | BIMSS-024, BIMSS-007, BIMSS-047 |
 
 BIMSS-028–032's dependency on BIMSS-011 is dropped (superseded, see above);
@@ -1290,6 +1290,52 @@ Merged via [PR #36](https://github.com/agurokeendavid/bi-buklod-bimss/pull/36).
 - Verified: `dotnet build`/`dotnet test` (285/285 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-022, BIMSS-047.
+
+### BIMSS-031 — Activate/Deactivate/status UI (Done)
+
+Merged via [PR #37](https://github.com/agurokeendavid/bi-buklod-bimss/pull/37).
+
+- `MemberStatusTransitionService` (`Bimss.Application`) already existed —
+  built during BIMSS-015 with `VerifyAsync`/`DeactivateAsync`/
+  `ReactivateAsync` fully implemented and unit-tested, but no controller
+  called it until this task.
+- `POST /api/members/{id}/verify` (`Permission.Membership.Verify`),
+  `/deactivate` and `/reactivate` (`Permission.Membership.Manage`,
+  `Deactivate` requires a `MemberStatusReason` id) — all three take
+  optional `Remarks` and return the updated `MemberDetailResponse`.
+- **Authorization bug caught and fixed before merge**: `MembersController`
+  had a class-level `[Authorize(Policy = Permission.Membership.Manage)]`.
+  ASP.NET Core combines a class-level `[Authorize]` with a method-level
+  one using AND, not override — leaving that in place while adding
+  `[Authorize(Policy = Permission.Membership.Verify)]` on `Verify` would
+  have silently required *both* permissions to verify a member, not just
+  `Verify`. The seeded `MembershipOfficer` dev role happens to hold both
+  permissions together, which would have hidden the bug in this
+  environment specifically. Fixed by removing the class-level attribute
+  and stating each action's own policy explicitly. Caught by a test
+  (`Verify_ReturnsForbidden_WithoutTheVerifyPermission`, using only
+  `Manage`) written specifically to pin this down, not by manual testing.
+- `GET /api/reference-data/member-status-reasons` (new
+  `IReferenceDataQueryService` method, same pattern as BIMSS-029's other
+  reference-data endpoints) backs the Deactivate reason picker.
+- Member detail page — status-conditional action buttons (only the one
+  valid for the member's current status shows). Clicking one reveals an
+  inline form (reason picker for Deactivate, optional remarks for all
+  three) rather than a modal dialog — no `Dialog` component exists in
+  this project yet and this didn't need one. A 409 (stale/invalid
+  transition) surfaces as an inline message asking the user to reload; a
+  403 as a permission message.
+- Tests: `ReferenceDataQueryServiceTests`/`ReferenceDataControllerTests`
+  gained `ListMemberStatusReasons` coverage; `MembersControllerTests`
+  gained `Verify_*`/`Deactivate_*`/`Reactivate_*` (401/403/404/409/200 per
+  action).
+- **Verified live** (by the user): verified a pending member (→ Active),
+  deactivated an active member with a reason (→ Inactive), reactivated it
+  (→ Active), confirmed only the status-appropriate button shows at each
+  stage.
+- Verified: `dotnet build`/`dotnet test` (300/300 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-024, BIMSS-047.
 
 ## Phase 1D — Existing Member Import (Not started)
 
