@@ -54,6 +54,26 @@ public class MembersController(
         return Ok(ToDetailResponse(member));
     }
 
+    [HttpGet("{id:guid}/status-history")]
+    [Authorize(Policy = Permission.Membership.Manage)]
+    public async Task<IActionResult> GetStatusHistory(Guid id, CancellationToken cancellationToken)
+    {
+        var history = await memberQueryService.ListStatusHistoryAsync(id, cancellationToken);
+
+        var response = history.Select(entry => new MemberStatusHistoryResponse
+        {
+            Id = entry.Id,
+            FromStatus = entry.FromStatus?.ToString(),
+            ToStatus = entry.ToStatus.ToString(),
+            ReasonId = entry.ReasonId,
+            ActorUserId = entry.ActorUserId,
+            OccurredAtUtc = entry.OccurredAtUtc,
+            Remarks = entry.Remarks,
+        });
+
+        return Ok(response);
+    }
+
     [HttpPut("{id:guid}")]
     [Authorize(Policy = Permission.Membership.Manage)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMemberRequest request, CancellationToken cancellationToken)

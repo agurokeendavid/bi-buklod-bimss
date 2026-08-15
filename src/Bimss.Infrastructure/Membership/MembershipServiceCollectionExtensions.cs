@@ -10,6 +10,7 @@ public static class MembershipServiceCollectionExtensions
         services.AddScoped<IMemberRepository, MemberRepository>();
         services.AddScoped<IMemberQueryService, MemberQueryService>();
         services.AddScoped<IReferenceDataQueryService, ReferenceDataQueryService>();
+        services.AddScoped<IMemberDocumentQueryService, MemberDocumentQueryService>();
 
         return services;
     }

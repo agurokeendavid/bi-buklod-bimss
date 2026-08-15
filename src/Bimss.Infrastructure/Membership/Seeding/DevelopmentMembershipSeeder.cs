@@ -136,6 +136,7 @@ public static class DevelopmentMembershipSeeder
     {
         var creationService = scopedServices.GetRequiredService<MemberCreationService>();
         var transitionService = scopedServices.GetRequiredService<MemberStatusTransitionService>();
+        var documentUploadService = scopedServices.GetRequiredService<MemberDocumentUploadService>();
 
         foreach (var member in Members)
         {
@@ -164,6 +165,22 @@ public static class DevelopmentMembershipSeeder
 
             if (member.TargetStatus is MemberStatus.Active or MemberStatus.Inactive)
             {
+                // Proof of employment is mandatory before verification
+                // (BIMSS-032) — DEV-00001 deliberately stays without a
+                // document so the gate is visible out of the box.
+                await using (var documentContent = new MemoryStream("Synthetic Development seed document."u8.ToArray()))
+                {
+                    await documentUploadService.UploadAsync(
+                        result.MemberId,
+                        "ProofOfEmployment",
+                        "proof-of-employment.pdf",
+                        "application/pdf",
+                        documentContent,
+                        documentContent.Length,
+                        actorUserId: null,
+                        cancellationToken);
+                }
+
                 await transitionService.VerifyAsync(result.MemberId, actorUserId: null, "Synthetic Development seed data", cancellationToken);
             }
 

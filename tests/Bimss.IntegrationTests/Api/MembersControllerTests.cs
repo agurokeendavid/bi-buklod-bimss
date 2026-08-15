@@ -167,6 +167,54 @@ public class MembersControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetStatusHistory_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/api/members/{Guid.NewGuid()}/status-history");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetStatusHistory_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.GetAsync($"/api/members/{Guid.NewGuid()}/status-history");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetStatusHistory_ReturnsTransitions_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+        await SeedMemberDocumentAsync(memberId);
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+        await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest { Remarks = "Documents checked" });
+
+        client.DefaultRequestHeaders.Remove(TestAuthHandler.PermissionsHeader);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.GetAsync($"/api/members/{memberId}/status-history");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var history = await response.Content.ReadFromJsonAsync<List<MemberStatusHistoryResponse>>();
+        Assert.NotNull(history);
+        Assert.Equal(2, history!.Count);
+        Assert.Null(history[0].FromStatus);
+        Assert.Equal("PendingVerification", history[0].ToStatus);
+        Assert.Equal("PendingVerification", history[1].FromStatus);
+        Assert.Equal("Active", history[1].ToStatus);
+        Assert.Equal("Documents checked", history[1].Remarks);
+    }
+
+    [Fact]
     public async Task Create_ReturnsUnauthorized_WhenNotAuthenticated()
     {
         using var client = _factory.CreateClient();
@@ -359,6 +407,7 @@ public class MembersControllerTests : IDisposable
     public async Task Verify_ReturnsOk_AndTransitionsToActive_WithThePermission()
     {
         var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+        await SeedMemberDocumentAsync(memberId);
 
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
@@ -377,6 +426,7 @@ public class MembersControllerTests : IDisposable
     public async Task Verify_ReturnsConflict_WhenNotPendingVerification()
     {
         var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+        await SeedMemberDocumentAsync(memberId);
 
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
@@ -415,6 +465,7 @@ public class MembersControllerTests : IDisposable
     public async Task Deactivate_ReturnsOk_AndTransitionsToInactive_WithThePermission()
     {
         var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+        await SeedMemberDocumentAsync(memberId);
 
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
@@ -474,6 +525,7 @@ public class MembersControllerTests : IDisposable
     public async Task Reactivate_ReturnsOk_AndTransitionsToActive_WithThePermission()
     {
         var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+        await SeedMemberDocumentAsync(memberId);
 
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
@@ -503,6 +555,20 @@ public class MembersControllerTests : IDisposable
         client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
 
         var response = await client.PostAsJsonAsync($"/api/members/{memberId}/reactivate", new ReactivateMemberRequest());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Verify_ReturnsConflict_WhenMemberHasNoDocuments()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Verify);
+
+        var response = await client.PostAsJsonAsync($"/api/members/{memberId}/verify", new VerifyMemberRequest());
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
@@ -550,5 +616,16 @@ public class MembersControllerTests : IDisposable
         await dbContext.SaveChangesAsync();
 
         return member.Id;
+    }
+
+    private async Task SeedMemberDocumentAsync(Guid memberId)
+    {
+        await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+
+        dbContext.MemberDocuments.Add(new MemberDocument(
+            Guid.NewGuid(), memberId, "ProofOfEmployment", "coe.pdf", "application/pdf",
+            Guid.NewGuid().ToString("N"), 1024, DateTimeOffset.UtcNow, uploadedByUserId: null));
+
+        await dbContext.SaveChangesAsync();
     }
 }
