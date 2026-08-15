@@ -34,8 +34,9 @@ note under Phase 1B below and "Confirmed decisions" in
 `docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
 `MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
 (`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
-`MemberEligibility`), and BIMSS-019 (`MemberFamilyInformation` &
-`MemberChild`) are now Done. BIMSS-020 (`MemberPrivacyConsent`) is next.
+`MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
+and BIMSS-020 (`MemberPrivacyConsent`) are now Done. BIMSS-021
+(`MemberDocument` metadata + storage abstraction) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -449,7 +450,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-017 | `MemberContact` & `MemberAddress` | Done — [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21) |
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Done — [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22) |
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Done — [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23) |
-| BIMSS-020 | `MemberPrivacyConsent` | Not started |
+| BIMSS-020 | `MemberPrivacyConsent` | Done — [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24) |
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Not started |
 | BIMSS-022 | Member creation use case | Not started |
 | BIMSS-023 | Member read/query use cases | Not started |
@@ -720,6 +721,42 @@ Merged via [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (169/169 passing) in
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (two tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-015.
+
+### BIMSS-020 — `MemberPrivacyConsent` (Done)
+
+Merged via [PR #24](https://github.com/agurokeendavid/bi-buklod-bimss/pull/24).
+
+- `MemberPrivacyConsent` (`Bimss.Domain/Membership/`) — `ConsentGiven` (bool),
+  `NoticeVersion` (required string), `ConsentedAtUtc` (required timestamp),
+  `Source` (required string, e.g. "Web Form"). Deliberately **immutable** —
+  no update method. A new row is appended for every consent event
+  (re-consenting to a later notice version, or withdrawing consent) rather
+  than editing an existing row, per `AGENTS.md`'s rule against overwriting
+  auditable records; a member accumulates one row per event, so `MemberId` is
+  indexed but not unique — same shape as `MemberEligibility`/`MemberChild`.
+- `docs/DATA_DICTIONARY.md`'s "Proposed core database tables" list also
+  sketches a separate `PrivacyNoticeVersions` lookup table, but the
+  field-mapping row for this data (#39) describes it as scalar fields ("bool
+  + notice version + timestamp + source"), and no backlog task calls for a
+  notice-version management table. Kept `NoticeVersion` as a plain string —
+  introducing a full lookup/versioning entity for the notice text itself is
+  out of this task's scope and can be added later if Buklod needs to manage
+  notice *content*, not just track which version a member consented to.
+- `MemberPrivacyConsentConfiguration` (`Bimss.Infrastructure/Membership/`)
+  uses `Cascade` delete to `Member`, consistent with every prior Membership
+  task.
+- Migration: `AddMemberPrivacyConsent` — one table, the FK/index above.
+- Tests: `MemberPrivacyConsentTests` (unit — constructor guard clauses,
+  consent given/withheld); `MemberPrivacyConsentConfigurationTests` (unit,
+  `DbContext.Model` metadata-inspection style, including the not-unique
+  `MemberId` assertion); `MemberPrivacyConsentPersistenceTests` (integration
+  — round-trip, multiple consent events accumulating for the same member).
+- Scope is schema/domain-rule only — no Application use case, controller, or
+  admin UI (BIMSS-022 onward, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (181/181 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (one table, expected FK/index, nothing else touched).
 - Dependencies: BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
