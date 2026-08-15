@@ -1401,6 +1401,16 @@ was never queried back out.
 
 ## Phase 1D — Existing Member Import (Not started)
 
+**Rescoped for the frontend pivot (2026-08-16)**: only BIMSS-038 (Import
+batch admin UI) has a frontend component — BIMSS-033–037 are pure
+backend (schema/ingestion/validation/dedup/promotion) and are unaffected.
+BIMSS-038 now depends on BIMSS-047 (Next.js scaffold) instead of any
+Razor/MVC prerequisite, and will be a Next.js admin screen under
+`frontend/`, following the same pattern as the Phase 1C membership admin
+screens (server-side authoritative validation, `fetchWithAuth`, shadcn/
+ui data table for reviewing staged rows). Detailed scope is still worked
+out when the task is actually started, same as every other task.
+
 | ID | Title | Depends on |
 |---|---|---|
 | BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | BIMSS-004 |
@@ -1408,19 +1418,32 @@ was never queried back out.
 | BIMSS-035 | Staging validation rules | BIMSS-034 |
 | BIMSS-036 | Duplicate detection | BIMSS-035 |
 | BIMSS-037 | Promote staging → domain entities | BIMSS-022, BIMSS-036 |
-| BIMSS-038 | Import batch admin UI | BIMSS-033–037 |
+| BIMSS-038 | Import batch admin UI | BIMSS-033–037, BIMSS-047 |
 
 ## Phase 1E — Member Self-Service (Not started)
 
+**Rescoped for the frontend pivot (2026-08-16)**: this is a member-facing
+portal, distinct from the officer-facing `/dashboard` admin screens Phase
+1C built — it needs its own route group and layout in `frontend/` (e.g.
+a member-only area gated on `Permission.Membership.ViewSelf` rather than
+`Membership.Manage`), not just more screens bolted onto the existing
+admin nav. BIMSS-039's dependency on BIMSS-011 (Bootstrap/Razor layout,
+superseded — see the Phase 1C note above) is replaced with BIMSS-047.
+BIMSS-040/042/044/045 are self-service equivalents of BIMSS-028/029/030
+and will reuse their patterns (`fetchWithAuth`, form validation mirroring
+server-side DataAnnotations) scoped to `Membership.ViewSelf`/`ManageSelf`
+instead of `Manage`. Detailed scope for each is still worked out when
+actually started.
+
 | ID | Title | Depends on |
 |---|---|---|
-| BIMSS-039 | Member dashboard shell | BIMSS-011 |
-| BIMSS-040 | My Profile (read) | BIMSS-023 |
+| BIMSS-039 | Member dashboard shell | BIMSS-047 |
+| BIMSS-040 | My Profile (read) | BIMSS-023, BIMSS-039 |
 | BIMSS-041 | `MemberUpdateRequest`/Change schema | BIMSS-004 |
-| BIMSS-042 | Member submits update request | BIMSS-041 |
+| BIMSS-042 | Member submits update request | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | BIMSS-041, BIMSS-030 |
 | BIMSS-044 | Direct self-service edit for low-risk fields | BIMSS-042 |
-| BIMSS-045 | Update request status/history view | BIMSS-041 |
+| BIMSS-045 | Update request status/history view | BIMSS-041, BIMSS-039 |
 
 ## Secrets convention
 
