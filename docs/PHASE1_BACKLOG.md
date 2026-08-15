@@ -33,9 +33,9 @@ blocking business questions were confirmed with Buklod on 2026-08-14 (see the
 note under Phase 1B below and "Confirmed decisions" in
 `docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
 `MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
-(`MemberContact` & `MemberAddress`), and BIMSS-018 (`MemberEducation` &
-`MemberEligibility`) are now Done. BIMSS-019 (`MemberFamilyInformation` &
-`MemberChild`) is next.
+(`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
+`MemberEligibility`), and BIMSS-019 (`MemberFamilyInformation` &
+`MemberChild`) are now Done. BIMSS-020 (`MemberPrivacyConsent`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -448,7 +448,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-016 | `MemberEmployment` | Done — [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20) |
 | BIMSS-017 | `MemberContact` & `MemberAddress` | Done — [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21) |
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Done — [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22) |
-| BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Not started |
+| BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Done — [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23) |
 | BIMSS-020 | `MemberPrivacyConsent` | Not started |
 | BIMSS-021 | `MemberDocument` metadata + storage abstraction | Not started |
 | BIMSS-022 | Member creation use case | Not started |
@@ -685,6 +685,42 @@ Merged via [PR #22](https://github.com/agurokeendavid/bi-buklod-bimss/pull/22).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (two tables, expected FKs/indexes, nothing else touched).
 - Dependencies: BIMSS-014, BIMSS-015.
+
+### BIMSS-019 — `MemberFamilyInformation` & `MemberChild` (Done)
+
+Merged via [PR #23](https://github.com/agurokeendavid/bi-buklod-bimss/pull/23).
+
+- `MemberFamilyInformation` (`Bimss.Domain/Membership/`) — `SpouseFullName`,
+  `FatherFullName`, `MotherMaidenName`, `ParentsPresentAddress`, all nullable
+  free text. Only `SpouseFullName` is explicitly conditional ("if married")
+  per `docs/DATA_DICTIONARY.md`, but none of the others are marked mandatory
+  either, so all four stayed optional rather than guessing a requiredness
+  rule Buklod hasn't confirmed. One record per member (unique index on
+  `MemberId`).
+- `MemberChild` (`Bimss.Domain/Membership/`) — `Name` and `DateOfBirth` are
+  **both mandatory**, per Buklod's confirmed decision that birth date is not
+  optional (the one Phase 1B child field with an explicit mandatory rule
+  beyond "required to exist at all"). A member can have multiple children, so
+  this is a genuine one-to-many like `MemberEligibility` (BIMSS-018) —
+  `MemberId` indexed but not unique.
+- Both `MemberFamilyInformationConfiguration`/`MemberChildConfiguration`
+  (`Bimss.Infrastructure/Membership/`) use `Cascade` delete to `Member`,
+  consistent with every prior Membership task.
+- Migration: `AddMemberFamilyInformationAndChild` — two tables, the FKs/
+  indexes above.
+- Tests: `MemberFamilyInformationTests`/`MemberChildTests` (unit —
+  constructor/update-method guard clauses); `MemberFamilyInformationConfigurationTests`/
+  `MemberChildConfigurationTests` (unit, `DbContext.Model`
+  metadata-inspection style, including the unique-vs-not-unique `MemberId`
+  assertion); `MemberFamilyInformationPersistenceTests`/
+  `MemberChildPersistenceTests` (integration — round-trips, including two
+  children for one member, and updates persisting across reloads).
+- Scope is schema/domain-rule only — no Application use case, controller, or
+  admin UI (BIMSS-022 onward, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (169/169 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (two tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
 
