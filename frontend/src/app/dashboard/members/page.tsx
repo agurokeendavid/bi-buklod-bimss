@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import type { MemberSummary } from "@/lib/types/member";
 import { MembersTable } from "@/components/members-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function MembersPage() {
   const { fetchWithAuth } = useAuth();
@@ -41,9 +44,14 @@ export default function MembersPage() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Members</CardTitle>
-        <CardDescription>Buklod membership roster.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle>Members</CardTitle>
+          <CardDescription>Buklod membership roster.</CardDescription>
+        </div>
+        <Link href="/dashboard/members/new" className={cn(buttonVariants({ size: "sm" }))}>
+          Create member
+        </Link>
       </CardHeader>
       <CardContent>
         {error ? (

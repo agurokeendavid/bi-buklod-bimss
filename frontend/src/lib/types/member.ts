@@ -28,3 +28,27 @@ export interface MemberDetail {
   officeUnitId: string | null;
   permanentAppointmentDate: string | null;
 }
+
+// Mirrors Bimss.Contracts.Membership.ReferenceDataItemResponse.
+export interface ReferenceDataItem {
+  id: string;
+  code: string;
+  name: string;
+}
+
+// Mirrors Bimss.Contracts.Membership.CreateMemberRequest. DateOnly fields
+// are sent as "yyyy-MM-dd" strings.
+export interface CreateMemberRequest {
+  lastName: string;
+  firstName: string;
+  middleName: string | null;
+  suffixId: string | null;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  civilStatusId: string;
+  joiningReason: string | null;
+  employeeNumber: string;
+  positionDesignation: string;
+  officeUnitId: string;
+  permanentAppointmentDate: string | null;
+}
