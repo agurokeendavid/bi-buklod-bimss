@@ -34,8 +34,9 @@ in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
 BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
 scaffold), BIMSS-027 (Membership admin list), BIMSS-028 (Member details
-view), and BIMSS-029 (Create member admin UI) are all Done. BIMSS-030
-(Edit permitted information) is next.
+view), BIMSS-029 (Create member admin UI), and BIMSS-030 (Edit permitted
+information) are all Done. BIMSS-031 (Activate/Deactivate/status UI) is
+next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1020,7 +1021,7 @@ phase depends on them):
 | BIMSS-027 | Membership admin list (data table) | Done — [PR #33](https://github.com/agurokeendavid/bi-buklod-bimss/pull/33) | BIMSS-023, BIMSS-046, BIMSS-047 |
 | BIMSS-028 | Member details view | Done — [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34) | BIMSS-023, BIMSS-047 |
 | BIMSS-029 | Create member (admin UI) | Done — [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35) | BIMSS-022, BIMSS-047 |
-| BIMSS-030 | Edit permitted information (officer-direct-edit) | Not started | BIMSS-022, BIMSS-047 |
+| BIMSS-030 | Edit permitted information (officer-direct-edit) | Done — [PR #36](https://github.com/agurokeendavid/bi-buklod-bimss/pull/36) | BIMSS-022, BIMSS-047 |
 | BIMSS-031 | Activate/Deactivate/status UI | Not started | BIMSS-024, BIMSS-047 |
 | BIMSS-032 | Verification workflow UI + audit/history panel | Not started | BIMSS-024, BIMSS-007, BIMSS-047 |
 
@@ -1240,6 +1241,53 @@ Merged via [PR #35](https://github.com/agurokeendavid/bi-buklod-bimss/pull/35).
   Suffix values), confirmed the member was created and rendered correctly
   on both the detail page and the members list.
 - Verified: `dotnet build`/`dotnet test` (271/271 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-022, BIMSS-047.
+
+### BIMSS-030 — Edit permitted information (officer-direct-edit) (Done)
+
+Merged via [PR #36](https://github.com/agurokeendavid/bi-buklod-bimss/pull/36).
+
+- Officer-direct-edit means an authorized officer edits directly, no
+  approval step — the officer review IS the trust boundary, unlike the
+  future member-initiated self-service update-request workflow
+  (docs/DOMAIN_WORKFLOWS.md #2, Phase 1E's BIMSS-042/044) where officer
+  review is a separate approve/reject step over a member's own proposed
+  change. BI Employee Number stays immutable — it's a business identifier
+  (AGENTS.md) and this task's request contract has no field that could
+  carry a new value for it at all.
+- `Member.UpdateProfile` (`Bimss.Domain`) — new mutation method, reuses
+  the constructor's own validation; no status/history side effects since
+  a profile edit isn't a status transition.
+- `MemberEmployment.UpdateDetails` — already existed (added ahead of this
+  task during BIMSS-022, unused until now); reused as-is.
+- New `IMemberRepository.GetTrackedEmploymentByMemberIdAsync` port method
+  — `MemberEmployment` is its own table/row, not a navigation property on
+  `Member`, so editing it needs its own tracked load alongside
+  `GetTrackedByIdAsync`.
+- `MemberProfileUpdateService` (`Bimss.Application`) and `PUT
+  /api/members/{id}` (`Bimss.Api`, gated on `Permission.Membership.Manage`)
+  — mirrors `MemberCreationService`/`MemberStatusTransitionService`'s
+  existing conventions (load tracked, mutate via the aggregate's own
+  method, save, log to the audit trail as `"Member.UpdateProfile"`).
+- `/dashboard/members/[id]/edit` (frontend) — pre-fills from the existing
+  member and reference data, shows BI employee number as a disabled
+  input, reuses BIMSS-029's `SelectValue` label-resolution fix. Member
+  detail page gained an "Edit" button.
+- Tests: `MemberTests.UpdateProfile_*` (domain), new
+  `MemberProfileUpdateServiceTests` (application — success + audit log,
+  404 when member missing, 404 when employment missing),
+  `MembersControllerTests` gained `Update_*` coverage (401, 403, 404, 400
+  missing required field, 200 updated-and-persisted, confirms
+  EmployeeNumber is unchanged after an update).
+- **Verified live** (by the user): opened a member, clicked Edit,
+  confirmed the form pre-filled correctly including resolved Select
+  labels, changed a field, saved, confirmed the redirect to the detail
+  page showed the update and it persisted on refresh. Caught one
+  non-code issue: the locally running `Bimss.Api` process predated this
+  branch's new `PUT` route and needed a restart to pick it up (405 until
+  then) — not a defect in the code.
+- Verified: `dotnet build`/`dotnet test` (285/285 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-022, BIMSS-047.
 
