@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import type { MemberDetail, MemberDocument, MemberStatus, MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
+import type { MemberDetail, MemberDocument, MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,13 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { MemberDocumentsPanel } from "@/components/member-documents-panel";
 import { MemberStatusHistoryPanel } from "@/components/member-status-history-panel";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { memberStatusBadgeClassName } from "@/lib/member-status";
 import { cn } from "@/lib/utils";
-
-const statusBadgeVariant: Record<MemberStatus, "default" | "secondary" | "outline"> = {
-  PendingVerification: "secondary",
-  Active: "default",
-  Inactive: "outline",
-};
 
 type StatusAction = "verify" | "deactivate" | "reactivate";
 
@@ -164,9 +160,13 @@ export default function MemberDetailPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/dashboard/members" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit")}>
-        ← Back to members
-      </Link>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Members", href: "/dashboard/members" },
+          { label: member ? `${member.lastName}, ${member.firstName}` : "Member" },
+        ]}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
@@ -182,7 +182,12 @@ export default function MemberDetailPage() {
                 </Button>
               ) : null}
               {member.status === "Active" ? (
-                <Button size="sm" variant="outline" onClick={() => openAction("deactivate")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  onClick={() => openAction("deactivate")}
+                >
                   Deactivate
                 </Button>
               ) : null}
@@ -212,7 +217,7 @@ export default function MemberDetailPage() {
                 <Field label="Place of birth" value={member.placeOfBirth} />
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Status</span>
-                  <Badge variant={statusBadgeVariant[member.status]} className="w-fit">
+                  <Badge variant="outline" className={cn("w-fit", memberStatusBadgeClassName[member.status])}>
                     {member.status}
                   </Badge>
                 </div>

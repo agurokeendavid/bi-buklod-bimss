@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
 
 interface LoginResponse {
@@ -39,7 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!response.ok) {
+      // Only surface a message when a real session just died — a fresh,
+      // never-authenticated visit hitting this same branch (e.g. the
+      // silent restore-on-mount attempt) shouldn't show a spurious
+      // "session expired" toast on first load.
+      const hadSession = accessTokenRef.current !== null;
       setToken(null);
+      if (hadSession) {
+        toast.error("Your session has expired. Please sign in again.");
+      }
       return null;
     }
 

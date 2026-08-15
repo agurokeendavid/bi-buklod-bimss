@@ -1,6 +1,7 @@
 import type { MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { memberStatusBadgeClassName } from "@/lib/member-status";
 
 export function MemberStatusHistoryPanel({
   history,
@@ -30,11 +31,15 @@ export function MemberStatusHistoryPanel({
                   <div className="flex items-center gap-1.5">
                     {entry.fromStatus ? (
                       <>
-                        <Badge variant="outline">{entry.fromStatus}</Badge>
+                        <Badge variant="outline" className={memberStatusBadgeClassName[entry.fromStatus]}>
+                          {entry.fromStatus}
+                        </Badge>
                         <span className="text-muted-foreground">→</span>
                       </>
                     ) : null}
-                    <Badge>{entry.toStatus}</Badge>
+                    <Badge variant="outline" className={memberStatusBadgeClassName[entry.toStatus]}>
+                      {entry.toStatus}
+                    </Badge>
                   </div>
                 </TableCell>
                 <TableCell>

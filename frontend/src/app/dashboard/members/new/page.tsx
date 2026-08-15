@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { parseFieldErrors } from "@/lib/api-errors";
 import type { CreateMemberRequest, ReferenceDataItem } from "@/lib/types/member";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,17 @@ function RequiredMark() {
       {" "}
       *
     </span>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {message}
+    </p>
   );
 }
 
@@ -45,7 +57,9 @@ export default function NewMemberPage() {
   const [officeUnitId, setOfficeUnitId] = useState("");
   const [permanentAppointmentDate, setPermanentAppointmentDate] = useState("");
 
+  const [isDirty, setIsDirty] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -79,9 +93,42 @@ export default function NewMemberPage() {
     };
   }, [fetchWithAuth]);
 
+  useEffect(() => {
+    if (!isDirty) {
+      return;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  function clearFieldError(field: string) {
+    setFieldErrors((current) => {
+      if (!(field in current)) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function set<T>(setter: (value: T) => void, field: string) {
+    return (value: T) => {
+      setIsDirty(true);
+      clearFieldError(field);
+      setter(value);
+    };
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError(null);
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
@@ -111,12 +158,20 @@ export default function NewMemberPage() {
         return;
       }
 
+      if (response.status === 400) {
+        const errors = await parseFieldErrors(response);
+        setFieldErrors(errors);
+        setSubmitError("Please fix the highlighted fields.");
+        return;
+      }
+
       if (!response.ok) {
         setSubmitError(`Failed to create member (${response.status}).`);
         return;
       }
 
       const body = (await response.json()) as { id: string };
+      setIsDirty(false);
       toast.success("Member created.");
       router.push(`/dashboard/members/${body.id}`);
     } finally {
@@ -138,29 +193,44 @@ export default function NewMemberPage() {
           <p className="text-sm text-destructive">{loadError}</p>
         ) : (
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="lastName">
                   Last name
                   <RequiredMark />
                 </Label>
-                <Input id="lastName" required value={lastName} onChange={(event) => setLastName(event.target.value)} />
+                <Input
+                  id="lastName"
+                  required
+                  aria-invalid={!!fieldErrors.lastName}
+                  value={lastName}
+                  onChange={(event) => set(setLastName, "lastName")(event.target.value)}
+                />
+                <FieldError message={fieldErrors.lastName} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="firstName">
                   First name
                   <RequiredMark />
                 </Label>
-                <Input id="firstName" required value={firstName} onChange={(event) => setFirstName(event.target.value)} />
+                <Input
+                  id="firstName"
+                  required
+                  aria-invalid={!!fieldErrors.firstName}
+                  value={firstName}
+                  onChange={(event) => set(setFirstName, "firstName")(event.target.value)}
+                />
+                <FieldError message={fieldErrors.firstName} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="middleName">Middle name</Label>
-                <Input id="middleName" value={middleName} onChange={(event) => setMiddleName(event.target.value)} />
+                <Input id="middleName" value={middleName} onChange={(event) => set(setMiddleName, "middleName")(event.target.value)} />
+                <FieldError message={fieldErrors.middleName} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="suffix">Suffix</Label>
-                <Select value={suffixId} onValueChange={(value) => setSuffixId(value ?? NO_SUFFIX)}>
+                <Select value={suffixId} onValueChange={(value) => set(setSuffixId, "suffixId")(value ?? NO_SUFFIX)}>
                   <SelectTrigger id="suffix">
                     <SelectValue placeholder="None">
                       {(value) => suffixes.find((item) => item.id === value)?.name ?? "None"}
@@ -175,6 +245,7 @@ export default function NewMemberPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={fieldErrors.suffixId} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="dateOfBirth">
@@ -185,9 +256,11 @@ export default function NewMemberPage() {
                   id="dateOfBirth"
                   type="date"
                   required
+                  aria-invalid={!!fieldErrors.dateOfBirth}
                   value={dateOfBirth}
-                  onChange={(event) => setDateOfBirth(event.target.value)}
+                  onChange={(event) => set(setDateOfBirth, "dateOfBirth")(event.target.value)}
                 />
+                <FieldError message={fieldErrors.dateOfBirth} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="placeOfBirth">
@@ -197,9 +270,11 @@ export default function NewMemberPage() {
                 <Input
                   id="placeOfBirth"
                   required
+                  aria-invalid={!!fieldErrors.placeOfBirth}
                   value={placeOfBirth}
-                  onChange={(event) => setPlaceOfBirth(event.target.value)}
+                  onChange={(event) => set(setPlaceOfBirth, "placeOfBirth")(event.target.value)}
                 />
+                <FieldError message={fieldErrors.placeOfBirth} />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -207,7 +282,7 @@ export default function NewMemberPage() {
                   Civil status
                   <RequiredMark />
                 </Label>
-                <Select value={civilStatusId} onValueChange={(value) => setCivilStatusId(value ?? "")} required>
+                <Select value={civilStatusId} onValueChange={(value) => set(setCivilStatusId, "civilStatusId")(value ?? "")} required>
                   <SelectTrigger id="civilStatus">
                     <SelectValue placeholder="Select civil status">
                       {(value) => civilStatuses.find((item) => item.id === value)?.name ?? "Select civil status"}
@@ -221,6 +296,7 @@ export default function NewMemberPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={fieldErrors.civilStatusId} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="employeeNumber">
@@ -230,9 +306,11 @@ export default function NewMemberPage() {
                 <Input
                   id="employeeNumber"
                   required
+                  aria-invalid={!!fieldErrors.employeeNumber}
                   value={employeeNumber}
-                  onChange={(event) => setEmployeeNumber(event.target.value)}
+                  onChange={(event) => set(setEmployeeNumber, "employeeNumber")(event.target.value)}
                 />
+                <FieldError message={fieldErrors.employeeNumber} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="positionDesignation">
@@ -242,9 +320,11 @@ export default function NewMemberPage() {
                 <Input
                   id="positionDesignation"
                   required
+                  aria-invalid={!!fieldErrors.positionDesignation}
                   value={positionDesignation}
-                  onChange={(event) => setPositionDesignation(event.target.value)}
+                  onChange={(event) => set(setPositionDesignation, "positionDesignation")(event.target.value)}
                 />
+                <FieldError message={fieldErrors.positionDesignation} />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -252,7 +332,7 @@ export default function NewMemberPage() {
                   Office unit
                   <RequiredMark />
                 </Label>
-                <Select value={officeUnitId} onValueChange={(value) => setOfficeUnitId(value ?? "")} required>
+                <Select value={officeUnitId} onValueChange={(value) => set(setOfficeUnitId, "officeUnitId")(value ?? "")} required>
                   <SelectTrigger id="officeUnit">
                     <SelectValue placeholder="Select office unit">
                       {(value) => officeUnits.find((item) => item.id === value)?.name ?? "Select office unit"}
@@ -266,6 +346,7 @@ export default function NewMemberPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={fieldErrors.officeUnitId} />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="permanentAppointmentDate">Permanent appointment date</Label>
@@ -273,8 +354,9 @@ export default function NewMemberPage() {
                   id="permanentAppointmentDate"
                   type="date"
                   value={permanentAppointmentDate}
-                  onChange={(event) => setPermanentAppointmentDate(event.target.value)}
+                  onChange={(event) => set(setPermanentAppointmentDate, "permanentAppointmentDate")(event.target.value)}
                 />
+                <FieldError message={fieldErrors.permanentAppointmentDate} />
               </div>
             </div>
 
@@ -283,8 +365,9 @@ export default function NewMemberPage() {
               <Textarea
                 id="joiningReason"
                 value={joiningReason}
-                onChange={(event) => setJoiningReason(event.target.value)}
+                onChange={(event) => set(setJoiningReason, "joiningReason")(event.target.value)}
               />
+              <FieldError message={fieldErrors.joiningReason} />
             </div>
 
             {submitError ? (

@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import type { MemberSummary } from "@/lib/types/member";
+import type { MemberStatus, MemberSummary } from "@/lib/types/member";
 import { MembersTable } from "@/components/members-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const VALID_STATUSES: MemberStatus[] = ["PendingVerification", "Active", "Inactive"];
+
 export default function MembersPage() {
   const { fetchWithAuth } = useAuth();
+  const searchParams = useSearchParams();
   const [members, setMembers] = useState<MemberSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const statusParam = searchParams.get("status");
+  const initialStatusFilter = VALID_STATUSES.find((status) => status === statusParam);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +64,13 @@ export default function MembersPage() {
         {error ? (
           <p className="text-sm text-destructive">{error}</p>
         ) : members ? (
-          <MembersTable members={members} />
+          // `key` forces a remount when the URL's `?status=` filter changes —
+          // MembersTable only reads `initialStatusFilter` once (via
+          // `useState`'s initial value), and Next.js reuses this page's
+          // component instance for a search-param-only navigation (e.g.
+          // clicking a different dashboard stat card while already here),
+          // so without this the filter wouldn't update.
+          <MembersTable key={statusParam ?? "all"} members={members} initialStatusFilter={initialStatusFilter} />
         ) : (
           <p className="text-sm text-muted-foreground">Loading…</p>
         )}
