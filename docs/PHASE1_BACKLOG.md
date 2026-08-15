@@ -27,20 +27,11 @@ architecture or security rules that live elsewhere.
    pushing/opening a PR.
 4. Update this file's status/PR link in the same PR that completes the task.
 
-**Current state (2026-08-14): Phase 1A is fully Done** (BIMSS-001 through
-BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
-blocking business questions were confirmed with Buklod on 2026-08-14 (see the
-note under Phase 1B below and "Confirmed decisions" in
-`docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
-`MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), BIMSS-017
-(`MemberContact` & `MemberAddress`), BIMSS-018 (`MemberEducation` &
-`MemberEligibility`), BIMSS-019 (`MemberFamilyInformation` & `MemberChild`),
-BIMSS-020 (`MemberPrivacyConsent`), BIMSS-021 (`MemberDocument` metadata +
-storage abstraction), BIMSS-022 (Member creation use case), BIMSS-023
-(Member read/query use cases), BIMSS-024 (Member status transition service),
-and BIMSS-025 (Synthetic membership seed data) are now Done. BIMSS-026
-(Membership schema/constraint integration tests) is next — the last Phase 1B
-task.
+**Current state (2026-08-15): Phase 1A and Phase 1B are fully Done**
+(BIMSS-001 through BIMSS-026, all merged). Phase 1B's blocking business
+questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
+in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is next —
+start with BIMSS-027 (depends on BIMSS-023, which is Done).
 
 ## Phase 1A — Platform Foundation
 
@@ -444,7 +435,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
   `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-005, BIMSS-006.
 
-## Phase 1B — Membership Domain (Not started)
+## Phase 1B — Membership Domain
 
 | ID | Title | Status |
 |---|---|---|
@@ -460,7 +451,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-023 | Member read/query use cases | Done — [PR #27](https://github.com/agurokeendavid/bi-buklod-bimss/pull/27) |
 | BIMSS-024 | Member status transition service | Done — [PR #28](https://github.com/agurokeendavid/bi-buklod-bimss/pull/28) |
 | BIMSS-025 | Synthetic membership seed data | Done — [PR #29](https://github.com/agurokeendavid/bi-buklod-bimss/pull/29) |
-| BIMSS-026 | Membership schema/constraint integration tests | Not started |
+| BIMSS-026 | Membership schema/constraint integration tests | Done — [PR #30](https://github.com/agurokeendavid/bi-buklod-bimss/pull/30) |
 
 **Business questions confirmed with Buklod (2026-08-14)** — see "Confirmed
 decisions" in `docs/DATA_DICTIONARY.md` for full detail: BI Employee Number is
@@ -958,6 +949,47 @@ Merged via [PR #29](https://github.com/agurokeendavid/bi-buklod-bimss/pull/29).
   migration.
 - Dependencies: BIMSS-014, BIMSS-022, BIMSS-024.
 
+### BIMSS-026 — Membership schema/constraint integration tests (Done)
+
+Merged via [PR #30](https://github.com/agurokeendavid/bi-buklod-bimss/pull/30).
+Last Phase 1B task — Phase 1B is now fully Done.
+
+- `MembershipSchemaConstraintTests` (`Bimss.IntegrationTests/Membership/`) —
+  verifies guarantees EF Core InMemory (the convention since BIMSS-011)
+  cannot check: real unique-index/FK enforcement and `Database.MigrateAsync()`
+  actually applying migrations. Six tests against a real SQL Server:
+  migrations apply cleanly to a fresh database; `MemberEmployment.EmployeeNumber`'s
+  unique constraint; the one-employment-per-member unique constraint;
+  `MemberAddress`'s unique `(MemberId, AddressType)` constraint; `CivilStatus`
+  (a Restrict-delete reference row) cannot be deleted while a `Member`
+  references it; deleting a `Member` cascades to `MemberStatusHistory` and
+  `MemberEmployment`.
+- Runs for real only when `BIMSS_TEST_SQLSERVER_CONNECTION_STRING` is set;
+  every test no-ops locally where that's normally unset — the only test class
+  in the solution with an external dependency, everything else still runs
+  standalone.
+- **CI**: added a SQL Server service container to `.github/workflows/ci.yml`
+  (`mcr.microsoft.com/mssql/server:2022-latest`) plus a "Wait for SQL Server"
+  step (GitHub Actions doesn't wait for in-container readiness beyond
+  container start, so this polls the mapped port first) and
+  `EnableRetryOnFailure()` on the DbContext for the brief window after the
+  port opens but before SQL Server accepts logins. This is a **GitHub Actions
+  service container**, not Testcontainers — it runs alongside the job via the
+  runner's own Docker rather than the test process calling a local Docker
+  daemon, so it does not reintroduce the local Docker/WSL2 resource
+  exhaustion BIMSS-011 removed Testcontainers for. Verified in this PR's own
+  CI run: integration test count went from 56 to 62 and duration from ~2s to
+  ~18s, confirming the six new tests actually executed against real SQL
+  Server rather than silently no-opping. SA password is a hardcoded,
+  CI-only synthetic value discarded with the container at the end of the
+  job — never a real credential, same convention as
+  `DevelopmentIdentitySeeder`'s `DevPassword`.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (234/234 passing
+  locally, the six new tests no-op'd as designed since no local SQL Server
+  was available) in Release, `dotnet format --verify-no-changes`. CI run
+  confirmed 62/62 integration tests passing against the real database.
+- Dependencies: BIMSS-014 through BIMSS-021.
+
 ## Phase 1C — Membership Administration (Not started)
 
 | ID | Title | Depends on |
@@ -1032,6 +1064,22 @@ automatically from `ASPNETCORE_ENVIRONMENT`). Full detail in
   that requires a real SQL Server target again — LocalDB or a
   CI-workflow-level SQL Server service container are lower-overhead options
   than re-adding Testcontainers.
+  - **Implemented in BIMSS-026**: `MembershipSchemaConstraintTests`
+    (`Bimss.IntegrationTests/Membership/`) uses the CI-workflow-level SQL
+    Server service container option. `.github/workflows/ci.yml` runs
+    `mcr.microsoft.com/mssql/server:2022-latest` as a GitHub Actions service
+    container (started via the runner's own Docker before any test code
+    runs — not Testcontainers, which called Docker *from* the test process
+    and was what actually caused BIMSS-011's local resource exhaustion). A
+    "Wait for SQL Server" workflow step polls the mapped port before
+    `dotnet test` runs, since GitHub Actions doesn't wait for in-container
+    readiness beyond container start; `EnableRetryOnFailure()` on the
+    `SqlServer` provider covers the remaining brief window before SQL
+    Server actually accepts logins. Tests read
+    `BIMSS_TEST_SQLSERVER_CONNECTION_STRING` and no-op when it's unset
+    (i.e. always locally) — reuse this same pattern for any future
+    Loan/Contribution/Election constraint or concurrency test that
+    genuinely needs a real database, rather than re-adding Testcontainers.
   - Pattern for tests needing a `BimssDbContext`: give each test its own
     `Guid.NewGuid().ToString()` database name passed to `UseInMemoryDatabase(...)`
     for isolation; no `IAsyncLifetime`/async setup needed.
