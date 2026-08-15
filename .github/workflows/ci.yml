@@ -13,6 +13,28 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # Real SQL Server for BIMSS-026's schema/constraint integration tests —
+    # EF Core InMemory doesn't enforce unique indexes/FK constraints or
+    # support Database.MigrateAsync() (see docs/PHASE1_BACKLOG.md's
+    # Environment notes). This is a GitHub Actions service container, not
+    # Testcontainers — it runs alongside the job via the runner's own Docker,
+    # not through a Docker call from the test process, so it doesn't
+    # reintroduce the local Docker/WSL2 resource issues that BIMSS-011
+    # removed Testcontainers for. Tests that need it read
+    # BIMSS_TEST_SQLSERVER_CONNECTION_STRING and no-op locally when it's
+    # unset — nothing else in the suite requires this container.
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          # CI-only synthetic password for a throwaway container discarded
+          # at the end of the job — never a real credential, same
+          # convention as DevelopmentIdentitySeeder's DevPassword.
+          MSSQL_SA_PASSWORD: "Bimss-Ci-Only-Passw0rd!23"
+        ports:
+          - 1433:1433
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,5 +50,20 @@ jobs:
       - name: Build
         run: dotnet build Bimss.slnx --no-restore --configuration Release
 
+      - name: Wait for SQL Server
+        run: |
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/127.0.0.1/1433) 2>/dev/null; then
+              echo "SQL Server is accepting connections"
+              exit 0
+            fi
+            echo "Waiting for SQL Server... ($i)"
+            sleep 2
+          done
+          echo "SQL Server did not become ready in time"
+          exit 1
+
       - name: Test
         run: dotnet test Bimss.slnx --no-build --configuration Release
+        env:
+          BIMSS_TEST_SQLSERVER_CONNECTION_STRING: "Server=127.0.0.1,1433;User Id=sa;Password=Bimss-Ci-Only-Passw0rd!23;TrustServerCertificate=True;Encrypt=False;"
