@@ -18,4 +18,16 @@ public sealed class MemberRepository(BimssDbContext dbContext) : IMemberReposito
         dbContext.MemberEmployments.Add(employment);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<Member?> GetTrackedByIdAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return dbContext.Members
+            .Include(member => member.StatusHistory)
+            .SingleOrDefaultAsync(member => member.Id == memberId, cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

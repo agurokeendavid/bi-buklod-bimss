@@ -97,6 +97,12 @@ public class MemberCreationServiceTests
             AddedEmployment = employment;
             return Task.CompletedTask;
         }
+
+        public Task<Member?> GetTrackedByIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger
