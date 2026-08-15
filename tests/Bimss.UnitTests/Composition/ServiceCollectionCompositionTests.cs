@@ -1,5 +1,6 @@
 ﻿using Bimss.Application;
 using Bimss.Application.Auditing;
+using Bimss.Application.Membership;
 using Bimss.Infrastructure;
 using Bimss.Infrastructure.Authorization;
 using Bimss.Infrastructure.Identity;
@@ -37,6 +38,9 @@ public class ServiceCollectionCompositionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAuditLogger>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IMemberDocumentStorage>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IMemberRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<MemberCreationService>());
         Assert.NotNull(provider.GetRequiredService<IAuthorizationPolicyProvider>());
     }
 }

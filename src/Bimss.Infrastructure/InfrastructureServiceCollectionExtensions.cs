@@ -22,6 +22,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBimssIdentity();
         services.AddBimssAuditing();
         services.AddBimssMemberDocumentStorage(configuration);
+        services.AddBimssMembership();
 
         return services;
     }
