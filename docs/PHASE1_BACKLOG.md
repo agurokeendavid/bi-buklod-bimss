@@ -32,8 +32,9 @@ BIMSS-013, all merged). Phase 1B (Membership Domain) is in progress: its
 blocking business questions were confirmed with Buklod on 2026-08-14 (see the
 note under Phase 1B below and "Confirmed decisions" in
 `docs/DATA_DICTIONARY.md`), and BIMSS-014 (reference/master data tables), BIMSS-015 (Member core aggregate +
-`MemberStatusHistory`), and BIMSS-016 (`MemberEmployment`) are now Done.
-BIMSS-017 (`MemberContact` & `MemberAddress`) is next.
+`MemberStatusHistory`), BIMSS-016 (`MemberEmployment`), and BIMSS-017
+(`MemberContact` & `MemberAddress`) are now Done. BIMSS-018 (`MemberEducation`
+& `MemberEligibility`) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -444,7 +445,7 @@ Last task in the current Phase 1A run — see "Where to pick this up next" below
 | BIMSS-014 | Reference/master data tables (CivilStatus, Suffix, OfficeUnit, EducationalAttainment, EligibilityType, RelationshipType, MemberStatusReason) | Done — [PR #18](https://github.com/agurokeendavid/bi-buklod-bimss/pull/18) |
 | BIMSS-015 | Member core aggregate + `MemberStatusHistory` | Done — [PR #19](https://github.com/agurokeendavid/bi-buklod-bimss/pull/19) |
 | BIMSS-016 | `MemberEmployment` | Done — [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20) |
-| BIMSS-017 | `MemberContact` & `MemberAddress` | Not started |
+| BIMSS-017 | `MemberContact` & `MemberAddress` | Done — [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21) |
 | BIMSS-018 | `MemberEducation` & `MemberEligibility` | Not started |
 | BIMSS-019 | `MemberFamilyInformation` & `MemberChild` | Not started |
 | BIMSS-020 | `MemberPrivacyConsent` | Not started |
@@ -609,6 +610,42 @@ Merged via [PR #20](https://github.com/agurokeendavid/bi-buklod-bimss/pull/20).
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
   sanity (one table, expected FKs/indexes, nothing else touched).
 - Dependencies: BIMSS-014, BIMSS-015.
+
+### BIMSS-017 — `MemberContact` & `MemberAddress` (Done)
+
+Merged via [PR #21](https://github.com/agurokeendavid/bi-buklod-bimss/pull/21).
+
+- `MemberContact` (`Bimss.Domain/Membership/`) — `Landline` (nullable),
+  `MobileNumber` (required), `Email` (required). One record per member
+  (unique index on `MemberId`). These three fields are exactly the profile
+  area Buklod confirmed members can edit directly without officer review
+  (`docs/DATA_DICTIONARY.md`'s "Confirmed decisions" #2) — `UpdateDetails(...)`
+  is written as the single guarded entry point a future self-service edit
+  path (BIMSS-044) can call.
+- `MemberAddress` (`Bimss.Domain/Membership/`) + `MemberAddressType` enum
+  (`Present`, `Permanent`) — free-text `AddressLine` per
+  `docs/DATA_DICTIONARY.md` ("nvarchar initially; later structured address if
+  needed"). One row per `(member, type)`, enforced via a unique composite
+  index rather than fixed `PresentAddress`/`PermanentAddress` columns on
+  `Member` — keeps the type list open if a third address type is ever needed.
+- Both `MemberContactConfiguration`/`MemberAddressConfiguration`
+  (`Bimss.Infrastructure/Membership/`) reference `Member` with `Cascade`
+  delete (meaningless without their member), same reasoning as
+  `MemberStatusHistory`/`MemberEmployment`.
+- Migration: `AddMemberContactAndAddress` — two tables, the two unique
+  indexes above, FKs to `Members`.
+- Tests: `MemberContactTests`/`MemberAddressTests` (unit — constructor/
+  update-method guard clauses); `MemberContactConfigurationTests`/
+  `MemberAddressConfigurationTests` (unit, `DbContext.Model`
+  metadata-inspection style); `MemberContactPersistenceTests`/
+  `MemberAddressPersistenceTests` (integration — round-trips, including both
+  address types for the same member, and updates persisting across reloads).
+- Scope is schema/domain-rule only — no Application use case, controller, or
+  admin UI (BIMSS-022 onward, Phase 1C).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (135/135 passing) in
+  Release, `dotnet format --verify-no-changes`. Migration diff reviewed for
+  sanity (two tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-015.
 
 ## Phase 1C — Membership Administration (Not started)
 
