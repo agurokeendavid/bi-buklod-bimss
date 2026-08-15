@@ -32,8 +32,9 @@ architecture or security rules that live elsewhere.
 questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
 in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
-BIMSS-046 (JWT authentication backend) is Done. BIMSS-047 (Next.js frontend
-scaffold) is next.
+BIMSS-046 (JWT authentication backend) and BIMSS-047 (Next.js frontend
+scaffold) are both Done. BIMSS-027 (Membership admin list) is next — the
+first real Membership screen on the new stack.
 
 ## Phase 1A — Platform Foundation
 
@@ -1014,7 +1015,7 @@ phase depends on them):
 | ID | Title | Status | Depends on |
 |---|---|---|---|
 | BIMSS-046 | JWT authentication backend (`Bimss.Api`) | Done — [PR #31](https://github.com/agurokeendavid/bi-buklod-bimss/pull/31) | BIMSS-005, BIMSS-006 |
-| BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Not started | BIMSS-046 |
+| BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Done — [PR #32](https://github.com/agurokeendavid/bi-buklod-bimss/pull/32) | BIMSS-046 |
 | BIMSS-027 | Membership admin list (data table) | Not started | BIMSS-023, BIMSS-046, BIMSS-047 |
 | BIMSS-028 | Member details view | Not started | BIMSS-023, BIMSS-047 |
 | BIMSS-029 | Create member (admin UI) | Not started | BIMSS-022, BIMSS-047 |
@@ -1087,6 +1088,43 @@ First task of the frontend pivot.
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (250/250 passing) in
   Release, `dotnet format --verify-no-changes`. Migration diff reviewed.
 - Dependencies: BIMSS-005, BIMSS-006.
+
+### BIMSS-047 — Next.js frontend scaffold (Done)
+
+Merged via [PR #32](https://github.com/agurokeendavid/bi-buklod-bimss/pull/32).
+Direct replacement for BIMSS-011's now-superseded Bootstrap/Razor layout work.
+
+- New top-level `frontend/` app: Next.js (App Router, TypeScript) + Tailwind
+  CSS + shadcn/ui.
+- **No CDN font dependency** — `next/font/google` was removed in favor of a
+  system font stack. Discovered because this sandbox couldn't reach
+  `fonts.gstatic.com` (a real network restriction, not a bug), but kept
+  deliberately: a government intranet deployment shouldn't depend on
+  Google's CDN being reachable at build/runtime either.
+- `AuthProvider` (`lib/auth-context.tsx`) — access token in memory only
+  (never `localStorage`/`sessionStorage`); silent session restore on mount
+  via `POST /api/auth/refresh` (`credentials: "include"` carries the
+  httpOnly cookie); `fetchWithAuth` attaches the bearer header and retries
+  once after a refresh on 401.
+- `/login` and `/dashboard` (protected layout + nav shell + sign-out): the
+  dashboard's placeholder page calls a real protected `Bimss.Api` endpoint
+  through `fetchWithAuth` to prove the bearer-token flow end to end —
+  BIMSS-027 replaces this placeholder with real Membership screens.
+- CI: new `frontend` job in `ci.yml` (`npm ci`, lint, build), separate from
+  the .NET job.
+- `docs/REPOSITORY_SETUP.md` gained a "Frontend setup (Next.js)" section —
+  local dev must use `Bimss.Api`'s **https** launch profile (the refresh
+  cookie's `Secure` attribute requires it).
+- **Verified live**, not just build/lint: ran both sides against the real
+  local SQL Server (migrations applied, `DevelopmentIdentitySeeder` dev
+  accounts) and drove an actual browser via Chrome automation — login
+  succeeds, a protected API call through `fetchWithAuth` returns 200, a
+  full page reload stays authenticated (silent refresh works), sign-out
+  clears the session and redirects, and visiting `/dashboard` while logged
+  out redirects to `/login`.
+- `dotnet build`/`dotnet test` unaffected (250/250 passing) — this task
+  touches no .NET code. `npm run lint`/`npm run build` both clean.
+- Dependencies: BIMSS-046.
 
 ## Phase 1D — Existing Member Import (Not started)
 
