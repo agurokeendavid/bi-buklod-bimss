@@ -34,6 +34,8 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 
     public DbSet<MemberPrivacyConsent> MemberPrivacyConsents => Set<MemberPrivacyConsent>();
 
+    public DbSet<MemberDocument> MemberDocuments => Set<MemberDocument>();
+
     public DbSet<CivilStatus> CivilStatuses => Set<CivilStatus>();
 
     public DbSet<Suffix> Suffixes => Set<Suffix>();
