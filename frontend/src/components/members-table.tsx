@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import type { MemberSummary } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,11 @@ const columns: ColumnDef<MemberSummary>[] = [
   {
     accessorKey: "lastName",
     header: "Last name",
+    cell: ({ row }) => (
+      <Link href={`/dashboard/members/${row.original.id}`} className="font-medium text-primary hover:underline">
+        {row.original.lastName}
+      </Link>
+    ),
   },
   {
     accessorKey: "firstName",
