@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import type { MemberDocument } from "@/lib/types/member";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 const DOCUMENT_TYPE_OPTIONS = ["Proof of Employment", "Valid ID", "Other"];
 
@@ -34,6 +36,8 @@ export function MemberDocumentsPanel({
   onUploaded: (doc: MemberDocument) => void;
 }) {
   const { fetchWithAuth } = useAuth();
+  const fileInputId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [documentType, setDocumentType] = useState(DOCUMENT_TYPE_OPTIONS[0]);
   const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -78,9 +82,8 @@ export function MemberDocumentsPanel({
       });
       toast.success("Document uploaded.");
       setFile(null);
-      const input = document.getElementById("documentFile") as HTMLInputElement | null;
-      if (input) {
-        input.value = "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     } finally {
       setIsUploading(false);
@@ -153,7 +156,7 @@ export function MemberDocumentsPanel({
         <div className="flex flex-col gap-2">
           <Label htmlFor="documentType">Document type</Label>
           <Select value={documentType} onValueChange={(value) => setDocumentType(value ?? DOCUMENT_TYPE_OPTIONS[0])}>
-            <SelectTrigger id="documentType">
+            <SelectTrigger id="documentType" className="w-56">
               <SelectValue>{(value) => value}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -166,14 +169,22 @@ export function MemberDocumentsPanel({
           </Select>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="documentFile">File (PDF, JPG, PNG)</Label>
-          <input
-            id="documentFile"
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="text-sm"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
+          <Label htmlFor={fileInputId}>File (PDF, JPG, PNG)</Label>
+          <div className="flex items-center gap-3">
+            <label htmlFor={fileInputId} className={cn(buttonVariants({ variant: "outline", size: "default" }), "cursor-pointer")}>
+              <Upload className="size-4" />
+              Choose file
+            </label>
+            <input
+              ref={fileInputRef}
+              id={fileInputId}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="sr-only"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            />
+            <span className="text-sm text-muted-foreground">{file ? file.name : "No file chosen"}</span>
+          </div>
         </div>
         <Button type="submit" size="sm" disabled={isUploading}>
           {isUploading ? "Uploading…" : "Upload"}
