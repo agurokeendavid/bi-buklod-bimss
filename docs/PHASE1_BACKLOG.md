@@ -35,9 +35,14 @@ confirmed with Buklod on 2026-08-14 (see "Confirmed decisions" in
 on the new frontend pivot (see the note under Phase 1C below) — the
 Next.js admin UI now covers the full member lifecycle: list, detail,
 create, edit, activate/deactivate/verify with a document-upload gate, and
-status/audit history. Phase 1D (Existing Member Import) is next; it still
-needs the same "was Razor, now Next.js" re-scoping treatment Phase 1C got
-before work starts on BIMSS-038 (Import batch admin UI).
+status/audit history. A cross-cutting frontend design pass (no BIMSS ID —
+see the note at the end of the Phase 1C section) then restyled all of
+Phase 1C's screens (theme, sidebar/header shell, dark mode, UX audit) —
+Phase 1D/1E's own UI work should follow the conventions it established.
+Phase 1D (Existing Member Import) is next; its dependency on the retired
+Razor/MVC plan is already rescoped (see the Phase 1D section below) —
+BIMSS-038 (Import batch admin UI) now depends on BIMSS-047 like every
+other Phase 1C UI task did.
 
 ## Phase 1A — Platform Foundation
 
@@ -1398,6 +1403,53 @@ was never queried back out.
 - Verified: `dotnet build`/`dotnet test` (316/316 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-024, BIMSS-007, BIMSS-047.
+
+### Frontend design pass (2026-08-16, no BIMSS ID — cross-cutting UI polish, not a new feature)
+
+Merged via [PR #39](https://github.com/agurokeendavid/bi-buklod-bimss/pull/39).
+After BIMSS-027–032 shipped functionally complete but visually plain (default
+shadcn grayscale theme, one-link top bar), the user asked for a full design
+pass across everything Phase 1C had built, using
+[NextAdminHQ/nextjs-admin-dashboard](https://github.com/NextAdminHQ/nextjs-admin-dashboard)
+(MIT-style license) as real visual/structural reference — fetched via `gh api`,
+not guessed. Kept shadcn/ui + Base UI as the component library throughout
+(per `AGENTS.md`'s Frontend rules) rather than adopting NextAdmin's own
+component set, which would have meant re-migrating every existing screen.
+
+- Blue accent theme (light + dark tokens), a sidebar + header shell
+  (`AppSidebar`/`AppHeader`) replacing the old single top bar, dark mode via
+  `next-themes` (already a scaffold dependency, wired up for the first
+  time), and larger base sizing app-wide (18px root font-size, taller
+  inputs/buttons/selects) — an explicit accessibility call since Buklod's
+  membership skews senior/non-technical, prioritizing legibility over
+  density.
+- `/dashboard` became a real overview (live stat cards from `/api/members`,
+  no fabricated trend data, deep-linking into a pre-filtered members view)
+  instead of an immediate redirect to the members list.
+- UX audit implementation: members-table sort/search/status-filter/
+  pagination, inline per-field form validation (parsed from the server's
+  real `ValidationProblemDetails`, via new `lib/api-errors.ts`), a
+  `beforeunload` unsaved-changes warning on create/edit forms, a
+  session-expiry toast, breadcrumbs, tooltips on icon-only buttons, a
+  visually-distinguished Deactivate button, and a styled file input.
+- **Two real bugs found and fixed during live verification**, not just
+  cosmetic misses: an infinite render loop that hung the browser tab
+  (`members-table.tsx`'s `columnFilters` was built as a fresh array
+  literal inline in TanStack Table's controlled `state` on every render —
+  fixed with `useMemo`), and the dashboard stat-card filter silently not
+  applying when already on the members page (`useState`'s initial value
+  only reads once; Next.js reuses the page's component instance across a
+  search-param-only navigation — fixed by keying the table on the URL's
+  status param). Both patterns, and the Base UI `render`-prop composition
+  convention this pass reinforced, are now documented in
+  `.github/instructions/frontend.instructions.md` for future work.
+- No backend changes, no new BIMSS task — this revisits/polishes
+  BIMSS-027–032's existing screens rather than adding scope. Phase 1D/1E's
+  own UI work should follow the conventions this pass established rather
+  than reverting to shadcn defaults.
+- Verified: `npm run lint`/`npm run build` clean throughout; live manual
+  verification by the user, including reproducing and confirming the fix
+  for the render-loop hang.
 
 ## Phase 1D — Existing Member Import (Not started)
 
