@@ -19,5 +19,10 @@ public interface IMemberRepository
     // projections.
     Task<Member?> GetTrackedByIdAsync(Guid memberId, CancellationToken cancellationToken);
 
+    // Tracked load for mutation via MemberEmployment.UpdateDetails (BIMSS-030).
+    // Separate from GetTrackedByIdAsync because MemberEmployment is its own
+    // row/table, not a navigation property on Member.
+    Task<MemberEmployment?> GetTrackedEmploymentByMemberIdAsync(Guid memberId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

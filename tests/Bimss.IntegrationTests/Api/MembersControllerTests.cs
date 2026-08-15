@@ -238,6 +238,100 @@ public class MembersControllerTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Update_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.PutAsJsonAsync($"/api/members/{Guid.NewGuid()}", CreateValidUpdateRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsForbidden_WithoutThePermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.PutAsJsonAsync($"/api/members/{Guid.NewGuid()}", CreateValidUpdateRequest());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsNotFound_WhenMemberDoesNotExist()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var response = await client.PutAsJsonAsync($"/api/members/{Guid.NewGuid()}", CreateValidUpdateRequest());
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsBadRequest_WhenLastNameIsMissing()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var request = CreateValidUpdateRequest();
+        request.LastName = string.Empty;
+
+        var response = await client.PutAsJsonAsync($"/api/members/{memberId}", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsOk_AndPersistsChanges_WithThePermission()
+    {
+        var memberId = await SeedMemberAsync("Dela Cruz", "Juan", "BI-00123");
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.Manage);
+
+        var request = CreateValidUpdateRequest();
+        request.LastName = "Reyes";
+        request.PositionDesignation = "Senior Immigration Officer";
+
+        var response = await client.PutAsJsonAsync($"/api/members/{memberId}", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(updated);
+        Assert.Equal("Reyes", updated!.LastName);
+        Assert.Equal("Senior Immigration Officer", updated.PositionDesignation);
+        // BI Employee Number is a business identifier and not editable via this endpoint.
+        Assert.Equal("BI-00123", updated.EmployeeNumber);
+
+        var getResponse = await client.GetAsync($"/api/members/{memberId}");
+        var persisted = await getResponse.Content.ReadFromJsonAsync<MemberDetailResponse>();
+        Assert.NotNull(persisted);
+        Assert.Equal("Reyes", persisted!.LastName);
+        Assert.Equal("Senior Immigration Officer", persisted.PositionDesignation);
+    }
+
+    private static UpdateMemberRequest CreateValidUpdateRequest()
+    {
+        return new UpdateMemberRequest
+        {
+            LastName = "Dela Cruz",
+            FirstName = "Juan",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            PlaceOfBirth = "Manila",
+            CivilStatusId = Guid.NewGuid(),
+            PositionDesignation = "Immigration Officer I",
+            OfficeUnitId = Guid.NewGuid(),
+        };
+    }
+
     private static CreateMemberRequest CreateValidRequest()
     {
         return new CreateMemberRequest

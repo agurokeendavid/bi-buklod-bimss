@@ -72,9 +72,16 @@ export default function MemberDetailPage() {
       </Link>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Member details</CardTitle>
-          <CardDescription>Core identity and employment information.</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>Member details</CardTitle>
+            <CardDescription>Core identity and employment information.</CardDescription>
+          </div>
+          {member ? (
+            <Link href={`/dashboard/members/${params.id}/edit`} className={cn(buttonVariants({ size: "sm" }))}>
+              Edit
+            </Link>
+          ) : null}
         </CardHeader>
         <CardContent>
           {notFound ? (

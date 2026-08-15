@@ -10,7 +10,10 @@ namespace Bimss.Api.Controllers;
 [ApiController]
 [Route("api/members")]
 [Authorize(Policy = Permission.Membership.Manage)]
-public class MembersController(IMemberQueryService memberQueryService, MemberCreationService memberCreationService)
+public class MembersController(
+    IMemberQueryService memberQueryService,
+    MemberCreationService memberCreationService,
+    MemberProfileUpdateService memberProfileUpdateService)
     : ControllerBase
 {
     [HttpGet]
@@ -40,24 +43,52 @@ public class MembersController(IMemberQueryService memberQueryService, MemberCre
             return NotFound();
         }
 
-        return Ok(new MemberDetailResponse
-        {
-            Id = member.Id,
-            LastName = member.LastName,
-            FirstName = member.FirstName,
-            MiddleName = member.MiddleName,
-            SuffixId = member.SuffixId,
-            DateOfBirth = member.DateOfBirth,
-            PlaceOfBirth = member.PlaceOfBirth,
-            CivilStatusId = member.CivilStatusId,
-            JoiningReason = member.JoiningReason,
-            Status = member.Status.ToString(),
-            EmployeeNumber = member.EmployeeNumber,
-            PositionDesignation = member.PositionDesignation,
-            OfficeUnitId = member.OfficeUnitId,
-            PermanentAppointmentDate = member.PermanentAppointmentDate,
-        });
+        return Ok(ToDetailResponse(member));
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMemberRequest request, CancellationToken cancellationToken)
+    {
+        var actorUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorUserId)
+            ? parsedActorUserId
+            : (Guid?)null;
+
+        var command = new UpdateMemberCommand(
+            request.LastName,
+            request.FirstName,
+            request.MiddleName,
+            request.SuffixId,
+            request.DateOfBirth,
+            request.PlaceOfBirth,
+            request.CivilStatusId,
+            request.JoiningReason,
+            request.PositionDesignation,
+            request.OfficeUnitId,
+            request.PermanentAppointmentDate);
+
+        await memberProfileUpdateService.UpdateAsync(id, command, actorUserId, cancellationToken);
+
+        var member = await memberQueryService.GetByIdAsync(id, cancellationToken);
+        return Ok(ToDetailResponse(member!));
+    }
+
+    private static MemberDetailResponse ToDetailResponse(MemberDetail member) => new()
+    {
+        Id = member.Id,
+        LastName = member.LastName,
+        FirstName = member.FirstName,
+        MiddleName = member.MiddleName,
+        SuffixId = member.SuffixId,
+        DateOfBirth = member.DateOfBirth,
+        PlaceOfBirth = member.PlaceOfBirth,
+        CivilStatusId = member.CivilStatusId,
+        JoiningReason = member.JoiningReason,
+        Status = member.Status.ToString(),
+        EmployeeNumber = member.EmployeeNumber,
+        PositionDesignation = member.PositionDesignation,
+        OfficeUnitId = member.OfficeUnitId,
+        PermanentAppointmentDate = member.PermanentAppointmentDate,
+    };
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateMemberRequest request, CancellationToken cancellationToken)
