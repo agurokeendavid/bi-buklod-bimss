@@ -18,6 +18,8 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 
     public DbSet<MemberStatusHistory> MemberStatusHistories => Set<MemberStatusHistory>();
 
+    public DbSet<MemberEmployment> MemberEmployments => Set<MemberEmployment>();
+
     public DbSet<CivilStatus> CivilStatuses => Set<CivilStatus>();
 
     public DbSet<Suffix> Suffixes => Set<Suffix>();
