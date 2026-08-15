@@ -33,9 +33,8 @@ questions were confirmed with Buklod on 2026-08-14 (see "Confirmed decisions"
 in `docs/DATA_DICTIONARY.md`). Phase 1C (Membership Administration) is
 in progress on the new frontend pivot (see the note under Phase 1C below):
 BIMSS-046 (JWT authentication backend), BIMSS-047 (Next.js frontend
-scaffold), and BIMSS-027 (Membership admin list — the first real Membership
-screen on the new stack) are all Done. BIMSS-028 (Member details view) is
-next.
+scaffold), BIMSS-027 (Membership admin list), and BIMSS-028 (Member details
+view) are all Done. BIMSS-029 (Create member admin UI) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1018,7 +1017,7 @@ phase depends on them):
 | BIMSS-046 | JWT authentication backend (`Bimss.Api`) | Done — [PR #31](https://github.com/agurokeendavid/bi-buklod-bimss/pull/31) | BIMSS-005, BIMSS-006 |
 | BIMSS-047 | Next.js frontend scaffold (base layout, auth flow, API client) | Done — [PR #32](https://github.com/agurokeendavid/bi-buklod-bimss/pull/32) | BIMSS-046 |
 | BIMSS-027 | Membership admin list (data table) | Done — [PR #33](https://github.com/agurokeendavid/bi-buklod-bimss/pull/33) | BIMSS-023, BIMSS-046, BIMSS-047 |
-| BIMSS-028 | Member details view | Not started | BIMSS-023, BIMSS-047 |
+| BIMSS-028 | Member details view | Done — [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34) | BIMSS-023, BIMSS-047 |
 | BIMSS-029 | Create member (admin UI) | Not started | BIMSS-022, BIMSS-047 |
 | BIMSS-030 | Edit permitted information (officer-direct-edit) | Not started | BIMSS-022, BIMSS-047 |
 | BIMSS-031 | Activate/Deactivate/status UI | Not started | BIMSS-024, BIMSS-047 |
@@ -1164,6 +1163,35 @@ First real Membership screen on the new stack.
 - Verified: `dotnet build`/`dotnet test` (254/254 passing), `dotnet format
   --verify-no-changes`, `npm run lint`/`npm run build` clean.
 - Dependencies: BIMSS-023, BIMSS-046, BIMSS-047.
+
+### BIMSS-028 — Member details view (Done)
+
+Merged via [PR #34](https://github.com/agurokeendavid/bi-buklod-bimss/pull/34).
+
+- `MembersController` gained `GET /api/members/{id}`, gated on
+  `Permission.Membership.Manage`, returns `MemberDetailResponse`
+  (`Bimss.Contracts/Membership/`) mapped from
+  `IMemberQueryService.GetByIdAsync()` (BIMSS-023); 404 when the member
+  doesn't exist.
+- `/dashboard/members/[id]` (frontend) — core identity + employment fields
+  in a `Card` grid, status `Badge`, "Back to members" link. The members
+  list's last-name cell now links to each row's detail page.
+- Tests: `MembersControllerTests` gained `GetById` coverage — 401, 403, 404,
+  200 with real seeded data matching the detail response shape.
+- **Verified live**: clicked from the members list into a member's detail
+  page against the real API + SQL Server + dev seed data, confirmed every
+  field rendered correctly, the back link worked, and a nonexistent id
+  showed "Member not found." instead of crashing.
+- Two things hit and resolved during verification, neither a defect in the
+  final code: a stale leftover dev-server process from BIMSS-027's session
+  had a crashed Turbopack worker pool (fixed by killing it and starting
+  clean — unrelated to this PR); an attempted `<Button asChild>` pattern
+  (Radix-style) doesn't work with this project's Base-UI-based `Button` —
+  used `buttonVariants()` + `cn()` on the `Link` directly instead. Worth
+  remembering for any future `asChild`-style composition in this frontend.
+- Verified: `dotnet build`/`dotnet test` (258/258 passing), `dotnet format
+  --verify-no-changes`, `npm run lint`/`npm run build` clean.
+- Dependencies: BIMSS-023, BIMSS-047.
 
 ## Phase 1D — Existing Member Import (Not started)
 
