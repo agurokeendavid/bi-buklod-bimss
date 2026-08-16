@@ -147,7 +147,8 @@ If the documentation and implementation disagree, do not silently guess. Preserv
 ## Frontend rules
 
 - The frontend is a separate Next.js + React (TypeScript) app under `frontend/`, consuming `Bimss.Api` over REST with JWT bearer auth. It is not part of the .NET solution and does not share a process with the backend.
-- Use Tailwind CSS for layout/styling and shadcn/ui (Radix-based) for components — this replaced Bootstrap/jQuery/DevExtreme (see `docs/PHASE1_BACKLOG.md` for why).
+- Use Tailwind CSS for layout/styling and shadcn/ui (this project's install uses Base UI, `@base-ui/react`, not Radix) for components — this replaced Bootstrap/jQuery/DevExtreme (see `docs/PHASE1_BACKLOG.md` for why).
+- `docs/design/BIMSS-UI-SPEC.md` is the frontend visual-design source of truth (tokens, typography, spacing, screen layout); `docs/design/README.md` tracks what's actually integrated versus deferred to a later phase. Read it before restyling or adding a screen.
 - Use a data-table library (e.g. TanStack Table) for data-heavy grids, filtering, and administrative screens where it adds value; do not reach for a heavy grid component merely to replace simple semantic HTML.
 - Keep client-side business logic minimal; authoritative decisions belong on the server. Do not compute authoritative totals, balances, or eligibility client-side.
 - Prefer server components/data-fetching patterns where the framework supports them; keep client components focused on interactivity.

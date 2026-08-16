@@ -175,6 +175,19 @@ dotnet run --launch-profile https
 npm run dev
 ```
 
+Sign in with a seeded synthetic dev account (created by
+`DevelopmentIdentitySeeder`, `src/Bimss.Infrastructure/Identity/Seeding/`,
+strictly gated on `ASPNETCORE_ENVIRONMENT=Development`) — e.g.
+`admin.dev@bimss.local` / `Dev-Only-Passw0rd!23` for the Administrator role.
+The other five roles follow the same `{role}.dev@bimss.local` pattern with
+the same password: `member.dev`, `membership.officer.dev`,
+`finance.officer.dev`, `election.committee.dev`, `auditor.dev`.
+
+If the frontend's login fails immediately with a network/fetch error rather
+than an "invalid credentials" message, `Bimss.Api` usually isn't running, or
+the local SQL Server service is stopped — check both (`sc query MSSQLSERVER`
+or your instance name) before assuming a frontend bug.
+
 ### CI
 
 `.github/workflows/ci.yml` runs a separate `frontend` job (`npm ci`, lint,

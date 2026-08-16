@@ -6,13 +6,16 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import type { MemberDetail, MemberDocument, MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
+import { OctagonAlert } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MemberDocumentsPanel } from "@/components/member-documents-panel";
 import { MemberStatusHistoryPanel } from "@/components/member-status-history-panel";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -32,6 +35,15 @@ function Field({ label, value }: { label: string; value: string }) {
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-sm">{value}</span>
+    </div>
+  );
+}
+
+function FactBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[11.5px] text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -168,70 +180,87 @@ export default function MemberDetailPage() {
         ]}
       />
 
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <div>
-            <CardTitle>Member details</CardTitle>
-            <CardDescription>Core identity and employment information.</CardDescription>
-          </div>
-          {member ? (
-            <div className="flex gap-2">
-              {member.status === "PendingVerification" ? (
-                <Button size="sm" variant="outline" onClick={() => openAction("verify")}>
-                  Verify
-                </Button>
-              ) : null}
-              {member.status === "Active" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                  onClick={() => openAction("deactivate")}
+      {notFound ? (
+        <Card className="rounded-xl shadow-none">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">Member not found.</CardContent>
+        </Card>
+      ) : error ? (
+        <Alert variant="destructive">
+          <OctagonAlert />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : !member ? (
+        <Card className="rounded-xl shadow-none">
+          <CardContent className="flex flex-col gap-4 py-6">
+            <Skeleton className="h-19 w-19 rounded-lg" />
+            <Skeleton className="h-6 w-64" />
+            <Skeleton className="h-16 w-full" />
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card className="rounded-xl shadow-none">
+            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-1 gap-4">
+                <div
+                  aria-hidden="true"
+                  className="flex size-19 shrink-0 items-center justify-center rounded-lg text-[9.5px] text-muted-foreground"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(135deg, var(--muted) 0 6px, color-mix(in oklch, var(--muted), var(--foreground) 4%) 6px 12px)",
+                  }}
                 >
-                  Deactivate
-                </Button>
-              ) : null}
-              {member.status === "Inactive" ? (
-                <Button size="sm" variant="outline" onClick={() => openAction("reactivate")}>
-                  Reactivate
-                </Button>
-              ) : null}
-              <Link href={`/dashboard/members/${params.id}/edit`} className={cn(buttonVariants({ size: "sm" }))}>
-                Edit
-              </Link>
-            </div>
-          ) : null}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {notFound ? (
-            <p className="text-sm text-muted-foreground">Member not found.</p>
-          ) : error ? (
-            <p className="text-sm text-destructive">{error}</p>
-          ) : member ? (
-            <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <Field label="Last name" value={member.lastName} />
-                <Field label="First name" value={member.firstName} />
-                <Field label="Middle name" value={member.middleName ?? "—"} />
-                <Field label="Date of birth" value={member.dateOfBirth} />
-                <Field label="Place of birth" value={member.placeOfBirth} />
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Status</span>
-                  <Badge variant="outline" className={cn("w-fit", memberStatusBadgeClassName[member.status])}>
-                    {member.status}
-                  </Badge>
+                  ID photo
                 </div>
-                <Field label="Employee number" value={member.employeeNumber ?? "—"} />
-                <Field label="Position / designation" value={member.positionDesignation ?? "—"} />
-                <Field label="Permanent appointment date" value={member.permanentAppointmentDate ?? "—"} />
-                <Field label="Joining reason" value={member.joiningReason ?? "—"} />
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-[21px] font-semibold tracking-tight">
+                        {member.lastName}, {member.firstName}
+                        {member.middleName ? ` ${member.middleName.charAt(0)}.` : ""}
+                      </h2>
+                      <Badge variant="outline" className={memberStatusBadgeClassName[member.status]}>
+                        {member.status}
+                      </Badge>
+                    </div>
+                    <p className="text-[13px] text-muted-foreground">{member.positionDesignation ?? "Position not on file"}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-6.5 gap-y-3">
+                    <FactBlock label="Membership ID" value={member.id} />
+                    <FactBlock label="Employee no." value={member.employeeNumber ?? "—"} />
+                    <FactBlock label="Permanent appointment" value={member.permanentAppointmentDate ?? "—"} />
+                  </div>
+                </div>
               </div>
-
-              {activeAction ? (
-                <form
-                  className="flex flex-col gap-3 rounded-lg border border-border p-4"
-                  onSubmit={handleActionSubmit}
-                >
+              <div className="flex shrink-0 gap-2">
+                {member.status === "PendingVerification" ? (
+                  <Button size="sm" variant="outline" onClick={() => openAction("verify")}>
+                    Verify
+                  </Button>
+                ) : null}
+                {member.status === "Active" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                    onClick={() => openAction("deactivate")}
+                  >
+                    Deactivate
+                  </Button>
+                ) : null}
+                {member.status === "Inactive" ? (
+                  <Button size="sm" variant="outline" onClick={() => openAction("reactivate")}>
+                    Reactivate
+                  </Button>
+                ) : null}
+                <Link href={`/dashboard/members/${params.id}/edit`} className={cn(buttonVariants({ size: "sm" }))}>
+                  Edit record
+                </Link>
+              </div>
+            </CardContent>
+            {activeAction ? (
+              <CardContent className="pt-0">
+                <form className="flex flex-col gap-3 rounded-lg border border-border p-4" onSubmit={handleActionSubmit}>
                   <p className="text-sm font-medium">{actionLabel[activeAction]} this member</p>
 
                   {activeAction === "deactivate" ? (
@@ -274,23 +303,52 @@ export default function MemberDetailPage() {
                     </Button>
                   </div>
                 </form>
-              ) : null}
+              </CardContent>
+            ) : null}
+          </Card>
 
-              <Separator />
-              <MemberDocumentsPanel
-                memberId={params.id}
-                documents={documents}
-                onUploaded={(doc) => setDocuments((current) => [doc, ...current])}
-              />
-
-              <Separator />
-              <MemberStatusHistoryPanel history={statusHistory} statusReasons={statusReasons} />
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          )}
-        </CardContent>
-      </Card>
+          <Tabs defaultValue="personal">
+            <TabsList variant="line">
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="audit">Audit trail</TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal" className="mt-3">
+              <Card className="rounded-xl shadow-none">
+                <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  <Field label="Last name" value={member.lastName} />
+                  <Field label="First name" value={member.firstName} />
+                  <Field label="Middle name" value={member.middleName ?? "—"} />
+                  <Field label="Date of birth" value={member.dateOfBirth} />
+                  <Field label="Place of birth" value={member.placeOfBirth} />
+                  <Field label="Employee number" value={member.employeeNumber ?? "—"} />
+                  <Field label="Position / designation" value={member.positionDesignation ?? "—"} />
+                  <Field label="Permanent appointment date" value={member.permanentAppointmentDate ?? "—"} />
+                  <Field label="Joining reason" value={member.joiningReason ?? "—"} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="documents" className="mt-3">
+              <Card className="rounded-xl shadow-none">
+                <CardContent>
+                  <MemberDocumentsPanel
+                    memberId={params.id}
+                    documents={documents}
+                    onUploaded={(doc) => setDocuments((current) => [doc, ...current])}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="audit" className="mt-3">
+              <Card className="rounded-xl shadow-none">
+                <CardContent>
+                  <MemberStatusHistoryPanel history={statusHistory} statusReasons={statusReasons} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
     </div>
   );
 }

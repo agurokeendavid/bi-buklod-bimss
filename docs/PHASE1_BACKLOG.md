@@ -39,6 +39,15 @@ status/audit history. A cross-cutting frontend design pass (no BIMSS ID —
 see the note at the end of the Phase 1C section) then restyled all of
 Phase 1C's screens (theme, sidebar/header shell, dark mode, UX audit) —
 Phase 1D/1E's own UI work should follow the conventions it established.
+A second cross-cutting design pass (no BIMSS ID, 2026-08-16) then integrated
+a fuller frontend design system handoff on top of that: design tokens (16px
+root, navy sidebar rail), grouped sidebar nav, centralized status-badge
+colors, and a re-skin of the five already-built screens (login, dashboard,
+membership register, member record, new-member form) — see
+`docs/design/README.md`'s "Integration status" for exactly what shipped
+versus what stayed deferred (contributions/loans/approvals/reports/settings/
+elections screens all need data or endpoints that don't exist yet). The
+design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
 Phase 1D (Existing Member Import) is next; its dependency on the retired
 Razor/MVC plan is already rescoped (see the Phase 1D section below) —
 BIMSS-038 (Import batch admin UI) now depends on BIMSS-047 like every
@@ -1450,6 +1459,55 @@ component set, which would have meant re-migrating every existing screen.
 - Verified: `npm run lint`/`npm run build` clean throughout; live manual
   verification by the user, including reproducing and confirming the fix
   for the render-loop hang.
+
+### Design system integration (2026-08-16, no BIMSS ID — cross-cutting, not a new feature)
+
+The user brought a separate Claude-designed UI handoff (nine screens, high
+fidelity) for BIMSS. Moved its docs into `docs/design/` (`BIMSS-UI-SPEC.md`,
+`README.md`, the `BIMSS.dc.html` prototype) and integrated it into
+`frontend/` on top of the PR #39 design pass above, in the same
+cross-cutting spirit — no backend changes.
+
+- **Tokens** (`globals.css`): root font-size 16px (was 18px — the design
+  spec's whole type scale assumes 16px; if accessibility testing later
+  calls for larger text, prefer a user-toggled preference over reverting
+  the global override), `--app-bg`/`--primary-subtle` added, and the
+  sidebar tokens replaced with a fixed navy rail (`#0b3b6f`) independent of
+  light/dark mode — `--primary` (blue-600/500) is unchanged, the navy is
+  sidebar-only per the handoff's own "don't repaint the app navy" rule.
+- **Shell**: `nav-items.ts` gained a `group` discriminator
+  (`operations`/`administration`); `AppSidebar` renders grouped, navy-styled
+  nav (brand roundel, uppercase tracked group labels, `--sidebar-accent`
+  active state); `AppHeader` restyled to the spec's 56px sticky bar.
+  Deliberately did **not** add nav entries or header controls (search box,
+  "Alerts · n", "New application") for screens/features that don't exist
+  yet — a link or button with nothing real behind it is worse than not
+  showing it.
+- **Badges**: `lib/member-status.ts`'s color map now uses the spec's exact
+  hex values, plus `dark:` variants (the spec doesn't cover dark mode, but
+  dark mode already ships in this app, so badges still need to be legible
+  in it).
+- **Re-skinned** (not just tokens) the five already-built screens: login
+  (two-column navy/white layout), dashboard (tile anatomy), the members
+  register (filter pills, avatar-with-initials cell, a real "Verify
+  selected" bulk action reusing the existing per-member verify endpoint,
+  and a real client-side "Export CSV" — "Assign officer"/"Print IDs" from
+  the mockup were left out, not stubbed, since neither is a real feature),
+  and the member record page (`Tabs`: Personal/Documents/Audit trail,
+  wiring in the two existing panels).
+- **Deliberately not built**: the mockup's dashboard charts/pending-queue/
+  activity-feed/membership-by-office panels, the register's Contributions
+  YTD/Last posted/Office columns, member-record Contributions/Loans/Benefit
+  claims tabs, and a 5-step application wizard — all need loan/contribution/
+  audit-feed data or endpoints that don't exist yet (Phase 3/4/5/7). Built
+  the correct look-and-feel shell now; real wiring lands with each
+  capability's own phase, exactly as the handoff's own phase tags intend.
+  Full list of what's deferred: `docs/design/README.md`'s "Integration
+  status" section.
+- `.github/instructions/frontend.instructions.md` and `AGENTS.md`'s
+  Frontend rules updated to point at `docs/design/BIMSS-UI-SPEC.md` as the
+  visual-design source of truth and to correct the stale 18px-root note.
+- Verified: `npm run lint`/`npm run build` clean.
 
 ## Phase 1D — Existing Member Import (Not started)
 

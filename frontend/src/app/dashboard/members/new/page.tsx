@@ -3,9 +3,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { parseFieldErrors } from "@/lib/api-errors";
 import type { CreateMemberRequest, ReferenceDataItem } from "@/lib/types/member";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,20 +182,24 @@ export default function NewMemberPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create member</CardTitle>
-        <CardDescription>
-          Core identity and employment information. BI Employee Number is mandatory and unique. Fields marked
-          <RequiredMark /> are required.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loadError ? (
-          <p className="text-sm text-destructive">{loadError}</p>
-        ) : (
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+    <div className="mx-auto flex w-full max-w-[980px] flex-col">
+      <Card className="rounded-xl shadow-none">
+        <CardHeader>
+          <CardTitle className="text-[14.5px] font-semibold">Create member</CardTitle>
+          <CardDescription>
+            Core identity and employment information. BI Employee Number is mandatory and unique. Fields marked
+            <RequiredMark /> are required.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadError ? (
+            <Alert variant="destructive">
+              <OctagonAlert />
+              <AlertDescription>{loadError}</AlertDescription>
+            </Alert>
+          ) : (
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 gap-x-4.5 gap-y-4 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="lastName">
                   Last name
@@ -376,12 +382,13 @@ export default function NewMemberPage() {
               </p>
             ) : null}
 
-            <Button type="submit" disabled={isSubmitting} className="w-fit">
-              {isSubmitting ? "Creating…" : "Create member"}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+              <Button type="submit" disabled={isSubmitting} className="w-fit">
+                {isSubmitting ? "Creating…" : "Create member"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

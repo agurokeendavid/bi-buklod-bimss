@@ -1,10 +1,15 @@
 import type { MemberStatus } from "@/lib/types/member";
 
-// Semantic status colors (success/pending/neutral) rather than reusing
-// whatever the primary/secondary theme tokens happen to be — kept as a
-// shared className map since both the members list and detail page need it.
+// Status badge colors from docs/design/BIMSS-UI-SPEC.md §2 ("Status
+// colors") — fixed hex, not theme tokens, since these are semantic
+// (success/pending/neutral) and defined independently of the app's
+// primary/secondary palette. Centralized here so no component picks its
+// own colors — both the members list and detail page use this map. The
+// spec doesn't cover dark mode, so the dark: variants below (translucent
+// versions of the same hues) are this app's own extension, needed because
+// dark mode is already a shipped feature.
 export const memberStatusBadgeClassName: Record<MemberStatus, string> = {
-  PendingVerification: "border-amber-200 bg-amber-100 text-amber-800",
-  Active: "border-emerald-200 bg-emerald-100 text-emerald-800",
-  Inactive: "border-slate-200 bg-slate-100 text-slate-700",
+  Active: "border-transparent bg-[#dcfce7] text-[#166534] dark:bg-emerald-500/15 dark:text-emerald-400",
+  PendingVerification: "border-transparent bg-[#fef9c3] text-[#854d0e] dark:bg-amber-500/15 dark:text-amber-400",
+  Inactive: "border-transparent bg-[#f4f4f5] text-[#52525b] dark:bg-zinc-500/15 dark:text-zinc-400",
 };

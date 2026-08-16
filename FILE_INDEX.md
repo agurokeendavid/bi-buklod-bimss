@@ -14,6 +14,9 @@
 - `docs/DEVELOPMENT_ROADMAP.md`
 - `docs/REPOSITORY_SETUP.md`
 - `docs/AI_TOOLING.md`
+- `docs/design/BIMSS-UI-SPEC.md` — frontend visual-design source of truth (tokens, typography, screens)
+- `docs/design/README.md` — design handoff overview and integration status
+- `docs/design/prototype/BIMSS.dc.html` — interactive HTML prototype (reference only, not production code)
 
 ## Skills
 Five project skills are included in both:
