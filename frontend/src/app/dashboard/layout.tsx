@@ -25,9 +25,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 md:flex-row">
       <AppSidebar isMobileOpen={isMobileNavOpen} onMobileOpenChange={setIsMobileNavOpen} />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col bg-app-bg">
         <AppHeader onOpenMobileNav={() => setIsMobileNavOpen(true)} />
-        <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-6">{children}</main>
+        <main className="w-full flex-1 px-[18px] pt-5 pb-12 md:px-[22px]">{children}</main>
       </div>
     </div>
   );

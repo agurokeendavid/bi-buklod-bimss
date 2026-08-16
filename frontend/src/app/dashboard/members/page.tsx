@@ -5,8 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import type { MemberStatus, MemberSummary } from "@/lib/types/member";
+import { OctagonAlert } from "lucide-react";
 import { MembersTable } from "@/components/members-table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -50,10 +53,10 @@ export default function MembersPage() {
   }, [fetchWithAuth]);
 
   return (
-    <Card>
+    <Card className="rounded-xl shadow-none">
       <CardHeader className="flex flex-row items-start justify-between">
         <div>
-          <CardTitle>Members</CardTitle>
+          <CardTitle className="text-[14.5px] font-semibold">Membership register</CardTitle>
           <CardDescription>Buklod membership roster.</CardDescription>
         </div>
         <Link href="/dashboard/members/new" className={cn(buttonVariants({ size: "sm" }))}>
@@ -62,7 +65,10 @@ export default function MembersPage() {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <Alert variant="destructive">
+            <OctagonAlert />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : members ? (
           // `key` forces a remount when the URL's `?status=` filter changes —
           // MembersTable only reads `initialStatusFilter` once (via
@@ -72,7 +78,10 @@ export default function MembersPage() {
           // so without this the filter wouldn't update.
           <MembersTable key={statusParam ?? "all"} members={members} initialStatusFilter={initialStatusFilter} />
         ) : (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <div className="flex flex-col gap-3.5">
+            <Skeleton className="h-9 w-full max-w-md" />
+            <Skeleton className="h-64 w-full" />
+          </div>
         )}
       </CardContent>
     </Card>

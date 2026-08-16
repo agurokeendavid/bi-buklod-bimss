@@ -49,7 +49,7 @@ export function AppHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const displayName = accessToken ? decodeJwtDisplayName(accessToken) : null;
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card px-4 md:px-6">
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger
@@ -61,7 +61,7 @@ export function AppHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           />
           <TooltipContent>Open navigation</TooltipContent>
         </Tooltip>
-        <h1 className="text-lg font-semibold">{activeNavLabel(pathname)}</h1>
+        <h1 className="text-[15px] font-semibold">{activeNavLabel(pathname)}</h1>
       </div>
 
       <div className="flex items-center gap-2">

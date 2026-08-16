@@ -39,6 +39,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-app-bg: var(--app-bg);
+  --color-primary-subtle: var(--primary-subtle);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -79,14 +81,21 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.005 264);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.546 0.215 262.881);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0.015 264);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0.005 264);
-  --sidebar-ring: oklch(0.623 0.188 262.881);
+  /* Navy sidebar rail — deliberately distinct from --primary (blue-600),
+     used only for the sidebar per the frontend design system
+     (docs/design/BIMSS-UI-SPEC.md §2). White on this navy passes AA. */
+  --sidebar: #0b3b6f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #0b3b6f;
+  --sidebar-accent: rgba(255, 255, 255, 0.16);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.15);
+  --sidebar-ring: rgba(255, 255, 255, 0.4);
+  /* Main content background behind cards, and the selected-row/selected-card
+     tint — docs/design/BIMSS-UI-SPEC.md §2. */
+  --app-bg: #fafafa;
+  --primary-subtle: #eff6ff;
 }
 
 .dark {
@@ -116,14 +125,20 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0.01 264);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.623 0.188 262.881);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0.01 264);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.623 0.188 262.881);
+  /* Navy sidebar rail stays the same in dark mode — it's a fixed brand rail,
+     not a theme-dependent surface, and white-on-navy already passes AA. */
+  --sidebar: #0b3b6f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #0b3b6f;
+  --sidebar-accent: rgba(255, 255, 255, 0.16);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.15);
+  --sidebar-ring: rgba(255, 255, 255, 0.4);
+  /* Mirrors --background (the darkest surface, behind elevated --card
+     content) — same relationship light mode's --app-bg has to --card. */
+  --app-bg: oklch(0.145 0 0);
+  --primary-subtle: oklch(0.269 0.06 262.881);
 }
 
 @layer base {
@@ -135,10 +150,11 @@
   }
   html {
     @apply font-sans;
-    /* Members are often senior or non-technical users — a larger base
-       size (18px vs. the 16px default) scales every rem-based Tailwind
-       utility (text, padding, component heights) proportionally larger
-       app-wide, rather than hand-tuning each component again. */
-    font-size: 18px;
+    /* 16px root, matching docs/design/BIMSS-UI-SPEC.md's type scale (was
+       18px — that enlarged every rem-based utility ~12% beyond the design
+       system's sizes). If accessibility testing later calls for larger
+       text, prefer a user-toggled preference over reintroducing a global
+       root override. */
+    font-size: 16px;
   }
 }

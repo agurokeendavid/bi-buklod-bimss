@@ -2,12 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,31 +36,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-background p-4">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 size-96 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -right-24 -bottom-24 size-80 rounded-full bg-primary/10 blur-3xl" />
+    <div className="grid flex-1 grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+      {/* Left panel — government/organization identity, purpose, DPA notice. No fabricated
+          live stats (unauthenticated page, no public endpoint) and no role selector
+          (production reads the role from JWT claims — see docs/design/BIMSS-UI-SPEC.md §5.1). */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-[#0b3b6f] px-14 py-13 text-white lg:flex">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-28 -bottom-28 size-[440px] rounded-full border border-white/[.13]" />
+          <div className="absolute -right-16 -bottom-16 size-[290px] rounded-full border border-white/10" />
+        </div>
+
+        <div className="relative flex items-center gap-3">
+          <div className="flex size-[46px] shrink-0 items-center justify-center rounded-full border-2 border-white/50 text-sm font-semibold">
+            BI
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[10.5px] font-semibold tracking-[.16em] text-white/72 uppercase">
+              Republic of the Philippines
+            </span>
+            <span className="text-[14.5px] font-semibold">Bureau of Immigration · Buklod ng Kawani</span>
+          </div>
+        </div>
+
+        <div className="relative flex max-w-[450px] flex-col gap-4">
+          <span className="text-[10.5px] font-semibold tracking-[.2em] text-white/70 uppercase">BIMSS · Release 1.0</span>
+          <h1 className="text-[41px] leading-[1.09] font-bold tracking-tighter">
+            Buklod Integrated Membership and Services System
+          </h1>
+          <p className="text-[14.5px] leading-[1.7] text-white/82">
+            One secured record per member, replacing fragmented and manual recordkeeping.
+            Membership, contributions, and member services are handled in a single verified
+            workflow.
+          </p>
+        </div>
+
+        {/* Spacer — the mockup's stat row (active members / fund balance / offices
+            covered) sat here but is dropped: this is an unauthenticated page with no
+            public endpoint to source real numbers from. */}
+        <div aria-hidden="true" />
       </div>
 
-      <Card className="relative w-full max-w-sm">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <ShieldCheck className="size-7" />
+      {/* Right panel — sign-in form. */}
+      <div className="flex flex-1 items-center justify-center bg-background p-4">
+        <div className="flex w-full max-w-[376px] flex-col gap-6">
+          <div className="flex flex-col gap-1 lg:hidden">
+            <span className="text-sm font-semibold text-primary">BIMSS</span>
           </div>
-          <CardTitle className="text-2xl font-semibold">BIMSS</CardTitle>
-          <CardDescription className="max-w-64">
-            Buklod Integrated Membership and Services System
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl font-semibold tracking-tight">Sign in</h2>
+            <p className="text-sm text-muted-foreground">
+              Use your BI employee number or Buklod membership ID.
+            </p>
+          </div>
+
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="userName">Username</Label>
+              <Label htmlFor="userName">Employee / Membership ID</Label>
               <Input
                 id="userName"
                 name="userName"
                 autoComplete="username"
                 required
+                className="tabular-nums"
                 value={userName}
                 onChange={(event) => setUserName(event.target.value)}
               />
@@ -89,16 +126,22 @@ export default function LoginPage() {
               </div>
             </div>
             {error ? (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
+              <Alert variant="destructive">
+                <OctagonAlert />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             ) : null}
-            <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>
+            <Button type="submit" className="mt-2 h-10 w-full" disabled={isSubmitting}>
               {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+
+          <p className="text-[11.5px] leading-[1.65] text-muted-foreground">
+            All access is logged. Personal data is processed under the Data Privacy Act of 2012
+            (RA 10173). Unauthorized use is subject to administrative and criminal liability.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

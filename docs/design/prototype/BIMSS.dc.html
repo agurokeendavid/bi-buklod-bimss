@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f4f5;font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#09090b;-webkit-font-smoothing:antialiased}
+  a{color:#2563eb;text-decoration:none}
+  a:hover{color:#1d4ed8;text-decoration:underline}
+  input,select,textarea,button{font-family:inherit}
+  ::placeholder{color:#a1a1aa}
+  table{border-collapse:collapse}
+</style>
+</helmet>
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+<div data-screen-label="Login" style="min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr;background:#fff">
+  <div style="background:#0b3b6f;color:#fff;padding:52px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:14px;position:relative;z-index:2">
+      <div style="width:46px;height:46px;flex:none;border-radius:9999px;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;letter-spacing:.05em">BI</div>
+      <div style="line-height:1.35">
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;opacity:.72">Republic of the Philippines</div>
+        <div style="font-size:14.5px;font-weight:600">Bureau of Immigration · Buklod ng Kawani</div>
+      </div>
+    </div>
+    <div style="max-width:450px;position:relative;z-index:2">
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;opacity:.7;margin-bottom:16px">BIMSS · Release 1.0</div>
+      <h1 style="font-size:41px;line-height:1.09;font-weight:700;margin:0 0 18px;letter-spacing:-.03em;text-wrap:pretty">Buklod Integrated Membership and Services System</h1>
+      <p style="font-size:14.5px;line-height:1.7;margin:0;opacity:.82;text-wrap:pretty">One secured record per member, replacing fragmented and manual recordkeeping. Membership, contributions, and member services are handled in a single verified workflow.</p>
+    </div>
+    <div style="display:flex;gap:40px;border-top:1px solid rgba(255,255,255,.2);padding-top:22px;position:relative;z-index:2;font-variant-numeric:tabular-nums">
+      <div><div style="font-size:23px;font-weight:600;letter-spacing:-.02em">3,412</div><div style="font-size:11.5px;opacity:.7">Active members</div></div>
+      <div><div style="font-size:23px;font-weight:600;letter-spacing:-.02em">₱48.2M</div><div style="font-size:11.5px;opacity:.7">Fund balance</div></div>
+      <div><div style="font-size:23px;font-weight:600;letter-spacing:-.02em">27</div><div style="font-size:11.5px;opacity:.7">Offices covered</div></div>
+    </div>
+    <div style="position:absolute;right:-150px;bottom:-170px;width:440px;height:440px;border-radius:9999px;border:1px solid rgba(255,255,255,.13)"></div>
+    <div style="position:absolute;right:-70px;bottom:-100px;width:290px;height:290px;border-radius:9999px;border:1px solid rgba(255,255,255,.1)"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:center;padding:48px">
+    <div style="width:100%;max-width:376px">
+      <h2 style="font-size:24px;font-weight:600;margin:0 0 6px;letter-spacing:-.02em">Sign in</h2>
+      <p style="font-size:13.5px;color:#71717a;margin:0 0 26px;line-height:1.5">Use your BI employee number or Buklod membership ID.</p>
+
+      <label style="display:block;font-size:13px;font-weight:500;margin-bottom:7px">Employee / Membership ID</label>
+      <input value="BI-2019-04871" style-focus="border-color:#2563eb;outline:3px solid rgba(37,99,235,.18)" style="width:100%;height:38px;padding:0 12px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;margin-bottom:16px;background:#fff;outline:0;font-variant-numeric:tabular-nums">
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px">
+        <label style="font-size:13px;font-weight:500">Password</label>
+        <a href="#" style="font-size:12.5px">Forgot password</a>
+      </div>
+      <input type="password" value="passwordpass" style-focus="border-color:#2563eb;outline:3px solid rgba(37,99,235,.18)" style="width:100%;height:38px;padding:0 12px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;margin-bottom:16px;outline:0">
+
+      <label style="display:block;font-size:13px;font-weight:500;margin-bottom:7px">Sign in as</label>
+      <select onChange="{{ pickRole }}" style="width:100%;height:38px;padding:0 10px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;background:#fff;margin-bottom:18px;outline:0">
+        <option>Membership Officer</option>
+        <option>Treasurer / Finance Officer</option>
+        <option>Member</option>
+        <option>System Administrator</option>
+      </select>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:22px"><input type="checkbox" style="accent-color:#2563eb;width:15px;height:15px">Remember this device for 30 days</label>
+
+      <button onClick="{{ signIn }}" style-hover="background:#1d4ed8" style="width:100%;height:40px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer">Sign in</button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:20px 0">
+        <div style="flex:1;height:1px;background:#e4e4e7"></div><span style="font-size:11px;color:#a1a1aa;letter-spacing:.1em">OR</span><div style="flex:1;height:1px;background:#e4e4e7"></div>
+      </div>
+      <button onClick="{{ signIn }}" style-hover="background:#f4f4f5" style="width:100%;height:40px;background:#fff;color:#09090b;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer">Continue with BI single sign-on</button>
+
+      <p style="font-size:11.5px;line-height:1.65;color:#a1a1aa;margin:24px 0 0;text-wrap:pretty">All access is logged. Personal data is processed under the Data Privacy Act of 2012 (RA 10173). Unauthorized use is subject to administrative and criminal liability.</p>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;min-height:100vh">
+
+  <aside style="width:242px;flex:none;background:#0b3b6f;color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh">
+    <div style="padding:16px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.15)">
+      <div style="width:34px;height:34px;flex:none;border-radius:9999px;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">BI</div>
+      <div style="line-height:1.25"><div style="font-size:14.5px;font-weight:600">BIMSS</div><div style="font-size:10.5px;opacity:.68">Buklod ng Kawani</div></div>
+    </div>
+
+    <nav style="flex:1;overflow:auto;padding:12px 8px;display:flex;flex-direction:column;gap:2px">
+      <div style="padding:4px 10px 6px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.5">Operations</div>
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="7">
+        <div onClick="{{ item.go }}" style-hover="background:rgba(255,255,255,.1)" style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;background:{{ item.bg }};font-weight:{{ item.weight }}">
+          <span style="flex:1">{{ item.label }}</span>
+          <sc-if value="{{ item.badge }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:10.5px;font-weight:600;background:#c2410c;color:#fff;padding:2px 6px;border-radius:9999px;font-variant-numeric:tabular-nums">{{ item.badge }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="height:1px;background:rgba(255,255,255,.15);margin:12px 10px"></div>
+      <div style="padding:0 10px 6px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.5">Administration</div>
+      <sc-for list="{{ navAdmin }}" as="item" hint-placeholder-count="2">
+        <div onClick="{{ item.go }}" style-hover="background:rgba(255,255,255,.1)" style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;background:{{ item.bg }};font-weight:{{ item.weight }}">
+          <span style="flex:1">{{ item.label }}</span>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="padding:12px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;flex:none;border-radius:9999px;background:rgba(255,255,255,.17);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600">MR</div>
+      <div style="flex:1;line-height:1.3;min-width:0"><div style="font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">M. Ramirez</div><div style="font-size:10.5px;opacity:.68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ role }}</div></div>
+      <span onClick="{{ signOut }}" style-hover="opacity:1" style="cursor:pointer;font-size:10.5px;font-weight:600;opacity:.7;letter-spacing:.06em">EXIT</span>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;background:#fafafa">
+    <header style="height:56px;background:#fff;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:12px;padding:0 22px;position:sticky;top:0;z-index:6">
+      <div style="font-size:15px;font-weight:600;letter-spacing:-.015em">{{ title }}</div>
+      <div style="font-size:11px;font-weight:500;color:#71717a;padding:2px 7px;border:1px solid #e4e4e7;border-radius:9999px">FY 2026</div>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 11px;border:1px solid #e4e4e7;border-radius:8px;width:258px;background:#fafafa">
+        <span style="font-size:12px;color:#a1a1aa">⌕</span>
+        <input placeholder="Search member, ID, or transaction" style="border:0;background:transparent;outline:0;font-size:13px;flex:1;min-width:0">
+      </div>
+      <button style-hover="background:#f4f4f5" style="height:36px;padding:0 12px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">Alerts · 6</button>
+      <button onClick="{{ goForm }}" style-hover="background:#1d4ed8" style="height:36px;padding:0 14px;border:0;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">New application</button>
+    </header>
+
+    <div style="padding:20px 22px 48px">
+
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Dashboard">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:16px 18px">
+            <div style="font-size:12.5px;font-weight:500;color:#71717a;margin-bottom:10px">{{ s.label }}</div>
+            <div style="font-size:27px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+            <div style="font-size:12px;color:#71717a;margin-top:6px;line-height:1.4">{{ s.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-bottom:14px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px 16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px">
+            <div><div style="font-size:14.5px;font-weight:600">Collections and disbursements</div><div style="font-size:12.5px;color:#71717a;margin-top:3px">Monthly, millions of pesos</div></div>
+            <div style="display:flex;gap:14px;font-size:11.5px;color:#71717a">
+              <span style="display:flex;align-items:center;gap:6px"><i style="width:9px;height:9px;background:#2563eb;border-radius:2px;display:block"></i>Collections</span>
+              <span style="display:flex;align-items:center;gap:6px"><i style="width:9px;height:9px;background:#c7cdd4;border-radius:2px;display:block"></i>Disbursements</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:12px;height:176px">
+            <sc-for list="{{ chart }}" as="c" hint-placeholder-count="8">
+              <div style="flex:1;display:flex;flex-direction:column;height:100%">
+                <div style="flex:1;display:flex;align-items:flex-end;gap:3px">
+                  <div style="flex:1;background:#2563eb;border-radius:3px 3px 0 0;height:{{ c.a }}"></div>
+                  <div style="flex:1;background:#c7cdd4;border-radius:3px 3px 0 0;height:{{ c.b }}"></div>
+                </div>
+                <div style="border-top:1px solid #e4e4e7;margin-top:8px;padding-top:7px;text-align:center;font-size:11px;color:#a1a1aa">{{ c.m }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px">
+          <div style="font-size:14.5px;font-weight:600;margin-bottom:3px">Pending your action</div>
+          <div style="font-size:12.5px;color:#71717a;margin-bottom:15px">Queued for review or approval</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ queue }}" as="q" hint-placeholder-count="4">
+              <div onClick="{{ goApprovals }}" style-hover="border-color:#2563eb;background:#fafafa" style="border:1px solid #e4e4e7;border-radius:8px;padding:11px 12px;cursor:pointer;display:flex;align-items:center;gap:11px">
+                <div style="width:3px;height:32px;border-radius:2px;flex:none;background:{{ q.tone }}"></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.title }}</div>
+                  <div style="font-size:11.5px;color:#71717a;margin-top:2px">{{ q.meta }}</div>
+                </div>
+                <div style="font-size:18px;font-weight:600;font-variant-numeric:tabular-nums">{{ q.count }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border-top:1px solid #e4e4e7;margin-top:15px;padding-top:13px;display:flex;justify-content:space-between;font-size:12.5px">
+            <span style="color:#71717a">Oldest item in queue</span><span style="font-weight:600">9 days</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+          <div style="padding:15px 20px;border-bottom:1px solid #e4e4e7;display:flex;align-items:baseline;justify-content:space-between">
+            <div style="font-size:14.5px;font-weight:600">Recent activity</div>
+            <a href="#" style="font-size:12.5px">Full audit log</a>
+          </div>
+          <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+            <div style="padding:11px 20px;border-bottom:1px solid #f4f4f5;display:flex;gap:12px;align-items:baseline">
+              <div style="width:50px;flex:none;font-size:11.5px;color:#a1a1aa;font-variant-numeric:tabular-nums">{{ a.time }}</div>
+              <div style="flex:1;font-size:13px;line-height:1.5">{{ a.text }}<span style="color:#a1a1aa"> · {{ a.who }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px">
+          <div style="font-size:14.5px;font-weight:600;margin-bottom:3px">Membership by office</div>
+          <div style="font-size:12.5px;color:#71717a;margin-bottom:17px">Top divisions, active members</div>
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <sc-for list="{{ offices }}" as="o" hint-placeholder-count="6">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                  <span>{{ o.name }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ o.count }}</span>
+                </div>
+                <div style="height:6px;background:#f4f4f5;border-radius:9999px;overflow:hidden"><div style="height:100%;background:#2563eb;border-radius:9999px;width:{{ o.pct }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isMembers }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Members">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+          <div onClick="{{ t.go }}" style-hover="border-color:#2563eb" style="padding:6px 13px;border:1px solid {{ t.border }};border-radius:9999px;font-size:12.5px;cursor:pointer;background:{{ t.bg }};color:{{ t.color }};font-weight:{{ t.weight }}">{{ t.label }} <span style="opacity:.6;font-variant-numeric:tabular-nums">{{ t.count }}</span></div>
+        </sc-for>
+        <div style="flex:1"></div>
+        <button style-hover="background:#f4f4f5" style="height:34px;padding:0 12px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer">Filters · 2</button>
+        <button style-hover="background:#f4f4f5" style="height:34px;padding:0 12px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer">Export CSV</button>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:11px;background:#fafafa;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px"><input type="checkbox" style="accent-color:#2563eb;width:14px;height:14px">Select all</label>
+          <div style="width:1px;height:18px;background:#e4e4e7"></div>
+          <span style="font-size:12.5px;color:#71717a">3 selected</span>
+          <button style="height:28px;padding:0 10px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer">Verify</button>
+          <button style="height:28px;padding:0 10px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer">Assign officer</button>
+          <button style="height:28px;padding:0 10px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer">Print IDs</button>
+          <div style="flex:1"></div>
+          <span style="font-size:12.5px;color:#71717a">Showing 1–8 of 3,412</span>
+        </div>
+
+        <table style="width:100%;font-size:13px">
+          <thead>
+            <tr>
+              <th style="width:38px;padding:10px 0 10px 16px;border-bottom:1px solid #e4e4e7"></th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Member</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Membership ID</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Office / Division</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Status</th>
+              <th style="text-align:right;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Contributions YTD</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Last posted</th>
+              <th style="width:52px;padding:10px 16px 10px 12px;border-bottom:1px solid #e4e4e7"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="8">
+              <tr style-hover="background:#fafafa" style="border-bottom:1px solid #f4f4f5">
+                <td style="padding:11px 0 11px 16px"><input type="checkbox" style="accent-color:#2563eb;width:14px;height:14px"></td>
+                <td style="padding:11px 12px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="width:30px;height:30px;flex:none;border-radius:9999px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">{{ m.initials }}</div>
+                    <div style="line-height:1.35">
+                      <div onClick="{{ goProfile }}" style-hover="text-decoration:underline" style="font-weight:500;cursor:pointer">{{ m.name }}</div>
+                      <div style="font-size:11.5px;color:#71717a">{{ m.position }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding:11px 12px;font-variant-numeric:tabular-nums;color:#52525b">{{ m.id }}</td>
+                <td style="padding:11px 12px;color:#52525b">{{ m.office }}</td>
+                <td style="padding:11px 12px"><span style="display:inline-block;padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:500;background:{{ m.statusBg }};color:{{ m.statusFg }}">{{ m.status }}</span></td>
+                <td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ m.ytd }}</td>
+                <td style="padding:11px 12px;color:#71717a;font-variant-numeric:tabular-nums">{{ m.last }}</td>
+                <td style="padding:11px 16px 11px 12px;text-align:right"><span onClick="{{ goProfile }}" style-hover="color:#2563eb" style="cursor:pointer;color:#a1a1aa;font-size:15px;letter-spacing:.08em">···</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+
+        <div style="padding:11px 16px;display:flex;align-items:center;gap:8px;border-top:1px solid #e4e4e7;background:#fafafa">
+          <span style="font-size:12.5px;color:#71717a;flex:1">Page 1 of 427</span>
+          <button style="height:30px;padding:0 11px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12.5px;color:#a1a1aa;cursor:pointer">Previous</button>
+          <button style="height:30px;width:30px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;font-size:12.5px;font-weight:500;cursor:pointer">1</button>
+          <button style="height:30px;width:30px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12.5px;cursor:pointer">2</button>
+          <button style="height:30px;width:30px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12.5px;cursor:pointer">3</button>
+          <button style-hover="background:#f4f4f5" style="height:30px;padding:0 11px;border:1px solid #e4e4e7;background:#fff;border-radius:6px;font-size:12.5px;cursor:pointer">Next</button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Member profile">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#71717a;margin-bottom:14px">
+        <span onClick="{{ goMembers }}" style-hover="color:#2563eb" style="cursor:pointer">Members</span><span>/</span><span style="color:#09090b;font-weight:500">Cortez, Ana Liza R.</span>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:20px 22px;margin-bottom:14px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:76px;height:76px;flex:none;border-radius:8px;background:repeating-linear-gradient(135deg,#f4f4f5 0 6px,#e9eaec 6px 12px);display:flex;align-items:center;justify-content:center;font-size:9.5px;color:#71717a;text-align:center;line-height:1.3;padding:6px">ID photo</div>
+        <div style="flex:1;min-width:260px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h2 style="font-size:21px;font-weight:600;margin:0;letter-spacing:-.025em">Cortez, Ana Liza R.</h2>
+            <span style="padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:500;background:#dcfce7;color:#166534">Active · Verified</span>
+          </div>
+          <div style="font-size:13px;color:#71717a;margin-top:5px">Immigration Officer II · Port Operations Division · Member since 12 Mar 2019</div>
+          <div style="display:flex;gap:26px;margin-top:16px;flex-wrap:wrap;font-variant-numeric:tabular-nums">
+            <sc-for list="{{ profileFacts }}" as="f" hint-placeholder-count="4">
+              <div><div style="font-size:11.5px;color:#71717a;margin-bottom:4px">{{ f.k }}</div><div style="font-size:14px;font-weight:600">{{ f.v }}</div></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex:none">
+          <button style-hover="background:#f4f4f5" style="height:36px;padding:0 13px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">Print ID</button>
+          <button style-hover="background:#1d4ed8" style="height:36px;padding:0 13px;border:0;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">Edit record</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:4px;border-bottom:1px solid #e4e4e7;margin-bottom:16px;flex-wrap:wrap">
+        <sc-for list="{{ profileTabs }}" as="p" hint-placeholder-count="5">
+          <div onClick="{{ p.go }}" style-hover="color:#09090b" style="padding:9px 13px;font-size:13px;cursor:pointer;border-bottom:2px solid {{ p.bar }};color:{{ p.color }};font-weight:{{ p.weight }};margin-bottom:-1px">{{ p.label }}</div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:14px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+          <div style="padding:15px 20px;border-bottom:1px solid #e4e4e7;font-size:14.5px;font-weight:600">Contribution ledger</div>
+          <table style="width:100%;font-size:13px">
+            <thead><tr>
+              <th style="text-align:left;padding:9px 20px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Period</th>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Reference</th>
+              <th style="text-align:right;padding:9px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Amount</th>
+              <th style="text-align:left;padding:9px 20px 9px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Status</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ ledger }}" as="l" hint-placeholder-count="6">
+                <tr style="border-bottom:1px solid #f4f4f5">
+                  <td style="padding:10px 20px;font-variant-numeric:tabular-nums">{{ l.period }}</td>
+                  <td style="padding:10px 12px;color:#71717a;font-variant-numeric:tabular-nums">{{ l.ref }}</td>
+                  <td style="padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ l.amt }}</td>
+                  <td style="padding:10px 20px 10px 12px"><span style="padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:500;background:{{ l.bg }};color:{{ l.fg }}">{{ l.status }}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px">
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:14px">Personal details</div>
+            <div style="display:flex;flex-direction:column;gap:11px;font-size:13px">
+              <sc-for list="{{ details }}" as="d" hint-placeholder-count="6">
+                <div style="display:flex;justify-content:space-between;gap:16px">
+                  <span style="color:#71717a">{{ d.k }}</span><span style="font-weight:500;text-align:right">{{ d.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px">
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:12px">Beneficiaries</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ beneficiaries }}" as="b" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:11px;border:1px solid #e4e4e7;border-radius:8px;padding:10px 12px">
+                  <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">{{ b.name }}</div><div style="font-size:11.5px;color:#71717a">{{ b.rel }}</div></div>
+                  <div style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">{{ b.share }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Membership application">
+      <div style="max-width:980px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 22px;margin-bottom:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+            <div><div style="font-size:16px;font-weight:600">Membership application</div><div style="font-size:12.5px;color:#71717a;margin-top:3px">Draft saved 2 minutes ago · Ref. APP-2026-00412</div></div>
+            <div style="font-size:12.5px;color:#71717a">Step 2 of 5</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ steps }}" as="st" hint-placeholder-count="5">
+              <div style="flex:1;min-width:0">
+                <div style="height:4px;border-radius:9999px;background:{{ st.bar }};margin-bottom:8px"></div>
+                <div style="font-size:11.5px;color:{{ st.color }};font-weight:{{ st.weight }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ st.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:22px">
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px">Employment and eligibility</div>
+          <p style="font-size:12.5px;color:#71717a;margin:0 0 22px">Verified against the BI personnel record. Fields marked with an asterisk are required.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 18px">
+            <sc-for list="{{ fields }}" as="f" hint-placeholder-count="6">
+              <div style="grid-column:{{ f.span }}">
+                <label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px">{{ f.label }}</label>
+                <div style="display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border:1px solid {{ f.border }};border-radius:8px;background:{{ f.bg }};font-size:14px;color:{{ f.color }}">
+                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.value }}</span>
+                  <sc-if value="{{ f.suffix }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size:11px;color:#a1a1aa">{{ f.suffix }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ f.help }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:11.5px;color:{{ f.helpColor }};margin-top:6px">{{ f.help }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <div style="grid-column:span 2">
+              <label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px">Monthly contribution basis *</label>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <sc-for list="{{ radios }}" as="r" hint-placeholder-count="3">
+                  <div style="flex:1;min-width:170px;display:flex;gap:10px;align-items:flex-start;border:1px solid {{ r.border }};background:{{ r.bg }};border-radius:8px;padding:12px 13px;cursor:pointer">
+                    <div style="width:15px;height:15px;flex:none;border-radius:9999px;border:1.5px solid {{ r.dotBorder }};margin-top:1px;display:flex;align-items:center;justify-content:center"><div style="width:7px;height:7px;border-radius:9999px;background:{{ r.dot }}"></div></div>
+                    <div><div style="font-size:13px;font-weight:500">{{ r.label }}</div><div style="font-size:11.5px;color:#71717a;margin-top:2px">{{ r.note }}</div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="grid-column:span 2">
+              <label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px">Supporting documents</label>
+              <div style="border:1px dashed #d4d4d8;border-radius:8px;padding:20px;text-align:center;background:#fafafa">
+                <div style="font-size:13px;font-weight:500;margin-bottom:4px">Drop files or browse</div>
+                <div style="font-size:11.5px;color:#71717a">PDF, JPG, or PNG · maximum 5 MB per file · appointment paper and valid ID required</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <sc-for list="{{ files }}" as="fl" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:9px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 11px;background:#fff">
+                    <div style="width:26px;height:26px;border-radius:6px;background:#f4f4f5;display:flex;align-items:center;justify-content:center;font-size:9px;color:#71717a">PDF</div>
+                    <div><div style="font-size:12.5px;font-weight:500">{{ fl.name }}</div><div style="font-size:11px;color:#71717a">{{ fl.size }}</div></div>
+                    <span style="color:#a1a1aa;cursor:pointer;font-size:13px">✕</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="grid-column:span 2;border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:13px 15px;display:flex;gap:11px">
+              <div style="width:3px;border-radius:2px;background:#d97706;flex:none"></div>
+              <div style="font-size:12.5px;line-height:1.55;color:#78350f">The employee number entered already has a closed Buklod record from 2016. Confirm whether this is a reinstatement before submitting; reinstatements retain the original membership ID.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid #e4e4e7;flex-wrap:wrap">
+            <button style-hover="background:#f4f4f5" style="height:38px;padding:0 14px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Back</button>
+            <div style="flex:1"></div>
+            <button style-hover="background:#f4f4f5" style="height:38px;padding:0 14px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Save draft</button>
+            <button onClick="{{ goApprovals }}" style-hover="background:#1d4ed8" style="height:38px;padding:0 16px;border:0;background:#2563eb;color:#fff;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Continue to beneficiaries</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isContributions }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Contributions">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
+        <sc-for list="{{ contribStats }}" as="s" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:16px 18px">
+            <div style="font-size:12.5px;font-weight:500;color:#71717a;margin-bottom:10px">{{ s.label }}</div>
+            <div style="font-size:24px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+            <div style="font-size:12px;color:#71717a;margin-top:6px">{{ s.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div><div style="font-size:14.5px;font-weight:600">Post remittance batch</div><div style="font-size:12.5px;color:#71717a;margin-top:3px">Payroll deduction file for the period 01–15 Aug 2026</div></div>
+          <div style="flex:1"></div>
+          <button style-hover="background:#f4f4f5" style="height:36px;padding:0 12px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">Import payroll file</button>
+          <button style-hover="background:#1d4ed8" style="height:36px;padding:0 14px;border:0;background:#2563eb;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">Post batch</button>
+        </div>
+        <table style="width:100%;font-size:13px">
+          <thead><tr>
+            <th style="text-align:left;padding:10px 20px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Batch</th>
+            <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Period</th>
+            <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Source</th>
+            <th style="text-align:right;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Members</th>
+            <th style="text-align:right;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Amount</th>
+            <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Status</th>
+            <th style="text-align:left;padding:10px 20px 10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Posted by</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{ batches }}" as="b" hint-placeholder-count="6">
+              <tr style-hover="background:#fafafa" style="border-bottom:1px solid #f4f4f5">
+                <td style="padding:11px 20px;font-weight:500;font-variant-numeric:tabular-nums">{{ b.id }}</td>
+                <td style="padding:11px 12px;color:#52525b;font-variant-numeric:tabular-nums">{{ b.period }}</td>
+                <td style="padding:11px 12px;color:#52525b">{{ b.source }}</td>
+                <td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ b.members }}</td>
+                <td style="padding:11px 12px;text-align:right;font-weight:500;font-variant-numeric:tabular-nums">{{ b.amount }}</td>
+                <td style="padding:11px 12px"><span style="padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:500;background:{{ b.bg }};color:{{ b.fg }}">{{ b.status }}</span></td>
+                <td style="padding:11px 20px 11px 12px;color:#71717a">{{ b.by }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Approvals">
+      <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:14px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+          <div style="padding:15px 20px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:10px">
+            <div style="font-size:14.5px;font-weight:600;flex:1">Approval queue</div>
+            <span style="font-size:12.5px;color:#71717a">18 items</span>
+          </div>
+          <sc-for list="{{ approvals }}" as="a" hint-placeholder-count="6">
+            <div style-hover="background:#fafafa" style="padding:13px 20px;border-bottom:1px solid #f4f4f5;display:flex;gap:12px;align-items:center;cursor:pointer;background:{{ a.rowBg }}">
+              <div style="width:30px;height:30px;flex:none;border-radius:9999px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">{{ a.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500">{{ a.name }}</div>
+                <div style="font-size:11.5px;color:#71717a;margin-top:2px">{{ a.kind }} · {{ a.ref }}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">{{ a.amount }}</div>
+                <div style="font-size:11.5px;color:{{ a.ageColor }};margin-top:2px">{{ a.age }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:20px 22px;align-self:start">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div style="font-size:15px;font-weight:600;flex:1">Salary loan · LN-2026-00318</div>
+            <span style="padding:2px 9px;border-radius:9999px;font-size:11.5px;font-weight:500;background:#fef9c3;color:#854d0e">For review</span>
+          </div>
+          <div style="font-size:12.5px;color:#71717a;margin-bottom:20px">Filed 07 Aug 2026 by Dela Cruz, Marvin S. · BKD-2015-00233</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+            <sc-for list="{{ loanFacts }}" as="f" hint-placeholder-count="6">
+              <div style="border:1px solid #e4e4e7;border-radius:8px;padding:11px 13px">
+                <div style="font-size:11.5px;color:#71717a;margin-bottom:4px">{{ f.k }}</div>
+                <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">{{ f.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border:1px solid #e4e4e7;border-radius:8px;padding:14px 15px;margin-bottom:18px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Eligibility checks</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ checks }}" as="c" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;font-size:12.5px">
+                  <div style="width:16px;height:16px;flex:none;border-radius:9999px;background:{{ c.bg }};color:{{ c.fg }};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">{{ c.mark }}</div>
+                  <span style="flex:1">{{ c.label }}</span>
+                  <span style="color:#71717a">{{ c.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px">Remarks</label>
+          <textarea placeholder="Recorded in the audit trail and visible to the member" style="width:100%;height:74px;padding:10px 12px;border:1px solid #e4e4e7;border-radius:8px;font-size:13px;resize:vertical;outline:0;margin-bottom:16px"></textarea>
+
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            <button style-hover="background:#1d4ed8" style="flex:1;min-width:120px;height:38px;border:0;background:#2563eb;color:#fff;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Approve</button>
+            <button style-hover="background:#f4f4f5" style="flex:1;min-width:120px;height:38px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Return for revision</button>
+            <button style-hover="background:#fef2f2" style="height:38px;padding:0 14px;border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer">Deny</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Reports">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+        <sc-for list="{{ reports }}" as="r" hint-placeholder-count="6">
+          <div style-hover="border-color:#2563eb" style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px;cursor:pointer">
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px">{{ r.name }}</div>
+            <div style="font-size:12.5px;color:#71717a;line-height:1.55;margin-bottom:14px;text-wrap:pretty">{{ r.desc }}</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#71717a">
+              <span style="padding:2px 8px;border-radius:9999px;border:1px solid #e4e4e7">{{ r.cadence }}</span>
+              <span>Last run {{ r.last }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:20px 22px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+          <div><div style="font-size:14.5px;font-weight:600">Membership growth</div><div style="font-size:12.5px;color:#71717a;margin-top:3px">Net new members per quarter, three-year view</div></div>
+          <div style="display:flex;gap:8px">
+            <button style-hover="background:#f4f4f5" style="height:32px;padding:0 11px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:12.5px;cursor:pointer">2024</button>
+            <button style-hover="background:#f4f4f5" style="height:32px;padding:0 11px;border:1px solid #e4e4e7;background:#fff;border-radius:8px;font-size:12.5px;cursor:pointer">2025</button>
+            <button style="height:32px;padding:0 11px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer">2026</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:10px;height:150px">
+          <sc-for list="{{ growth }}" as="g" hint-placeholder-count="12">
+            <div style="flex:1;display:flex;flex-direction:column;height:100%">
+              <div style="flex:1;display:flex;align-items:flex-end"><div style="width:100%;background:{{ g.tone }};border-radius:3px 3px 0 0;height:{{ g.h }}"></div></div>
+              <div style="border-top:1px solid #e4e4e7;margin-top:8px;padding-top:7px;text-align:center;font-size:10.5px;color:#a1a1aa">{{ g.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Settings">
+      <div style="max-width:900px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid #e4e4e7">
+            <div style="font-size:14.5px;font-weight:600">Roles and permissions</div>
+            <div style="font-size:12.5px;color:#71717a;margin-top:3px">Applies to every account assigned the role. Changes take effect on next sign-in.</div>
+          </div>
+          <table style="width:100%;font-size:13px">
+            <thead><tr>
+              <th style="text-align:left;padding:10px 20px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Role</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Scope</th>
+              <th style="text-align:right;padding:10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Accounts</th>
+              <th style="text-align:left;padding:10px 20px 10px 12px;border-bottom:1px solid #e4e4e7;font-size:12px;font-weight:500;color:#71717a">Key permissions</th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ roles }}" as="r" hint-placeholder-count="4">
+                <tr style="border-bottom:1px solid #f4f4f5">
+                  <td style="padding:12px 20px;font-weight:500">{{ r.name }}</td>
+                  <td style="padding:12px 12px;color:#52525b">{{ r.scope }}</td>
+                  <td style="padding:12px 12px;text-align:right;font-variant-numeric:tabular-nums">{{ r.count }}</td>
+                  <td style="padding:12px 20px 12px 12px;color:#71717a;line-height:1.5">{{ r.perms }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:18px 20px">
+          <div style="font-size:14.5px;font-weight:600;margin-bottom:16px">System preferences</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="flex:1"><div style="font-size:13.5px;font-weight:500">{{ t.label }}</div><div style="font-size:12px;color:#71717a;margin-top:3px">{{ t.note }}</div></div>
+                <div style="width:38px;height:21px;border-radius:9999px;flex:none;padding:2px;background:{{ t.track }};display:flex;justify-content:{{ t.justify }};cursor:pointer">
+                  <div style="width:17px;height:17px;border-radius:9999px;background:#fff"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    </div>
+  </main>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { screen: 'login', navKey: 'dashboard', role: 'Membership Officer', ptab: 'Contributions' };
+
+  go(screen, navKey) { return () => { this.setState({ screen, navKey: navKey || screen }); window.scrollTo(0, 0); }; }
+
+  navItem(label, screen, badge, key) {
+    const navKey = key || screen;
+    const on = this.state.navKey === navKey;
+    return { label, badge, go: this.go(screen, navKey), bg: on ? 'rgba(255,255,255,.16)' : 'transparent', weight: on ? 600 : 400 };
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const titles = {
+      dashboard: 'Dashboard', members: 'Membership register', profile: 'Member record',
+      form: 'New membership application', contributions: 'Contributions and remittances',
+      approvals: 'Approvals', reports: 'Reports', settings: 'Settings'
+    };
+    const st = (label, bg, fg) => ({ status: label, statusBg: bg, statusFg: fg });
+
+    return {
+      isLogin: s === 'login', isApp: s !== 'login',
+      isDashboard: s === 'dashboard', isMembers: s === 'members', isProfile: s === 'profile',
+      isForm: s === 'form', isContributions: s === 'contributions', isApprovals: s === 'approvals',
+      isReports: s === 'reports', isSettings: s === 'settings',
+      title: titles[s] || 'Dashboard',
+      role: this.state.role,
+      signIn: this.go('dashboard'),
+      signOut: this.go('login'),
+      goForm: this.go('form'),
+      goMembers: this.go('members'),
+      goProfile: this.go('profile'),
+      goApprovals: this.go('approvals'),
+      pickRole: e => this.setState({ role: e.target.value }),
+
+      nav: [
+        this.navItem('Dashboard', 'dashboard'),
+        this.navItem('Membership register', 'members'),
+        this.navItem('Applications', 'form', '12'),
+        this.navItem('Contributions', 'contributions'),
+        this.navItem('Loans and benefits', 'approvals', null, 'loans'),
+        this.navItem('Approvals', 'approvals', '18'),
+        this.navItem('Reports', 'reports')
+      ],
+      navAdmin: [this.navItem('Settings and roles', 'settings'), this.navItem('Audit log', 'settings', null, 'audit')],
+
+      stats: [
+        { label: 'Active members', value: '3,412', note: '+38 this month, 27 offices' },
+        { label: 'Collections this month', value: '₱4.12M', note: '96.4% of payroll deductions posted' },
+        { label: 'Outstanding loans', value: '₱11.8M', note: '412 accounts, 6 in arrears' },
+        { label: 'Fund balance', value: '₱48.2M', note: 'As of 15 Aug 2026' }
+      ],
+      chart: [
+        { m: 'Jan', a: '58%', b: '34%' }, { m: 'Feb', a: '64%', b: '41%' },
+        { m: 'Mar', a: '71%', b: '38%' }, { m: 'Apr', a: '67%', b: '52%' },
+        { m: 'May', a: '78%', b: '44%' }, { m: 'Jun', a: '84%', b: '61%' },
+        { m: 'Jul', a: '80%', b: '47%' }, { m: 'Aug', a: '92%', b: '55%' }
+      ],
+      queue: [
+        { title: 'Membership applications', meta: 'Awaiting officer verification', count: 12, tone: '#2563eb' },
+        { title: 'Salary loan requests', meta: 'Awaiting treasurer review', count: 18, tone: '#c2410c' },
+        { title: 'Benefit claims', meta: 'Mortuary and hospitalization', count: 5, tone: '#2563eb' },
+        { title: 'Record corrections', meta: 'Filed by members', count: 3, tone: '#a1a1aa' }
+      ],
+      activity: [
+        { time: '10:42', text: 'Posted remittance batch RB-2026-0815 · ₱2.06M', who: 'J. Santos' },
+        { time: '10:18', text: 'Approved salary loan LN-2026-00311', who: 'R. Villamor' },
+        { time: '09:55', text: 'Verified membership BKD-2026-01144', who: 'M. Ramirez' },
+        { time: '09:31', text: 'Updated beneficiary record for BKD-2018-00622', who: 'M. Ramirez' },
+        { time: '08:47', text: 'Returned application APP-2026-00398 for revision', who: 'L. Bautista' }
+      ],
+      offices: [
+        { name: 'Port Operations Division', count: 612, pct: '92%' },
+        { name: 'Intelligence Division', count: 488, pct: '74%' },
+        { name: 'Immigration Regulation', count: 431, pct: '65%' },
+        { name: 'Administrative Division', count: 397, pct: '60%' },
+        { name: 'Legal Division', count: 284, pct: '43%' },
+        { name: 'Field offices (combined)', count: 1200, pct: '100%' }
+      ],
+
+      tabs: ['All members|3,412', 'Active|3,208', 'Pending verification|112', 'Inactive|76'].map(x => {
+        const [label, count] = x.split('|');
+        const on = label === 'All members';
+        return { label, count, go: this.go('members'), bg: on ? '#2563eb' : '#fff', color: on ? '#fff' : '#52525b', border: on ? '#2563eb' : '#e4e4e7', weight: on ? 500 : 400 };
+      }),
+      members: [
+        { initials: 'AC', name: 'Cortez, Ana Liza R.', position: 'Immigration Officer II', id: 'BKD-2019-00871', office: 'Port Operations', ytd: '₱9,600.00', last: '15 Aug 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'MD', name: 'Dela Cruz, Marvin S.', position: 'Administrative Officer IV', id: 'BKD-2015-00233', office: 'Administrative', ytd: '₱12,800.00', last: '15 Aug 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'RB', name: 'Bautista, Rowena T.', position: 'Immigration Officer I', id: 'BKD-2026-01144', office: 'Intelligence', ytd: '₱1,600.00', last: '15 Aug 2026', ...st('Pending verification', '#fef9c3', '#854d0e') },
+        { initials: 'JS', name: 'Santos, Jomar P.', position: 'Immigration Officer III', id: 'BKD-2012-00098', office: 'Immigration Regulation', ytd: '₱12,800.00', last: '15 Aug 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'LG', name: 'Gonzales, Liza M.', position: 'Attorney III', id: 'BKD-2017-00544', office: 'Legal Division', ytd: '₱11,200.00', last: '31 Jul 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'FT', name: 'Tolentino, Ferdinand A.', position: 'Immigration Officer II', id: 'BKD-2014-00187', office: 'Field Office · Cebu', ytd: '₱6,400.00', last: '30 Jun 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'MV', name: 'Villamor, Ma. Rosario D.', position: 'Chief Administrative Officer', id: 'BKD-2009-00021', office: 'Administrative', ytd: '₱16,000.00', last: '15 Aug 2026', ...st('Active', '#dcfce7', '#166534') },
+        { initials: 'ER', name: 'Reyes, Emmanuel C.', position: 'Immigration Officer I', id: 'BKD-2013-00142', office: 'Field Office · Davao', ytd: '₱0.00', last: '28 Feb 2026', ...st('Inactive', '#f4f4f5', '#52525b') }
+      ],
+
+      profileFacts: [
+        { k: 'Membership ID', v: 'BKD-2019-00871' }, { k: 'Employee no.', v: 'BI-2019-04871' },
+        { k: 'Contributions YTD', v: '₱9,600.00' }, { k: 'Outstanding loan', v: '₱18,400.00' }
+      ],
+      profileTabs: ['Contributions', 'Personal', 'Loans', 'Benefit claims', 'Documents', 'Audit trail'].map(label => {
+        const on = label === this.state.ptab;
+        return { label, go: () => this.setState({ ptab: label }), bar: on ? '#2563eb' : 'transparent', color: on ? '#09090b' : '#71717a', weight: on ? 600 : 400 };
+      }),
+      ledger: [
+        { period: 'Aug 2026 · 1st half', ref: 'RB-2026-0815', amt: '₱800.00', status: 'Posted', bg: '#dcfce7', fg: '#166534' },
+        { period: 'Jul 2026 · 2nd half', ref: 'RB-2026-0731', amt: '₱800.00', status: 'Posted', bg: '#dcfce7', fg: '#166534' },
+        { period: 'Jul 2026 · 1st half', ref: 'RB-2026-0715', amt: '₱800.00', status: 'Posted', bg: '#dcfce7', fg: '#166534' },
+        { period: 'Jun 2026 · 2nd half', ref: 'RB-2026-0630', amt: '₱800.00', status: 'Posted', bg: '#dcfce7', fg: '#166534' },
+        { period: 'Jun 2026 · 1st half', ref: 'ADJ-2026-0041', amt: '₱800.00', status: 'Adjusted', bg: '#fef9c3', fg: '#854d0e' },
+        { period: 'May 2026 · 2nd half', ref: 'RB-2026-0531', amt: '₱800.00', status: 'Posted', bg: '#dcfce7', fg: '#166534' }
+      ],
+      details: [
+        { k: 'Date of birth', v: '14 Feb 1988' }, { k: 'Civil status', v: 'Married' },
+        { k: 'Mobile', v: '+63 917 555 0142' }, { k: 'Email', v: 'alcortez@immigration.gov.ph' },
+        { k: 'Station', v: 'NAIA Terminal 3' }, { k: 'Date of appointment', v: '02 Jan 2019' }
+      ],
+      beneficiaries: [
+        { name: 'Cortez, Rafael M.', rel: 'Spouse', share: '50%' },
+        { name: 'Cortez, Miguel A.', rel: 'Child · minor', share: '25%' },
+        { name: 'Cortez, Sofia A.', rel: 'Child · minor', share: '25%' }
+      ],
+
+      steps: ['Personal information', 'Employment and eligibility', 'Beneficiaries', 'Documents', 'Review and submit'].map((label, i) => ({
+        label, bar: i <= 1 ? '#2563eb' : '#e4e4e7', color: i <= 1 ? '#09090b' : '#a1a1aa', weight: i === 1 ? 600 : 400
+      })),
+      fields: [
+        { label: 'Employee number *', value: 'BI-2026-05310', span: 'span 1', border: '#e4e4e7', bg: '#fff', color: '#09090b', suffix: 'verified' },
+        { label: 'Full name', value: 'Rowena T. Bautista', span: 'span 1', border: '#e4e4e7', bg: '#fafafa', color: '#71717a', help: 'Pulled from the BI personnel record and read-only.', helpColor: '#71717a' },
+        { label: 'Position / rank *', value: 'Immigration Officer I', span: 'span 1', border: '#e4e4e7', bg: '#fff', color: '#09090b' },
+        { label: 'Office / division *', value: 'Intelligence Division', span: 'span 1', border: '#e4e4e7', bg: '#fff', color: '#09090b' },
+        { label: 'Date of appointment *', value: '02 Feb 2026', span: 'span 1', border: '#e4e4e7', bg: '#fff', color: '#09090b' },
+        { label: 'Employment status *', value: 'Select status', span: 'span 1', border: '#fca5a5', bg: '#fff', color: '#a1a1aa', help: 'Required before the application can be submitted.', helpColor: '#b91c1c' }
+      ],
+      radios: [
+        { label: 'Standard · ₱800 / month', note: 'Default rate for rank-and-file', on: true, border: '#2563eb', bg: '#eff6ff', dotBorder: '#2563eb', dot: '#2563eb' },
+        { label: 'Supervisory · ₱1,200 / month', note: 'Division chiefs and above', border: '#e4e4e7', bg: '#fff', dotBorder: '#d4d4d8', dot: 'transparent' },
+        { label: 'Voluntary top-up', note: 'Member specifies the amount', border: '#e4e4e7', bg: '#fff', dotBorder: '#d4d4d8', dot: 'transparent' }
+      ],
+      files: [
+        { name: 'appointment-paper.pdf', size: '1.2 MB' },
+        { name: 'valid-id-front.pdf', size: '640 KB' }
+      ],
+
+      contribStats: [
+        { label: 'Posted this period', value: '₱2.06M', note: '3,208 of 3,412 members' },
+        { label: 'Unposted / on hold', value: '₱74.4K', note: '93 members, payroll mismatch' },
+        { label: 'Arrears', value: '₱312K', note: '6 accounts over 90 days' },
+        { label: 'Adjustments YTD', value: '41', note: 'All with attached remarks' }
+      ],
+      batches: [
+        { id: 'RB-2026-0815', period: '01–15 Aug 2026', source: 'Payroll deduction', members: '3,208', amount: '₱2,058,400', status: 'Draft', bg: '#f4f4f5', fg: '#52525b', by: '—' },
+        { id: 'RB-2026-0731', period: '16–31 Jul 2026', source: 'Payroll deduction', members: '3,196', amount: '₱2,046,800', status: 'Posted', bg: '#dcfce7', fg: '#166534', by: 'J. Santos' },
+        { id: 'RB-2026-0715', period: '01–15 Jul 2026', source: 'Payroll deduction', members: '3,191', amount: '₱2,041,200', status: 'Posted', bg: '#dcfce7', fg: '#166534', by: 'J. Santos' },
+        { id: 'OTC-2026-0712', period: 'Jul 2026', source: 'Over-the-counter', members: '46', amount: '₱58,400', status: 'Posted', bg: '#dcfce7', fg: '#166534', by: 'L. Bautista' },
+        { id: 'ADJ-2026-0041', period: 'Jun 2026', source: 'Adjustment', members: '12', amount: '₱9,600', status: 'For review', bg: '#fef9c3', fg: '#854d0e', by: 'M. Ramirez' },
+        { id: 'RB-2026-0630', period: '16–30 Jun 2026', source: 'Payroll deduction', members: '3,184', amount: '₱2,038,400', status: 'Posted', bg: '#dcfce7', fg: '#166534', by: 'J. Santos' }
+      ],
+
+      approvals: [
+        { initials: 'MD', name: 'Dela Cruz, Marvin S.', kind: 'Salary loan', ref: 'LN-2026-00318', amount: '₱60,000', age: '9 days in queue', ageColor: '#b91c1c', rowBg: '#eff6ff' },
+        { initials: 'RB', name: 'Bautista, Rowena T.', kind: 'Membership application', ref: 'APP-2026-00412', amount: '—', age: '2 days in queue', ageColor: '#71717a', rowBg: 'transparent' },
+        { initials: 'FT', name: 'Tolentino, Ferdinand A.', kind: 'Hospitalization claim', ref: 'CLM-2026-00157', amount: '₱18,000', age: '4 days in queue', ageColor: '#71717a', rowBg: 'transparent' },
+        { initials: 'ER', name: 'Reyes, Emmanuel C.', kind: 'Record correction', ref: 'RC-2026-00088', amount: '—', age: '1 day in queue', ageColor: '#71717a', rowBg: 'transparent' },
+        { initials: 'LG', name: 'Gonzales, Liza M.', kind: 'Salary loan', ref: 'LN-2026-00319', amount: '₱45,000', age: '1 day in queue', ageColor: '#71717a', rowBg: 'transparent' },
+        { initials: 'JS', name: 'Santos, Jomar P.', kind: 'Mortuary benefit', ref: 'CLM-2026-00158', amount: '₱30,000', age: 'today', ageColor: '#71717a', rowBg: 'transparent' }
+      ],
+      loanFacts: [
+        { k: 'Amount applied', v: '₱60,000.00' }, { k: 'Term', v: '24 months' },
+        { k: 'Monthly amortization', v: '₱2,750.00' }, { k: 'Interest', v: '6% per annum' },
+        { k: 'Net take-home after', v: '₱21,340.00' }, { k: 'Existing loan balance', v: '₱0.00' }
+      ],
+      checks: [
+        { label: 'Membership tenure', value: '11 years', mark: '✓', bg: '#dcfce7', fg: '#166534' },
+        { label: 'Contributions current', value: 'Paid to 15 Aug 2026', mark: '✓', bg: '#dcfce7', fg: '#166534' },
+        { label: 'No outstanding loan', value: 'Cleared 12 May 2026', mark: '✓', bg: '#dcfce7', fg: '#166534' },
+        { label: 'Net take-home pay rule', value: 'Above ₱5,000 floor', mark: '!', bg: '#fef9c3', fg: '#854d0e' }
+      ],
+
+      reports: [
+        { name: 'Collection summary', desc: 'Posted contributions by period, office, and source, with variance against payroll.', cadence: 'Monthly', last: '15 Aug 2026' },
+        { name: 'Membership register', desc: 'Full roster with status, tenure, and contribution standing as of a chosen date.', cadence: 'On demand', last: '14 Aug 2026' },
+        { name: 'Loan portfolio', desc: 'Outstanding balances, amortization schedules, and accounts in arrears.', cadence: 'Monthly', last: '01 Aug 2026' },
+        { name: 'Benefit claims released', desc: 'Mortuary, hospitalization, and calamity assistance with releasing officer.', cadence: 'Quarterly', last: '30 Jun 2026' },
+        { name: 'Delinquency report', desc: 'Members with unposted contributions beyond two consecutive periods.', cadence: 'Monthly', last: '15 Aug 2026' },
+        { name: 'Audit trail extract', desc: 'User actions on member records for a chosen date range and module.', cadence: 'On demand', last: '12 Aug 2026' }
+      ],
+      growth: ['Q1 24|38%', 'Q2 24|46%', 'Q3 24|41%', 'Q4 24|52%', 'Q1 25|58%', 'Q2 25|54%', 'Q3 25|66%', 'Q4 25|71%', 'Q1 26|78%', 'Q2 26|84%', 'Q3 26|92%', 'Q4 26|34%'].map((x, i) => {
+        const [label, h] = x.split('|');
+        return { label, h, tone: i === 11 ? '#c7cdd4' : '#2563eb' };
+      }),
+
+      roles: [
+        { name: 'Member', scope: 'Own record only', count: '3,412', perms: 'View own record, file applications and claims, download statements' },
+        { name: 'Membership Officer', scope: 'All member records', count: 9, perms: 'Create and verify records, edit personal details, print IDs' },
+        { name: 'Treasurer / Finance Officer', scope: 'Financial modules', count: 4, perms: 'Post remittances, review loans, release benefits, run financial reports' },
+        { name: 'System Administrator', scope: 'System-wide', count: 2, perms: 'Manage users and roles, configure reference data, read audit log' }
+      ],
+      toggles: [
+        { label: 'Require two-person approval above ₱50,000', note: 'Loans and claims need a second approver before release.', track: '#2563eb', justify: 'flex-end' },
+        { label: 'Lock posted remittance batches', note: 'Posted batches can only be changed through an adjustment entry.', track: '#2563eb', justify: 'flex-end' },
+        { label: 'Email members on status change', note: 'Sends a notice when an application or claim changes state.', track: '#2563eb', justify: 'flex-end' },
+        { label: 'Allow member-initiated record corrections', note: 'Members may file corrections for officer review.', track: '#d4d4d8', justify: 'flex-start' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
