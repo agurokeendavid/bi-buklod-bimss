@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "superdesign@claude-plugins-official": true
+    "superdesign@claude-plugins-official": true,
+    "impeccable@impeccable": true
   }
 }
