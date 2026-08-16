@@ -80,6 +80,37 @@ AI coding agents and developers should read these files before implementing feat
 7. `docs/DEVELOPMENT_ROADMAP.md`
 8. `docs/PHASE1_BACKLOG.md` — current task status; see what's done and what's next
 
+## Running locally
+
+Full first-time setup (env files, EF Core tooling, database) is in
+`docs/REPOSITORY_SETUP.md` — do that once per clone. Once set up, run both
+sides in separate terminals:
+
+```powershell
+# Terminal 1 — backend (from the repo root)
+dotnet run --project src/Bimss.Api --launch-profile https
+
+# Terminal 2 — frontend
+cd frontend
+npm run dev
+```
+
+- Backend: `https://localhost:7247` (the `https` launch profile — see
+  `src/Bimss.Api/Properties/launchSettings.json`; the frontend's refresh-token
+  cookie requires HTTPS, so use this profile, not `http`).
+- Frontend: `http://localhost:3000`.
+- Requires SQL Server reachable locally (Developer/Express edition, LocalDB,
+  or a container) with migrations applied — see `docs/REPOSITORY_SETUP.md`'s
+  "EF Core tooling" section.
+- Sign in with a seeded synthetic dev account (`Bimss.Infrastructure/Identity/Seeding/DevelopmentIdentitySeeder.cs`),
+  e.g. `admin.dev@bimss.local` / `Dev-Only-Passw0rd!23` (Administrator role).
+  Other roles: `member.dev`, `membership.officer.dev`, `finance.officer.dev`,
+  `election.committee.dev`, `auditor.dev` (all `@bimss.local`, same password).
+  These only exist when `ASPNETCORE_ENVIRONMENT=Development`.
+- If sign-in fails immediately with a network/fetch error, the backend
+  usually isn't running yet (or SQL Server's service is stopped) — check
+  that before assuming a frontend bug.
+
 ## Important data rule
 
 The original membership spreadsheet is a migration source containing personal information. Do **not** commit the source workbook, exports, screenshots, real names, employee numbers, contact information, beneficiary information, or loan data to Git.
