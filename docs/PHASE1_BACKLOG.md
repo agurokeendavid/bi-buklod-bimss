@@ -1462,6 +1462,7 @@ component set, which would have meant re-migrating every existing screen.
 
 ### Design system integration (2026-08-16, no BIMSS ID — cross-cutting, not a new feature)
 
+Merged via [PR #40](https://github.com/agurokeendavid/bi-buklod-bimss/pull/40).
 The user brought a separate Claude-designed UI handoff (nine screens, high
 fidelity) for BIMSS. Moved its docs into `docs/design/` (`BIMSS-UI-SPEC.md`,
 `README.md`, the `BIMSS.dc.html` prototype) and integrated it into
