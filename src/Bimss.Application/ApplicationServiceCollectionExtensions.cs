@@ -19,6 +19,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<MemberStatusTransitionService>();
         services.AddScoped<MemberProfileUpdateService>();
         services.AddScoped<MemberDocumentUploadService>();
+        services.AddScoped<ImportBatchIngestionService>();
 
         return services;
     }

@@ -49,11 +49,11 @@ versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
 Phase 1D (Existing Member Import) is underway: BIMSS-033 (import staging
-schema — `ImportBatch`/`MemberImportStaging`/`ImportValidationError`) is
-Done as of 2026-08-17; BIMSS-034 (Excel ingestion service) is next. Its
-dependency on the retired Razor/MVC plan is already rescoped (see the
-Phase 1D section below) — BIMSS-038 (Import batch admin UI) now depends
-on BIMSS-047 like every other Phase 1C UI task did.
+schema) and BIMSS-034 (Excel ingestion service) are Done as of 2026-08-17;
+BIMSS-035 (staging validation rules) is next. Its dependency on the retired
+Razor/MVC plan is already rescoped (see the Phase 1D section below) —
+BIMSS-038 (Import batch admin UI) now depends on BIMSS-047 like every
+other Phase 1C UI task did.
 
 ## Phase 1A — Platform Foundation
 
@@ -1527,7 +1527,7 @@ out when the task is actually started, same as every other task.
 | ID | Title | Status | Depends on |
 |---|---|---|---|
 | BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | Done — [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42) | BIMSS-004 |
-| BIMSS-034 | Excel ingestion service | Not started | BIMSS-033 |
+| BIMSS-034 | Excel ingestion service | Done — [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43) | BIMSS-033 |
 | BIMSS-035 | Staging validation rules | Not started | BIMSS-034 |
 | BIMSS-036 | Duplicate detection | Not started | BIMSS-035 |
 | BIMSS-037 | Promote staging → domain entities | Not started | BIMSS-022, BIMSS-036 |
@@ -1592,6 +1592,61 @@ Merged via [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42).
   in Release, `dotnet format --verify-no-changes`. Migration diff reviewed
   for sanity (three tables, expected FKs/indexes, nothing else touched).
 - Dependencies: BIMSS-004.
+
+### BIMSS-034 — Excel ingestion service (Done)
+
+Merged via [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's first migration step only: "Create
+  Import Batch -> Load spreadsheet rows to staging." No row validation,
+  member matching, or promotion — those stay BIMSS-035/036/037.
+- `IExcelWorkbookReader` (`Bimss.Application/Membership/`) — a narrow port
+  ("read this file as rows of named columns") so the ingestion service
+  doesn't depend on a concrete Excel library, same reasoning as
+  `IMemberDocumentStorage`. `ClosedXmlWorkbookReader`
+  (`Bimss.Infrastructure/Membership/`) implements it with ClosedXML (MIT
+  license, .xlsx-only — sufficient since the source is a Google Forms
+  export, no legacy .xls/CSV support needed).
+  `IImportBatchRepository`/`ImportBatchRepository` follow the same
+  narrow-port pattern as `IMemberRepository`, with just the one method this
+  task needs (`AddBatchWithRowsAsync`) — expected to grow incrementally in
+  BIMSS-035/036/037 the same way `IMemberRepository` did across BIMSS-022/
+  030/032.
+- `ImportBatchIngestionService.IngestAsync` (`Bimss.Application/Membership/`)
+  reads the workbook, maps each row's named columns to a
+  `MemberImportStagingFields` (matching docs/DATA_DICTIONARY.md's Excel
+  field mapping table's "Source field" column verbatim as expected header
+  text), creates one `MemberImportStaging` per row plus the owning
+  `ImportBatch`, calls `ImportBatch.MarkStaged`, persists both in one
+  repository call, and records an `ImportBatch.Ingest` audit entry. Any
+  exception from the reader (unparseable file) is translated into a
+  `DomainValidationException` with a `File` field error rather than
+  surfacing the underlying library's exception type.
+- Beneficiaries 1-4 (distinct, unambiguous name/relationship column pairs)
+  are losslessly captured as structured JSON in `BeneficiariesRaw`; the
+  free-text "Additional Beneficiaries (Beneficiary 5 and above)" column is
+  carried through verbatim rather than parsed, per the data dictionary's
+  explicit "do not auto-parse until delimiter/format is agreed" — splitting
+  it into individual beneficiary rows is still BIMSS-036/037's job once
+  Buklod confirms that format. `ChildrenRaw` similarly stays an unparsed
+  verbatim capture of its one source cell.
+- No controller/API endpoint yet, matching the BIMSS-021 -> BIMSS-032
+  precedent (storage/service abstraction lands first; the admin UI's
+  controller wires it up later, here BIMSS-038). A future controller should
+  add a `[RequestSizeLimit]` the same way `MemberDocumentsController` does
+  (10 MB, undocumented elsewhere in the repo) — no import file size limit is
+  confirmed with Buklod yet either.
+- Tests: `ImportBatchIngestionServiceTests` (unit — hand-rolled fakes for
+  `IExcelWorkbookReader`/`IImportBatchRepository`/`IAuditLogger`, same style
+  as `MemberCreationServiceTests`; covers column mapping, the beneficiaries
+  JSON envelope, an empty workbook, and the reader-exception ->
+  `DomainValidationException` translation); `ClosedXmlWorkbookReaderTests`
+  (integration — real ClosedXML round-trip: writes a workbook in memory,
+  reads it back, same "exercises a real library/real I/O" placement as
+  `LocalFileMemberDocumentStorageTests`).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (376/376 passing) in
+  Release, `dotnet format --verify-no-changes`.
+- Dependencies: BIMSS-033.
 
 ## Phase 1E — Member Self-Service (Not started)
 

@@ -11,6 +11,8 @@ public static class MembershipServiceCollectionExtensions
         services.AddScoped<IMemberQueryService, MemberQueryService>();
         services.AddScoped<IReferenceDataQueryService, ReferenceDataQueryService>();
         services.AddScoped<IMemberDocumentQueryService, MemberDocumentQueryService>();
+        services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
+        services.AddScoped<IExcelWorkbookReader, ClosedXmlWorkbookReader>();
 
         return services;
     }
