@@ -160,3 +160,36 @@ explicitly ruled out above. Don't show live election results while
 voting is open. Don't add a `MemberId`-to-candidate-selection view
 anywhere (even for admins) — ballot secrecy means no screen, anywhere,
 ever shows how a specific member voted.
+
+## Logo/background asset swap (attach the files directly in Claude Design first)
+
+Once real brand assets are attached in the Claude Design chat, paste
+something like this — adjust the bracketed background placement to
+match what was actually attached:
+
+> I'm attaching our official logo and a background image — use them to
+> replace placeholder branding only, don't redesign anything else.
+>
+> **Logo**: replace the placeholder "BI" text-in-a-ringed-circle
+> everywhere it appears — the login panel (46px) and the sidebar brand
+> block (34px). Keep the surrounding layout exactly as-is (position,
+> spacing, the "Bureau of Immigration · Buklod ng Kawani" text beside/
+> below it) — only swap the placeholder graphic itself for the attached
+> logo, sized appropriately for each spot.
+>
+> **Background**: apply the attached background image to [the login
+> screen's left navy panel, replacing/layering under the existing
+> decorative circles — OR the general app content background behind
+> cards, replacing `--app-bg` — pick whichever this actually is].
+> Keep it readable: if the image is busy, preserve enough contrast for
+> the white login text / dark card text respectively, and don't let it
+> interfere with any existing component.
+>
+> Don't change anything else — all screens, tokens, layout, and copy
+> stay exactly as they are. This is purely a branding-asset swap.
+
+This is the first real image asset the project will have —
+`frontend/public/` in the actual Next.js app is currently empty. Once
+this is done in Claude Design and exported, the logo file should also
+land in `frontend/public/` for the real app to use eventually, not just
+the mockup.
