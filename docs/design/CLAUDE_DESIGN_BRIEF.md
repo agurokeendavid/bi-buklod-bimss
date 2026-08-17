@@ -164,8 +164,7 @@ ever shows how a specific member voted.
 ## Logo/background asset swap (attach the files directly in Claude Design first)
 
 Once real brand assets are attached in the Claude Design chat, paste
-something like this — adjust the bracketed background placement to
-match what was actually attached:
+this:
 
 > I'm attaching our official logo and a background image — use them to
 > replace placeholder branding only, don't redesign anything else.
@@ -177,16 +176,15 @@ match what was actually attached:
 > below it) — only swap the placeholder graphic itself for the attached
 > logo, sized appropriately for each spot.
 >
-> **Background**: apply the attached background image to [the login
-> screen's left navy panel, replacing/layering under the existing
-> decorative circles — OR the general app content background behind
-> cards, replacing `--app-bg` — pick whichever this actually is].
-> Keep it readable: if the image is busy, preserve enough contrast for
-> the white login text / dark card text respectively, and don't let it
-> interfere with any existing component.
+> **Background**: apply the attached background image to the login
+> screen's navy left panel, replacing/layering under the existing
+> decorative circles. Keep it readable: if the image is busy, preserve
+> enough contrast for the white login text and stats, and don't let it
+> interfere with the seal, headline, or stat row.
 >
 > Don't change anything else — all screens, tokens, layout, and copy
-> stay exactly as they are. This is purely a branding-asset swap.
+> stay elsewhere exactly as they are. This is purely a branding-asset
+> swap, scoped to the login screen's left panel and the two logo spots.
 
 This is the first real image asset the project will have —
 `frontend/public/` in the actual Next.js app is currently empty. Once
