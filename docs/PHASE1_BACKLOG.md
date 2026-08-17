@@ -49,11 +49,12 @@ versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
 Phase 1D (Existing Member Import) is underway: BIMSS-033 (import staging
-schema) and BIMSS-034 (Excel ingestion service) are Done as of 2026-08-17;
-BIMSS-035 (staging validation rules) is next. Its dependency on the retired
-Razor/MVC plan is already rescoped (see the Phase 1D section below) —
-BIMSS-038 (Import batch admin UI) now depends on BIMSS-047 like every
-other Phase 1C UI task did.
+schema), BIMSS-034 (Excel ingestion service), and BIMSS-035 (staging
+validation rules) are Done as of 2026-08-17; BIMSS-036 (duplicate
+detection) is next. Its dependency on the retired Razor/MVC plan is
+already rescoped (see the Phase 1D section below) — BIMSS-038 (Import
+batch admin UI) now depends on BIMSS-047 like every other Phase 1C UI
+task did.
 
 ## Phase 1A — Platform Foundation
 
@@ -1528,7 +1529,7 @@ out when the task is actually started, same as every other task.
 |---|---|---|---|
 | BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | Done — [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42) | BIMSS-004 |
 | BIMSS-034 | Excel ingestion service | Done — [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43) | BIMSS-033 |
-| BIMSS-035 | Staging validation rules | Not started | BIMSS-034 |
+| BIMSS-035 | Staging validation rules | Done — [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44) | BIMSS-034 |
 | BIMSS-036 | Duplicate detection | Not started | BIMSS-035 |
 | BIMSS-037 | Promote staging → domain entities | Not started | BIMSS-022, BIMSS-036 |
 | BIMSS-038 | Import batch admin UI | Not started | BIMSS-033–037, BIMSS-047 |
@@ -1647,6 +1648,49 @@ Merged via [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (376/376 passing) in
   Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-033.
+
+### BIMSS-035 — Staging validation rules (Done)
+
+Merged via [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's second migration step: "Validate
+  required/format fields." Checks only already-confirmed business rules —
+  the same fields `Member`/`MemberEmployment`'s own constructors require
+  (`LastName`, `FirstName`, `PlaceOfBirth`, `DateOfBirthRaw`, `CivilStatus`,
+  `EmployeeNumber`, `PositionDesignation`, `OfficeUnit`) — plus whether the
+  raw `CivilStatus`/`OfficeUnit`/`Suffix` text resolves to a known
+  reference-data value, since `IReferenceDataQueryService` (BIMSS-029)
+  already exists for exactly that lookup. Does **not** check for
+  duplicates/existing-member matches — that stays BIMSS-036.
+- `ImportBatchValidationService.ValidateAsync` (`Bimss.Application/
+  Membership/`) — loads the batch and its staging rows, loads
+  `CivilStatuses`/`OfficeUnits`/`Suffixes` once and matches by name
+  (case-insensitive, trimmed), runs each row through required/format/
+  reference-match checks, records one `ImportValidationError` per finding,
+  calls `MemberImportStaging.RecordValidation` per row and
+  `ImportBatch.MarkValidated` once for the batch, and logs an
+  `ImportBatch.Validate` audit entry. Same load-mutate-`SaveChangesAsync`
+  shape as `MemberStatusTransitionService`.
+- An unresolved `CivilStatus`/`OfficeUnit` is an `Error` (blocks promotion,
+  since `Member`/`MemberEmployment` construction requires a real reference
+  id); an unresolved `Suffix` is only a `Warning` (the field is optional and
+  nullable on `Member`). Date parsing uses `DateOnly.TryParse` against both
+  invariant and current culture rather than a single hard-coded format,
+  since no exact source date format is confirmed.
+- `IImportBatchRepository` grew (as expected, per BIMSS-034's note) with
+  `GetTrackedByIdAsync`, `GetTrackedRowsByBatchIdAsync`,
+  `AddValidationErrorsAsync`; `ImportBatchRepository` implements them
+  directly against `BimssDbContext`.
+- Tests: `ImportBatchValidationServiceTests` (unit — hand-rolled fakes,
+  covers the all-valid path, missing-required-fields, bad date format,
+  unresolved required reference (Error), unresolved optional `Suffix`
+  (Warning-only, row still valid), batch status transition, audit logging,
+  and the not-found path); `ImportBatchRepositoryTests` (integration —
+  InMemory provider, row ordering by `RowNumber`, validation-error
+  persistence).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (388/388 passing) in
+  Release, `dotnet format --verify-no-changes`.
+- Dependencies: BIMSS-034.
 
 ## Phase 1E — Member Self-Service (Not started)
 

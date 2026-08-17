@@ -13,4 +13,13 @@ public interface IImportBatchRepository
     // staged rows as one unit of work.
     Task AddBatchWithRowsAsync(
         ImportBatch batch, IReadOnlyCollection<MemberImportStaging> rows, CancellationToken cancellationToken);
+
+    // BIMSS-035: staging validation.
+    Task<ImportBatch?> GetTrackedByIdAsync(Guid importBatchId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<MemberImportStaging>> GetTrackedRowsByBatchIdAsync(Guid importBatchId, CancellationToken cancellationToken);
+
+    Task AddValidationErrorsAsync(IReadOnlyCollection<ImportValidationError> errors, CancellationToken cancellationToken);
+
+    Task SaveChangesAsync(CancellationToken cancellationToken);
 }

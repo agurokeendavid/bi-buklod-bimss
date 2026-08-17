@@ -170,6 +170,18 @@ public class ImportBatchIngestionServiceTests
             AddedRows = [.. rows];
             return Task.CompletedTask;
         }
+
+        public Task<ImportBatch?> GetTrackedByIdAsync(Guid importBatchId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
+
+        public Task<IReadOnlyList<MemberImportStaging>> GetTrackedRowsByBatchIdAsync(Guid importBatchId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
+
+        public Task AddValidationErrorsAsync(IReadOnlyCollection<ImportValidationError> errors, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger
