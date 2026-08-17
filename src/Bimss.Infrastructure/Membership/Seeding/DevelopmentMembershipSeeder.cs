@@ -1,7 +1,9 @@
 ﻿using Bimss.Application.Membership;
 using Bimss.Domain.Membership;
 using Bimss.Domain.Membership.ReferenceData;
+using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -163,6 +165,15 @@ public static class DevelopmentMembershipSeeder
 
             var result = await creationService.CreateAsync(command, actorUserId: null, cancellationToken);
 
+            if (member.EmployeeNumber == "DEV-00002")
+            {
+                // Links the "member.dev" login (seeded by DevelopmentIdentitySeeder,
+                // which runs before this seeder) to this Active member, so
+                // BIMSS-040's My Profile page has something real to show
+                // out of the box in local Development.
+                await LinkDevMemberUserAsync(scopedServices, result.MemberId);
+            }
+
             if (member.TargetStatus is MemberStatus.Active or MemberStatus.Inactive)
             {
                 // Proof of employment is mandatory before verification
@@ -189,6 +200,17 @@ public static class DevelopmentMembershipSeeder
                 await transitionService.DeactivateAsync(
                     result.MemberId, statusReasonId, actorUserId: null, "Synthetic Development seed data", cancellationToken);
             }
+        }
+    }
+
+    private static async Task LinkDevMemberUserAsync(IServiceProvider scopedServices, Guid memberId)
+    {
+        var userManager = scopedServices.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByNameAsync("member.dev");
+        if (user is not null && user.MemberId is null)
+        {
+            user.MemberId = memberId;
+            await userManager.UpdateAsync(user);
         }
     }
 

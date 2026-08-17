@@ -62,4 +62,38 @@ public sealed class MemberQueryService(BimssDbContext dbContext) : IMemberQueryS
                 entry.Id, entry.FromStatus, entry.ToStatus, entry.ReasonId, entry.ActorUserId, entry.OccurredAtUtc, entry.Remarks))
             .ToListAsync(cancellationToken);
     }
+
+    // Requires employment to exist (inner join, not left) — every member
+    // created through MemberCreationService (the only creation path today)
+    // gets both rows atomically, per CreateMemberCommand's own mandatory
+    // EmployeeNumber. Suffix stays a left join since it's genuinely
+    // optional on Member itself.
+    public Task<MyProfileDetail?> GetMyProfileByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return (
+            from user in dbContext.Users.AsNoTracking()
+            where user.Id == userId && user.MemberId != null
+            join member in dbContext.Members.AsNoTracking() on user.MemberId equals member.Id
+            join employment in dbContext.MemberEmployments.AsNoTracking() on member.Id equals employment.MemberId
+            join civilStatus in dbContext.CivilStatuses.AsNoTracking() on member.CivilStatusId equals civilStatus.Id
+            join officeUnit in dbContext.OfficeUnits.AsNoTracking() on employment.OfficeUnitId equals officeUnit.Id
+            join suffix in dbContext.Suffixes.AsNoTracking() on member.SuffixId equals suffix.Id into suffixGroup
+            from suffix in suffixGroup.DefaultIfEmpty()
+            select new MyProfileDetail(
+                member.Id,
+                member.LastName,
+                member.FirstName,
+                member.MiddleName,
+                suffix != null ? suffix.Name : null,
+                member.DateOfBirth,
+                member.PlaceOfBirth,
+                civilStatus.Name,
+                member.JoiningReason,
+                member.Status,
+                employment.EmployeeNumber,
+                employment.PositionDesignation,
+                officeUnit.Name,
+                employment.PermanentAppointmentDate))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
 }

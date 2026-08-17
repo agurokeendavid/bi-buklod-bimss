@@ -1,6 +1,9 @@
 ﻿using Bimss.Domain.Membership;
+using Bimss.Domain.Membership.ReferenceData;
 using Bimss.IntegrationTests.Support;
+using Bimss.Infrastructure.Identity;
 using Bimss.Infrastructure.Membership;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bimss.IntegrationTests.Membership;
 
@@ -157,5 +160,100 @@ public class MemberQueryServiceTests
         Assert.Equal(MemberStatus.Active, history[1].ToStatus);
         Assert.Equal(actorUserId, history[1].ActorUserId);
         Assert.Equal("Documents checked", history[1].Remarks);
+    }
+
+    [Fact]
+    public async Task GetMyProfileByUserIdAsync_ReturnsProfile_WithResolvedReferenceNames()
+    {
+        var userId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var suffixId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var civilStatus = new CivilStatus(Guid.NewGuid(), "SGL", "Single");
+            var officeUnit = new OfficeUnit(Guid.NewGuid(), "POD", "Port Operations Division");
+            var suffix = new Suffix(suffixId, "JR", "Jr.");
+            writeContext.CivilStatuses.Add(civilStatus);
+            writeContext.OfficeUnits.Add(officeUnit);
+            writeContext.Suffixes.Add(suffix);
+
+            writeContext.Members.Add(new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId, new DateOnly(1990, 1, 1), "Manila",
+                civilStatus.Id, "Referred", OccurredAt));
+            writeContext.MemberEmployments.Add(new MemberEmployment(
+                Guid.NewGuid(), memberId, "BI-00123", "Immigration Officer I", officeUnit.Id, new DateOnly(2020, 6, 1)));
+
+            writeContext.Users.Add(new ApplicationUser { Id = Guid.NewGuid(), UserName = "member.dev", MemberId = memberId });
+
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+
+        var profile = await queryService.GetMyProfileByUserIdAsync(userId: default, CancellationToken.None);
+        Assert.Null(profile);
+
+        var linkedUserId = await readContext.Users.Where(u => u.UserName == "member.dev").Select(u => u.Id).SingleAsync();
+        var linkedProfile = await queryService.GetMyProfileByUserIdAsync(linkedUserId, CancellationToken.None);
+
+        Assert.NotNull(linkedProfile);
+        Assert.Equal(memberId, linkedProfile!.Id);
+        Assert.Equal("Dela Cruz", linkedProfile.LastName);
+        Assert.Equal("Jr.", linkedProfile.SuffixName);
+        Assert.Equal("Single", linkedProfile.CivilStatusName);
+        Assert.Equal("Port Operations Division", linkedProfile.OfficeUnitName);
+        Assert.Equal("BI-00123", linkedProfile.EmployeeNumber);
+    }
+
+    [Fact]
+    public async Task GetMyProfileByUserIdAsync_ReturnsNull_WhenUserHasNoLinkedMember()
+    {
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            writeContext.Users.Add(new ApplicationUser { Id = Guid.NewGuid(), UserName = "officer.dev", MemberId = null });
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+        var userId = await readContext.Users.Where(u => u.UserName == "officer.dev").Select(u => u.Id).SingleAsync();
+
+        var profile = await queryService.GetMyProfileByUserIdAsync(userId, CancellationToken.None);
+
+        Assert.Null(profile);
+    }
+
+    [Fact]
+    public async Task GetMyProfileByUserIdAsync_ReturnsProfileWithNullSuffixName_WhenMemberHasNoSuffix()
+    {
+        var memberId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var civilStatus = new CivilStatus(Guid.NewGuid(), "SGL", "Single");
+            var officeUnit = new OfficeUnit(Guid.NewGuid(), "POD", "Port Operations Division");
+            writeContext.CivilStatuses.Add(civilStatus);
+            writeContext.OfficeUnits.Add(officeUnit);
+
+            writeContext.Members.Add(new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 1), "Manila",
+                civilStatus.Id, joiningReason: null, OccurredAt));
+            writeContext.MemberEmployments.Add(new MemberEmployment(
+                Guid.NewGuid(), memberId, "BI-00123", "Immigration Officer I", officeUnit.Id, null));
+            writeContext.Users.Add(new ApplicationUser { Id = Guid.NewGuid(), UserName = "member2.dev", MemberId = memberId });
+
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+        var userId = await readContext.Users.Where(u => u.UserName == "member2.dev").Select(u => u.Id).SingleAsync();
+
+        var profile = await queryService.GetMyProfileByUserIdAsync(userId, CancellationToken.None);
+
+        Assert.NotNull(profile);
+        Assert.Null(profile!.SuffixName);
     }
 }

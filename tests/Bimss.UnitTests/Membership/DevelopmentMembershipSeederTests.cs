@@ -2,6 +2,8 @@
 using Bimss.Application.Membership;
 using Bimss.Domain.Membership;
 using Bimss.Infrastructure.Auditing;
+using Bimss.Infrastructure.Identity;
+using Bimss.Infrastructure.Identity.Seeding;
 using Bimss.Infrastructure.Membership;
 using Bimss.Infrastructure.Membership.Seeding;
 using Bimss.Infrastructure.Persistence;
@@ -97,6 +99,23 @@ public class DevelopmentMembershipSeederTests : IDisposable
         Assert.Equal(3, await dbContext.MemberEmployments.CountAsync());
     }
 
+    [Fact]
+    public async Task SeedAsync_LinksMemberDevUser_ToTheActiveSeededMember()
+    {
+        await using var provider = BuildProvider();
+        await DevelopmentIdentitySeeder.SeedAsync(provider);
+
+        await DevelopmentMembershipSeeder.SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BimssDbContext>();
+
+        var activeEmployment = await dbContext.MemberEmployments.SingleAsync(e => e.EmployeeNumber == "DEV-00002");
+        var user = await dbContext.Users.SingleAsync(u => u.UserName == "member.dev");
+
+        Assert.Equal(activeEmployment.MemberId, user.MemberId);
+    }
+
     private ServiceProvider BuildProvider()
     {
         var databaseName = Guid.NewGuid().ToString();
@@ -104,6 +123,7 @@ public class DevelopmentMembershipSeederTests : IDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddDbContext<BimssDbContext>(options => options.UseInMemoryDatabase(databaseName));
+        services.AddBimssIdentity();
         services.AddBimssMembership();
         services.AddBimssAuditing();
         services.AddBimssApplication();
