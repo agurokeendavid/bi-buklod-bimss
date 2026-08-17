@@ -189,6 +189,12 @@ public class ImportBatchIngestionServiceTests
         public Task<Guid?> FindMemberIdByNameAndDateOfBirthAsync(
             string lastName, string firstName, DateOnly dateOfBirth, CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
+
+        public Task<MemberImportStaging?> GetTrackedRowByIdAsync(Guid stagingRowId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
+
+        public Task PromoteRowAsync(MemberImportStaging row, Member member, MemberEmployment employment, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchIngestionService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger

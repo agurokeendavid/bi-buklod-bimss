@@ -60,4 +60,17 @@ public sealed class ImportBatchRepository(BimssDbContext dbContext) : IImportBat
             .Select(member => (Guid?)member.Id)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public Task<MemberImportStaging?> GetTrackedRowByIdAsync(Guid stagingRowId, CancellationToken cancellationToken)
+    {
+        return dbContext.MemberImportStagingRows.SingleOrDefaultAsync(row => row.Id == stagingRowId, cancellationToken);
+    }
+
+    public async Task PromoteRowAsync(
+        MemberImportStaging row, Member member, MemberEmployment employment, CancellationToken cancellationToken)
+    {
+        dbContext.Members.Add(member);
+        dbContext.MemberEmployments.Add(employment);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

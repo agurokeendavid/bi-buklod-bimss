@@ -172,6 +172,12 @@ public class ImportBatchMatchingServiceTests
             return Task.FromResult(
                 NameAndDateOfBirthMatches.TryGetValue((lastName, firstName, dateOfBirth), out var memberId) ? memberId : (Guid?)null);
         }
+
+        public Task<MemberImportStaging?> GetTrackedRowByIdAsync(Guid stagingRowId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchMatchingService.");
+
+        public Task PromoteRowAsync(MemberImportStaging row, Member member, MemberEmployment employment, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchMatchingService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger
