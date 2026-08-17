@@ -17,17 +17,19 @@ file names actually in use:
 | Phase 1 — Platform foundation | `PHASE1_BACKLOG.md` (Phase 1A) | Done |
 | Phase 2 — Membership and migration | `PHASE1_BACKLOG.md` (Phase 1B–1E) | Done |
 | Phase 3 — Beneficiaries | `PHASE2_BACKLOG.md` | Not started (drafted) |
-| Phase 4 — Contributions | `PHASE3_BACKLOG.md` (not yet written) | Not started |
-| Phase 5 — Loans | `PHASE4_BACKLOG.md` (not yet written) | Not started |
-| Phase 6 — Elections | `PHASE5_BACKLOG.md` (not yet written) | Not started |
-| Phase 7 — Notifications and reporting | `PHASE6_BACKLOG.md` (not yet written) | Not started |
+| Phase 4 — Contributions | `PHASE3_BACKLOG.md` | Not started (drafted) |
+| Phase 5 — Loans | `PHASE4_BACKLOG.md` | Not started (drafted) |
+| Phase 6 — Elections | `PHASE5_BACKLOG.md` | Not started (drafted) |
+| Phase 7 — Notifications and reporting | `PHASE6_BACKLOG.md` | Not started (drafted) |
 | Phase 8 — Hardening / UAT / production | `PHASE7_BACKLOG.md` (not yet written) | Not started |
 
-The section headers below use the **renumbered (actual)** scheme. Each
-`Not started` phase needs its own round of Buklod business-question
-confirmation — see `docs/DATA_DICTIONARY.md`'s "Questions to confirm with
-Buklod before final schema" — before its detailed `PHASEn_BACKLOG.md` gets
-written, the same way Phase 2's did.
+The section headers below use the **renumbered (actual)** scheme.
+Phases 2–6 are now all drafted (`PHASE2_BACKLOG.md` through
+`PHASE6_BACKLOG.md`) — each got its own round of Buklod business-question
+confirmation first, recorded in `docs/DATA_DICTIONARY.md`'s dated
+"Confirmed decisions" sections, before its detailed backlog was written.
+Only Phase 7 (Hardening/UAT/production) has no detailed backlog yet — see
+its section below for why.
 
 ## Module coverage
 
@@ -42,21 +44,20 @@ written, the same way Phase 2's did.
 | 9 | Documents | 1 (metadata + storage + verification gate) | Foundation done (BIMSS-021); no dedicated upload workflow beyond that yet — expect incremental additions inside Loans (supporting docs) and Elections rather than a standalone phase |
 | 10 | Audit | 1 (logging foundation) | Foundation done (BIMSS-007); no admin-facing log viewer UI yet — planned for Phase 6 alongside Reports |
 | 3 | Beneficiaries | 2 | Not started — scoped in `PHASE2_BACKLOG.md` |
-| 4 | Contributions | 3 | Not started |
-| 5 | Loans | 4 | Not started |
-| 6 | Elections | 5 | Not started |
-| 7 | Notifications and Announcements | 6 | Not started |
-| 8 | Reports | 6 | Not started |
+| 4 | Contributions | 3 | Not started — scoped in `PHASE3_BACKLOG.md` |
+| 5 | Loans | 4 | Not started — scoped in `PHASE4_BACKLOG.md` |
+| 6 | Elections | 5 | Not started — scoped in `PHASE5_BACKLOG.md` |
+| 7 | Notifications and Announcements | 6 | Not started — scoped in `PHASE6_BACKLOG.md` |
+| 8 | Reports | 6 | Not started — scoped in `PHASE6_BACKLOG.md` |
 
 Notifications and Reports are grouped into one phase (6) because neither
 is a standalone data domain — DOMAIN_WORKFLOWS.md's workflow #10
 ("Sensitive report/export") reads across whatever data exists by that
 point, and announcements/notifications are plumbing that mostly gets
 triggered by events in the other modules (update-request decided, loan
-status changed, election opened). Both could be pulled earlier and threaded
-through each phase incrementally instead, if Buklod wants member-facing
-notifications sooner than Phase 6 — worth a explicit decision when Phase 3
-starts, not assumed here.
+status changed, election opened). Buklod confirmed keeping them together
+in Phase 6 rather than pulling them earlier (`docs/DATA_DICTIONARY.md`,
+2026-08-18) — see `docs/PHASE6_BACKLOG.md`.
 
 ## Phase 1 — Platform foundation + Membership (Done)
 
@@ -77,116 +78,69 @@ beneficiary questions are confirmed (`docs/DATA_DICTIONARY.md`,
 admin + self-service UI, and backfill of already-imported beneficiary/
 child data that had nowhere to land until this phase's schema exists.
 
-## Phase 3 — Contributions (Not started)
+## Phase 3 — Contributions (Not started, scoped)
 
-Blocked on one open question: *"What contribution amount/rules vary by
-member or year?"* (`docs/DATA_DICTIONARY.md`, question 2). Get that answer
-before writing `PHASE3_BACKLOG.md`, same process as Phase 2.
+See `docs/PHASE3_BACKLOG.md` (BIMSS-057 through BIMSS-065). Buklod's
+Contributions question is confirmed (`docs/DATA_DICTIONARY.md`,
+2026-08-17): fixed flat rate (effective-dated, same for every member),
+one contribution type only, pure ledger with no expected-vs-actual
+tracking. Covered: `ContributionRate`, batch import/staging/posting
+(mirroring BIMSS-033–038's Membership import pattern), the immutable
+`Contribution` ledger with a traceable `ContributionAdjustment`
+correction path, and admin + self-service ledger views.
 
-Proposed scope, from `docs/DATA_DICTIONARY.md`'s "Proposed core database
-tables" (`ContributionBatches`/`Contributions`/`ContributionAdjustments`)
-and `docs/DOMAIN_WORKFLOWS.md` #4:
+## Phase 4 — Loans (Not started, scoped)
 
-- Contribution batch import/posting (mirrors the BIMSS-033–038 import
-  pattern already built for Membership — staging, validation, error
-  reporting, before anything touches the ledger).
-- Immutable contribution transactions — **never** January–December columns
-  per `AGENTS.md`'s explicit rule; corrections go through a traceable
-  adjustment/reversal, never an overwrite of a posted row.
-- Member contribution ledger/history view (admin + self-service).
-- `Permission.Contribution.ViewSelf`/`Manage` already exist in the
-  Permission catalog (reserved since BIMSS-006, unused so far) — reuse
-  them rather than adding new ones unless the confirmed rules demand a
-  finer split (e.g. a separate posting-vs-adjustment permission).
-- Finance reports are Phase 6's concern, not this phase's — this phase
-  is the ledger itself.
+See `docs/PHASE4_BACKLOG.md` (BIMSS-066 through BIMSS-076) — the largest
+remaining module. Buklod's Loans question is confirmed
+(`docs/DATA_DICTIONARY.md`, 2026-08-17): one generic loan product for
+now, flat-rate interest on original principal, required co-maker,
+payroll-deduction repayment, flat penalty per missed payment, fixed max
+amount per product, one active loan per member at a time. Covered:
+`LoanType` product configuration, the full application lifecycle
+(`Draft -> ... -> Approved/Disapproved -> Released -> Active -> Fully
+Paid/Closed`) with separate review/approval/release steps matching the
+`Permission.Loan.Review`/`Approve`/`Release` split already reserved since
+BIMSS-006, payment schedule generation, payroll-deduction payment
+posting (reusing the Contributions batch-ingestion shape), and
+server-side-only balance/penalty computation. Extra concurrency/integrity
+tests required for the payment-posting and status-transition code, per
+`AGENTS.md`'s testing requirements.
 
-## Phase 4 — Loans (Not started)
+## Phase 5 — Elections (Not started, scoped)
 
-Blocked on: *"What official loan products, interest rules, terms,
-penalties, and eligibility rules exist?"* (question 3). This is the
-largest remaining module — get the product/calculation rules nailed down
-before scoping, not during.
+See `docs/PHASE5_BACKLOG.md` (BIMSS-077 through BIMSS-087) — the last
+module with a specific blocking Buklod question, now confirmed
+(`docs/DATA_DICTIONARY.md`, 2026-08-18): positions configured per
+election, multiple seats per position allowed (top-N by votes win),
+abstention allowed, eligibility is Active status only as of the
+voter-list freeze. Covered: election setup (positions/seats/candidates/
+voter-list freeze), voting with database-level one-ballot-per-voter
+protection and participation records kept structurally separate from
+ballot contents (no direct `MemberId -> CandidateId` relationship
+anywhere), closing/finalization as its own auditable action, and
+published results sourced only from finalized persisted results — never
+computed live from ballots on each request. Per `AGENTS.md`: "Election
+integrity code requires extra tests and review" — the backlog flags
+BIMSS-079/082 specifically for a dedicated review pass beyond the
+standard test suite.
 
-Proposed scope, from `docs/DATA_DICTIONARY.md`'s proposed tables
-(`LoanTypes`/`LoanApplications`/`LoanApplicationStatusHistory`/
-`LoanApprovals`/`Loans`/`LoanPaymentSchedules`/`LoanPayments`/
-`LoanAdjustments`) and `docs/DOMAIN_WORKFLOWS.md` #5–6:
+## Phase 6 — Notifications, Reports, and Audit viewer (Not started, scoped)
 
-- Loan type/product configuration (reference-data-like, but with
-  calculation rules attached — interest, terms, penalties).
-- Application lifecycle: `Draft -> Submitted -> For Review -> For
-  Approval -> Approved/Disapproved -> For Release -> Released -> Active ->
-  Fully Paid/Closed` (plus `Cancelled`/`Returned for Correction`), each
-  transition server-validated with actor/timestamp/remarks recorded, per
-  `AGENTS.md`'s Loan rules.
-- Payment schedule generation and payment posting; balances computed
-  **server-side only**, never in browser JavaScript, per `AGENTS.md`.
-- `Permission.Loan.Apply`/`ViewSelf`/`Review`/`Approve`/`Release` already
-  exist in the catalog (reserved since BIMSS-006) — the four-permission
-  split already anticipates a review/approve/release pipeline distinct
-  from Contributions' simpler manage/view split.
-- Never delete a released loan or posted payment as a normal correction
-  method — same adjustment/reversal discipline as Contributions.
-- Extra concurrency/integrity tests required for financial posting, per
-  `AGENTS.md`'s testing requirements — budget for this explicitly.
-
-## Phase 5 — Elections (Not started)
-
-Blocked on: *"What election positions and voting rules apply, including
-abstention and number of selections per position?"* (question 4).
-Self-contained relative to Contributions/Loans (doesn't depend on
-financial data), so — pending Buklod's answer — this phase could run in
-parallel with Phase 3/4 rather than strictly after them.
-
-Proposed scope, from `docs/DATA_DICTIONARY.md`'s proposed tables
-(`Elections`/`ElectionPositions`/`ElectionCandidates`/
-`ElectionEligibleVoters`/`ElectionParticipation`/`ElectionBallots`/
-`ElectionVotes`/`ElectionFinalizedResults`) and `docs/DOMAIN_WORKFLOWS.md`
-#7–9:
-
-- Election setup: positions, candidates, eligibility rules, voter-list
-  freeze.
-- Voting: server-enforced eligibility, one-ballot-per-voter with
-  **database-level** race-condition protection (a unique constraint on
-  `(ElectionId, MemberId)` in `ElectionParticipation`, not just an
-  application check), and participation records kept structurally
-  separate from ballot contents — **no direct `MemberId -> CandidateId`
-  relationship anywhere**, per `AGENTS.md`'s election rules.
-- No live candidate totals exposed while voting is open, unless Buklod
-  explicitly adopts that policy.
-- Closing/finalization as its own auditable action; published results
-  come only from finalized persisted results, never computed live from
-  ballots on each report request.
-- `Permission.Election.Vote`/`Manage`/`Finalize` already exist in the
-  catalog (reserved since BIMSS-006).
-- Per `AGENTS.md`: "Election integrity code requires extra tests and
-  review" — plan for a dedicated review pass on the ballot-secrecy and
-  concurrency code, not just the standard test suite.
-
-## Phase 6 — Notifications, Reports, and Audit viewer (Not started)
-
-Not blocked on a specific Buklod business question the way 3–5 are, but
-worth confirming scope preferences (email integration? which
-reports/exports are actually wanted?) before drafting its backlog — see
-"Module coverage" above for why Notifications and Reports are bundled
-here rather than each getting a phase.
-
-Proposed scope, from `docs/DOMAIN_WORKFLOWS.md` #10 and the original
-roadmap's Phase 7:
-
-- Announcements + in-app notifications; email integration only if/when
-  Buklod approves it (no email-sending infrastructure exists yet — noted
-  as a gap back in BIMSS-005).
-- Dashboards and authorized exports, permission-gated
-  (`Permission.Report.ViewMembership`/`ViewFinance`, reserved since
-  BIMSS-006) and audited on every sensitive export, per
-  `docs/DOMAIN_WORKFLOWS.md` #10.
-- Admin-facing audit log viewer — `Permission.Audit.View` exists and is
-  seeded to the `Auditor` role (BIMSS-013), but nothing renders
-  `AuditEvent` rows yet; this is the natural home for that screen once
-  Contributions/Loans/Elections give audit history something substantial
-  to show.
+See `docs/PHASE6_BACKLOG.md` (BIMSS-088 through BIMSS-097). Not blocked
+by a numbered open question the way 3–5 were, but scope preferences are
+confirmed (`docs/DATA_DICTIONARY.md`, 2026-08-18): email delivery is
+needed (adds SMTP infrastructure — a real gap since BIMSS-005), both
+officer-broadcast announcements and personal event-triggered
+notifications are in scope, and Membership + Finance reports are built
+together in one phase (both `Permission.Report.ViewMembership`/
+`ViewFinance`, reserved since BIMSS-006). Also covers the admin-facing
+audit log viewer — `Permission.Audit.View` has existed since BIMSS-006/
+BIMSS-013 with nothing rendering `AuditEvent` rows yet. Finance reports
+in particular are practically gated on Phases 3–4 existing with real
+data, even though the notification/schema groundwork (BIMSS-088–090)
+doesn't depend on that and can start any time — see the backlog's
+"Current state" note.
 
 ## Phase 7 — Hardening / UAT / production (Not started)
 

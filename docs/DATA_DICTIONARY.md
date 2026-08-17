@@ -210,10 +210,93 @@ free-text "Additional Beneficiaries (Beneficiary 5 and above)" column has
 no agreed delimiter/format for splitting it into individual rows — see
 `docs/PHASE2_BACKLOG.md`'s BIMSS-054 note.
 
+## Confirmed decisions (Buklod, 2026-08-17, Contributions)
+
+8. **Contribution amount is a fixed flat rate**, the same for every
+   member — not tied to salary/rank/office. The rate itself can still
+   change over time (e.g. a new amount effective a given date), so it
+   needs an effective-dated rate table, not a per-member override.
+   (Resolves former question 2; feeds BIMSS-057.)
+9. **One contribution type only** — regular monthly dues. No separate
+   special-assessment or other-fund categories to track distinctly for
+   now. (Feeds BIMSS-059 — no `ContributionType` reference table needed
+   yet; add one later if Buklod introduces a second contribution
+   category.)
+10. **Contributions are a pure ledger** — the system records what was
+    actually received/imported. It does not maintain an "expected
+    amount owed" or flag members who missed a contribution; that kind of
+    report, if ever needed, is computed from the ledger after the fact,
+    not from a dedicated expectation/schedule concept. (Feeds
+    BIMSS-058/059 — no missing-contribution tracking in the schema.)
+
+## Confirmed decisions (Buklod, 2026-08-17, Loans)
+
+11. **One generic loan product for now.** A single configurable
+    `LoanType` (rate/max amount/term/penalty as data, not hardcoded
+    rules) — more products can be added as rows later without a schema
+    change. (Feeds BIMSS-066.)
+12. **Interest is a flat rate on the original principal**
+    (`Interest = Principal × Rate × Term`), computed once at approval —
+    not diminishing-balance amortization, not interest-free. (Feeds
+    BIMSS-068's schedule generation.)
+13. **A co-maker/guarantor is required** on every loan application —
+    another member who co-signs. (Feeds BIMSS-067 — `LoanApplication`
+    needs a required co-maker reference.)
+14. **Payments are collected via payroll deduction**, arriving as a
+    periodic batch import — same shape as Contributions' batch ingestion
+    (BIMSS-060/061). (Feeds BIMSS-073.)
+15. **A flat penalty fee applies per missed/late payment** (not a
+    percentage). (Feeds BIMSS-066's `LoanType.PenaltyAmount` and
+    BIMSS-073's posting logic.)
+16. **Maximum loanable amount is a fixed cap per loan product**, not
+    computed from a member's contribution balance — no cross-module
+    dependency on the Contributions ledger. (Feeds BIMSS-066.)
+17. **A member may have only one active loan at a time.** A new
+    application isn't allowed while an existing loan is still active.
+    (Feeds BIMSS-070's eligibility check.)
+
+(Resolves former question 2; see `docs/PHASE4_BACKLOG.md`.)
+
+## Confirmed decisions (Buklod, 2026-08-18, Elections)
+
+18. **Positions are configured per election**, not a fixed constitutional
+    set reused every cycle — each `Election` owns its own
+    `ElectionPosition` rows, defined during setup. (Feeds BIMSS-077.)
+19. **A position can have multiple seats** (e.g. a "Board Member"
+    position with 5 winners) — the top-N candidates by vote count win,
+    not just a single winner per position. (Feeds BIMSS-077's
+    `SeatCount` field and BIMSS-083's tally logic.)
+20. **Abstention is allowed** — a voter can leave any position blank and
+    still submit a valid ballot. (Feeds BIMSS-079/082 — no
+    "every position required" validation on ballot submission.)
+21. **Voting eligibility is Active membership status only**, as of the
+    voter-list freeze date — no additional tenure/standing criteria.
+    (Feeds BIMSS-078.)
+
+(Resolves former question 2; see `docs/PHASE5_BACKLOG.md`.)
+
+## Confirmed decisions (Buklod, 2026-08-18, Notifications & Reports)
+
+Not resolutions of a numbered open question (Notifications/Reports never
+blocked a specific schema the way Contributions/Loans/Elections did) —
+recorded here as scope preferences confirmed before drafting
+`docs/PHASE6_BACKLOG.md`, the same way the others were confirmed before
+their backlogs.
+
+22. **Email delivery is needed**, not just in-app notifications. No
+    SMTP/email-sending infrastructure exists yet (gap noted since
+    BIMSS-005) — this phase adds it. (Feeds BIMSS-090.)
+23. **Both officer-broadcast announcements and personal event-triggered
+    notifications are in scope** (e.g. "your update request was
+    approved," "loan application status changed," "election is open").
+    (Feeds BIMSS-088/089/091.)
+24. **Membership and Finance reports are built together** in this phase
+    — both `Permission.Report.ViewMembership` and
+    `Permission.Report.ViewFinance` (reserved since BIMSS-006) get real
+    screens in the same phase rather than splitting across two. (Feeds
+    BIMSS-095/096.)
+
 ## Questions to confirm with Buklod before final schema
 
 1. Are retirees/former employees/honorary members possible?
-2. What contribution amount/rules vary by member or year?
-3. What official loan products, interest rules, terms, penalties, and eligibility rules exist?
-4. What election positions and voting rules apply, including abstention and number of selections per position?
-5. What record-retention rules apply after membership ends?
+2. What record-retention rules apply after membership ends?
