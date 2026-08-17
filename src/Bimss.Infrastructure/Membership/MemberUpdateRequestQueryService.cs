@@ -13,9 +13,24 @@ public sealed class MemberUpdateRequestQueryService(BimssDbContext dbContext) : 
     public async Task<IReadOnlyList<MemberUpdateRequestSummary>> ListAsync(
         MemberUpdateRequestStatus? status, CancellationToken cancellationToken)
     {
+        var requests = dbContext.MemberUpdateRequests.AsNoTracking();
+
+        // Filter and order on the source entity, before projecting into
+        // MemberUpdateRequestSummary — SQL Server's provider can't
+        // translate a Where/OrderBy applied after a constructor-projection
+        // like this record's (it throws InvalidOperationException at
+        // query-translation time, only visible against a real SQL Server
+        // provider; the EF Core InMemory provider used by this class's
+        // own tests is more permissive and never caught it).
+        if (status is not null)
+        {
+            requests = requests.Where(request => request.Status == status);
+        }
+
         var query =
-            from request in dbContext.MemberUpdateRequests.AsNoTracking()
+            from request in requests
             join member in dbContext.Members.AsNoTracking() on request.MemberId equals member.Id
+            orderby request.SubmittedAtUtc descending
             select new MemberUpdateRequestSummary(
                 request.Id,
                 request.MemberId,
@@ -25,12 +40,7 @@ public sealed class MemberUpdateRequestQueryService(BimssDbContext dbContext) : 
                 request.SubmittedAtUtc,
                 request.Status);
 
-        if (status is not null)
-        {
-            query = query.Where(summary => summary.Status == status);
-        }
-
-        return await query.OrderByDescending(summary => summary.SubmittedAtUtc).ToListAsync(cancellationToken);
+        return await query.ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<MemberUpdateRequestSummary>> ListByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
@@ -39,6 +49,7 @@ public sealed class MemberUpdateRequestQueryService(BimssDbContext dbContext) : 
             from request in dbContext.MemberUpdateRequests.AsNoTracking()
             join member in dbContext.Members.AsNoTracking() on request.MemberId equals member.Id
             where request.MemberId == memberId
+            orderby request.SubmittedAtUtc descending
             select new MemberUpdateRequestSummary(
                 request.Id,
                 request.MemberId,
@@ -48,7 +59,7 @@ public sealed class MemberUpdateRequestQueryService(BimssDbContext dbContext) : 
                 request.SubmittedAtUtc,
                 request.Status);
 
-        return await query.OrderByDescending(summary => summary.SubmittedAtUtc).ToListAsync(cancellationToken);
+        return await query.ToListAsync(cancellationToken);
     }
 
     public async Task<MemberUpdateRequestDetail?> GetByIdAsync(Guid requestId, CancellationToken cancellationToken)
