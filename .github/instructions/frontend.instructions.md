@@ -18,3 +18,11 @@ applyTo: "frontend/**/*.tsx,frontend/**/*.ts,frontend/**/*.css"
 - Access token: keep in memory only (React context/state), never `localStorage`/`sessionStorage`. Refresh token: an httpOnly cookie set by `Bimss.Api` — the frontend never reads or stores it directly; the API client only needs to call `/api/auth/refresh` with `credentials: 'include'`. See `docs/SECURITY_AND_PRIVACY.md`. Decoding the JWT payload client-side for **display only** (e.g. showing the signed-in user's name — `lib/jwt.ts`) is fine; never use a client-decoded claim for an authorization decision.
 - Design system: `docs/design/BIMSS-UI-SPEC.md` is the source of truth for tokens, typography, and screen layout (see `docs/design/README.md`'s "Integration status" for what's landed vs. deferred). Blue accent (`--primary`, both light/dark tokens in `globals.css`); the sidebar rail (`app-sidebar.tsx`) is a fixed navy (`--sidebar: #0b3b6f`) with `operations`/`administration` nav groups, independent of the app's primary/dark-mode tokens; header (`app-header.tsx`) is a 56px sticky bar. Dark mode via `next-themes` (already a dependency) with a toggle in the header. Base font-size is 16px, matching the design spec's type scale (changed from an earlier 18px override — see `globals.css`'s comment on `html { font-size }` before reintroducing a global override; prefer a user-toggled accessibility preference instead). Status badge colors are centralized in `lib/member-status.ts` — don't pick colors ad hoc in a component. Keep new UI consistent with the spec rather than reverting to shadcn defaults.
 - Add or update Playwright coverage for critical UI workflows.
+- Create-record forms: use `components/forms/record-form.tsx`'s `FormSection` / `FormFooter` /
+  `RequiredMark` / `FieldError` shell (see `dashboard/members/new/page.tsx` for the reference
+  usage) — Card header (title + description) → one or more `FormSection`s (title, optional helper
+  line, 2-column field grid; a field spans both columns via `sm:col-span-2`) → a `FormFooter`
+  (Cancel outline button, a `flex-1` spacer `div`, primary submit button, all above a `border-t`).
+  Reuse this for future create-record pages (loans, elections, etc.) instead of hand-rolling a
+  field grid per page. It's a layout/typography shell only — it does not prescribe validation or
+  a schema-driven field API.
