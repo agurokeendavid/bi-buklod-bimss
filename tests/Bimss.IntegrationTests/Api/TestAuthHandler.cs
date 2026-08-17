@@ -13,6 +13,7 @@ public class TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> option
     public const string SchemeName = "Test";
     public const string AuthenticatedHeader = "X-Test-Authenticated";
     public const string PermissionsHeader = "X-Test-Permissions";
+    public const string UserIdHeader = "X-Test-UserId";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -22,7 +23,8 @@ public class TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> option
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()) };
+        var userId = Request.Headers.TryGetValue(UserIdHeader, out var userIdValue) ? userIdValue.ToString() : Guid.NewGuid().ToString();
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId) };
 
         if (Request.Headers.TryGetValue(PermissionsHeader, out var permissionsValue))
         {

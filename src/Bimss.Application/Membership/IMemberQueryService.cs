@@ -10,4 +10,11 @@ public interface IMemberQueryService
     Task<IReadOnlyList<MemberSummary>> ListAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<MemberStatusHistoryEntry>> ListStatusHistoryAsync(Guid memberId, CancellationToken cancellationToken);
+
+    // BIMSS-040: member self-service "My Profile" — resolves the member
+    // linked to a login account (ApplicationUser.MemberId), with reference
+    // names already joined in server-side (a self-service caller has no
+    // permission to hit the officer-facing ReferenceDataController, which
+    // stays scoped to Permission.Membership.Manage).
+    Task<MyProfileDetail?> GetMyProfileByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

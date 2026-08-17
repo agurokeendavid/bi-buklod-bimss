@@ -80,6 +80,27 @@ export interface MemberDocument {
   uploadedByUserId: string | null;
 }
 
+// Mirrors Bimss.Contracts.Membership.MyProfileResponse — self-service's own
+// projection, with reference values already resolved to display names
+// server-side (unlike MemberDetail, which keeps raw ids for the
+// officer-facing edit form's Select components).
+export interface MyProfile {
+  id: string;
+  lastName: string;
+  firstName: string;
+  middleName: string | null;
+  suffixName: string | null;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  civilStatusName: string;
+  joiningReason: string | null;
+  status: MemberStatus;
+  employeeNumber: string;
+  positionDesignation: string;
+  officeUnitName: string;
+  permanentAppointmentDate: string | null;
+}
+
 // Mirrors Bimss.Contracts.Membership.MemberStatusHistoryResponse.
 export interface MemberStatusHistoryEntry {
   id: string;

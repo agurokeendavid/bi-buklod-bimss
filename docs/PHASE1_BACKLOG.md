@@ -53,8 +53,10 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
 `npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 (member dashboard shell) is Done as of 2026-08-17; BIMSS-040 (My
-Profile, read) is next.
+BIMSS-039 (member dashboard shell) and BIMSS-040 (My Profile, read) are
+Done as of 2026-08-17 — BIMSS-040 also retroactively wired up
+`ApplicationUser.MemberId` (added in BIMSS-005, never actually used until
+now). BIMSS-041 (`MemberUpdateRequest`/Change schema) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1859,7 +1861,7 @@ actually started.
 | ID | Title | Status | Depends on |
 |---|---|---|---|
 | BIMSS-039 | Member dashboard shell | Done — [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48) | BIMSS-047 |
-| BIMSS-040 | My Profile (read) | Not started | BIMSS-023, BIMSS-039 |
+| BIMSS-040 | My Profile (read) | Done — [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49) | BIMSS-023, BIMSS-039 |
 | BIMSS-041 | `MemberUpdateRequest`/Change schema | Not started | BIMSS-004 |
 | BIMSS-042 | Member submits update request | Not started | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | Not started | BIMSS-041, BIMSS-030 |
@@ -1896,6 +1898,62 @@ Merged via [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48).
   compiles). No live backend was available this session to click through
   authenticated — same known gap noted on BIMSS-038.
 - Dependencies: BIMSS-047.
+
+### BIMSS-040 — My Profile (read) (Done)
+
+Merged via [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49).
+
+- **Discovered gap, fixed as part of this task**: `ApplicationUser.MemberId`
+  (added in BIMSS-005, before `Member` existed) was never actually wired to
+  anything — no FK/index, never set anywhere, never read anywhere. A
+  self-service "My Profile" is impossible without resolving "which member
+  does this login belong to," so this task adds what was missing:
+  `ApplicationUserConfiguration` (`Bimss.Infrastructure/Identity/`) — a
+  unique filtered index (a member has at most one login and vice versa) and
+  a `Restrict` FK to `Members` (never `Cascade` — members are never
+  hard-deleted). Migration `LinkApplicationUserToMember`.
+- `IMemberQueryService.GetMyProfileByUserIdAsync` (new method) +
+  `MyProfileDetail` (`Bimss.Application/Membership/`) — a **separate**
+  projection from the officer-facing `MemberDetail`: reference values
+  (civil status, suffix, office unit) are resolved to display **names**
+  server-side, not left as raw ids. This is deliberate, not just a nicer
+  DTO — `ReferenceDataController` stays scoped to
+  `Permission.Membership.Manage`, so a self-service caller (`ViewSelf`) has
+  no permission to look up those names itself; resolving them server-side
+  avoids widening that controller's authorization just for this. Requires
+  employment to exist (inner join) since every member created through
+  `MemberCreationService` — the only creation path today — gets both rows
+  atomically.
+- `MyProfileController` (`Bimss.Api/Controllers/`, `api/my/profile`) — its
+  own controller (not folded into `MembersController`), gated
+  `Permission.Membership.ViewSelf`. Resolves "which member" from the
+  caller's own user id (JWT `sub`/`NameIdentifier`), never a route
+  parameter — there is no way to request another member's profile through
+  this endpoint.
+- `DevelopmentMembershipSeeder` now links the `member.dev` dev account
+  (seeded by `DevelopmentIdentitySeeder`, which runs first) to the
+  synthetic Active member (`DEV-00002`), so local Development has a
+  working example out of the box. Existing
+  `DevelopmentMembershipSeederTests` needed `AddBimssIdentity()` added to
+  their test service provider (previously had no Identity services
+  registered at all — nothing had needed them before this task).
+- Frontend: `/my/page.tsx` now fetches and renders the real profile
+  (replacing BIMSS-039's placeholder) — name, status badge, position/office,
+  and a fact grid. A 404 (account not yet linked to a member) renders a
+  plain explanatory sentence, not an error.
+- Tests: `MemberQueryServiceTests` gained three cases for
+  `GetMyProfileByUserIdAsync` (resolved names, no-linked-member, null
+  `SuffixName`); `MyProfileControllerTests` (integration —
+  `WebApplicationFactory` + `TestAuthHandler`; 401/403/404/200 cases).
+  `TestAuthHandler` gained an optional `X-Test-UserId` header (defaults to
+  a random id, as before) so a test can authenticate as a specific,
+  pre-seeded user — needed to exercise the "linked member" success path.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (427/427 passing)
+  in Release, `dotnet format --verify-no-changes`; `npm run lint`/`npm run
+  build` clean on the frontend. Same frontend verification gap as
+  BIMSS-038/039 (no live backend this session to click through
+  authenticated).
+- Dependencies: BIMSS-023, BIMSS-039.
 
 ## Secrets convention
 
