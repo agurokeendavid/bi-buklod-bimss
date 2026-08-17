@@ -1122,7 +1122,7 @@ namespace Bimss.Infrastructure.Persistence.Migrations
                     b.HasOne("Bimss.Domain.Membership.MemberImportStaging", null)
                         .WithMany()
                         .HasForeignKey("MemberImportStagingId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Bimss.Domain.Membership.Member", b =>

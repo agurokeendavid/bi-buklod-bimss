@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bimss.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BimssDbContext))]
-    [Migration("20260817093223_AddImportStagingSchema")]
+    [Migration("20260817094219_AddImportStagingSchema")]
     partial class AddImportStagingSchema
     {
         /// <inheritdoc />
@@ -1125,7 +1125,7 @@ namespace Bimss.Infrastructure.Persistence.Migrations
                     b.HasOne("Bimss.Domain.Membership.MemberImportStaging", null)
                         .WithMany()
                         .HasForeignKey("MemberImportStagingId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Bimss.Domain.Membership.Member", b =>

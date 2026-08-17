@@ -125,7 +125,7 @@ namespace Bimss.Infrastructure.Persistence.Migrations
                         column: x => x.MemberImportStagingId,
                         principalTable: "MemberImportStaging",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
