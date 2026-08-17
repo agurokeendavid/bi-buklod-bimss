@@ -19,7 +19,11 @@ because the backing API/data doesn't exist yet:
   says to wire in). Contributions / Loans / Benefit claims tabs wait for their own data.
 - The new-member form stays a single-page Personal+Employment form, not a 5-step wizard —
   Beneficiaries and a documents-upload step aren't real capabilities of the create-member API
-  yet.
+  yet. The single page is split into two `FormSection`s named "Personal information" and
+  "Employment information", mirroring the wizard's first two step names. This section/footer
+  shell (`frontend/src/components/forms/record-form.tsx`) is now the established pattern for
+  future create-record forms across modules — see the "Design system" bullet in
+  `.github/instructions/frontend.instructions.md`.
 
 See `docs/PHASE1_BACKLOG.md` for the task-level record of what shipped and what's still open.
 
