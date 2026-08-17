@@ -38,6 +38,10 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 
     public DbSet<MemberDocument> MemberDocuments => Set<MemberDocument>();
 
+    public DbSet<MemberUpdateRequest> MemberUpdateRequests => Set<MemberUpdateRequest>();
+
+    public DbSet<MemberUpdateRequestChange> MemberUpdateRequestChanges => Set<MemberUpdateRequestChange>();
+
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
 
     public DbSet<MemberImportStaging> MemberImportStagingRows => Set<MemberImportStaging>();

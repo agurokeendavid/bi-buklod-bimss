@@ -53,10 +53,11 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
 `npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 (member dashboard shell) and BIMSS-040 (My Profile, read) are
-Done as of 2026-08-17 — BIMSS-040 also retroactively wired up
-`ApplicationUser.MemberId` (added in BIMSS-005, never actually used until
-now). BIMSS-041 (`MemberUpdateRequest`/Change schema) is next.
+BIMSS-039 through BIMSS-041 (member dashboard shell, My Profile read,
+`MemberUpdateRequest`/Change schema) are Done as of 2026-08-17 — BIMSS-040
+also retroactively wired up `ApplicationUser.MemberId` (added in
+BIMSS-005, never actually used until now). BIMSS-042 (member submits
+update request) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1862,7 +1863,7 @@ actually started.
 |---|---|---|---|
 | BIMSS-039 | Member dashboard shell | Done — [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48) | BIMSS-047 |
 | BIMSS-040 | My Profile (read) | Done — [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49) | BIMSS-023, BIMSS-039 |
-| BIMSS-041 | `MemberUpdateRequest`/Change schema | Not started | BIMSS-004 |
+| BIMSS-041 | `MemberUpdateRequest`/Change schema | Done — [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50) | BIMSS-004 |
 | BIMSS-042 | Member submits update request | Not started | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | Not started | BIMSS-041, BIMSS-030 |
 | BIMSS-044 | Direct self-service edit for low-risk fields | Not started | BIMSS-042 |
@@ -1954,6 +1955,59 @@ Merged via [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49).
   BIMSS-038/039 (no live backend this session to click through
   authenticated).
 - Dependencies: BIMSS-023, BIMSS-039.
+
+### BIMSS-041 — `MemberUpdateRequest`/Change schema (Done)
+
+Merged via [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's "Member profile update" workflow:
+  "Member edits permitted fields -> Submit Update Request -> Pending
+  Review -> Membership Officer reviews differences -> Approve / Reject ->
+  Approved changes applied -> History/audit recorded." This task models
+  submission and the review decision only — actually applying an approved
+  change to `Member`/`MemberEmployment` is the reviewing service's job
+  (BIMSS-043), same "schema/domain-rule only" scope as every other schema
+  task.
+- `MemberUpdateRequest` (`Bimss.Domain/Membership/`) — `Pending -> Approved
+  /Rejected` (terminal, no further transitions), guarded the same way as
+  `ImportBatch`'s state machine. `Reject` requires non-blank remarks
+  (docs/design/BIMSS-UI-SPEC.md's business rule: "Return and Deny require
+  remarks" — the member needs to know why); `Approve`'s remarks stay
+  optional, same asymmetry as the Approvals screen spec. No FK from
+  `SubmittedByUserId`/`ReviewedByUserId` to `AspNetUsers` — same
+  established reasoning as `MemberStatusHistory.ActorUserId`.
+- `MemberUpdateRequestChange` — one field-level diff (`FieldName`/
+  `OldValue`/`NewValue`) per requested field; `internal` constructor, only
+  `MemberUpdateRequest` creates one (same pattern as `MemberStatusHistory`).
+  Field-agnostic by design — **which** fields are actually submittable
+  through this is BIMSS-042's concern, not this schema's; `OldValue`/
+  `NewValue` stay unconstrained (`nvarchar(max)`) since they hold whatever
+  a `Member`/`MemberEmployment` field's value naturally is, and those vary
+  widely in length.
+- `MemberUpdateRequestChangeInput` (`Bimss.Domain/Membership/`) — bundles
+  one proposed change so the constructor takes a collection of these
+  instead of parallel arrays, same reasoning as
+  `MemberImportStagingFields`.
+- Migration: `AddMemberUpdateRequestSchema` — two tables, `Cascade` FK from
+  `MemberUpdateRequests` to `Members` (a request belongs wholly to its
+  member, same reasoning as `MemberStatusHistory`) and `Cascade` from
+  `MemberUpdateRequestChanges` to its parent request.
+- Tests: `MemberUpdateRequestTests` (unit — constructor guards, multi-change
+  submission, Approve/Reject success/failure paths, remarks-required-on-
+  reject); `MemberUpdateRequestConfigurationTests` (unit, metadata
+  inspection); `MemberUpdateRequestPersistenceTests` (integration —
+  InMemory round-trip + Approve-across-reloads).
+  `MembershipSchemaConstraintTests` gained a real-SQL-Server cascade-delete
+  case (`MemberUpdateRequest` -> `Changes`) — InMemory doesn't reliably
+  simulate cascade delete unless the children are already loaded/tracked,
+  so that check belongs with the other real-DB-only constraint tests, not
+  the InMemory persistence file (a first attempt there was reverted after
+  it failed for exactly that reason).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (446/446 passing,
+  local InMemory-provider run — the new real-SQL-Server cascade case runs
+  in CI's SQL Server service container) in Release, `dotnet format
+  --verify-no-changes`.
+- Dependencies: BIMSS-004.
 
 ## Secrets convention
 

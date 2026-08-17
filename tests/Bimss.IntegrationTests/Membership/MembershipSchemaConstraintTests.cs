@@ -316,6 +316,45 @@ public class MembershipSchemaConstraintTests : IAsyncLifetime
         Assert.False(await readContext.ImportValidationErrors.AnyAsync(e => e.ImportBatchId == batchId));
     }
 
+    [Fact]
+    public async Task DeletingMemberUpdateRequest_CascadesToItsChanges()
+    {
+        if (!_isAvailable)
+        {
+            return;
+        }
+
+        var civilStatusId = await SeedCivilStatusAsync();
+        Guid requestId;
+
+        await using (var dbContext = CreateDbContext())
+        {
+            var member = CreateMember(civilStatusId);
+            dbContext.Members.Add(member);
+
+            var request = new MemberUpdateRequest(
+                Guid.NewGuid(),
+                member.Id,
+                Guid.NewGuid(),
+                DateTimeOffset.UtcNow,
+                [new MemberUpdateRequestChangeInput("LastName", "Dela Cruz", "Santos")]);
+            requestId = request.Id;
+            dbContext.MemberUpdateRequests.Add(request);
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using (var deleteContext = CreateDbContext())
+        {
+            var request = await deleteContext.MemberUpdateRequests.SingleAsync(r => r.Id == requestId);
+            deleteContext.MemberUpdateRequests.Remove(request);
+            await deleteContext.SaveChangesAsync();
+        }
+
+        await using var readContext = CreateDbContext();
+        Assert.False(await readContext.MemberUpdateRequestChanges.AnyAsync(change => change.MemberUpdateRequestId == requestId));
+    }
+
     private async Task<Guid> SeedCivilStatusAsync()
     {
         await using var dbContext = CreateDbContext();
