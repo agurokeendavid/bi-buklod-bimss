@@ -225,6 +225,12 @@ public class ImportBatchValidationServiceTests
         public Task<Guid?> FindMemberIdByNameAndDateOfBirthAsync(
             string lastName, string firstName, DateOnly dateOfBirth, CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by ImportBatchValidationService.");
+
+        public Task<MemberImportStaging?> GetTrackedRowByIdAsync(Guid stagingRowId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchValidationService.");
+
+        public Task PromoteRowAsync(MemberImportStaging row, Member member, MemberEmployment employment, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchValidationService.");
     }
 
     private sealed class FakeReferenceDataQueryService : IReferenceDataQueryService

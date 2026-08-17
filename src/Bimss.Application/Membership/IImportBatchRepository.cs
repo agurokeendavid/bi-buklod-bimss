@@ -28,4 +28,10 @@ public interface IImportBatchRepository
 
     Task<Guid?> FindMemberIdByNameAndDateOfBirthAsync(
         string lastName, string firstName, DateOnly dateOfBirth, CancellationToken cancellationToken);
+
+    // BIMSS-037: promotion.
+    Task<MemberImportStaging?> GetTrackedRowByIdAsync(Guid stagingRowId, CancellationToken cancellationToken);
+
+    Task PromoteRowAsync(
+        MemberImportStaging row, Member member, MemberEmployment employment, CancellationToken cancellationToken);
 }

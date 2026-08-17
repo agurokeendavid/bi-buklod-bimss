@@ -48,13 +48,13 @@ membership register, member record, new-member form) — see
 versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
-Phase 1D (Existing Member Import) is underway: BIMSS-033 through BIMSS-036
+Phase 1D (Existing Member Import) is underway: BIMSS-033 through BIMSS-037
 (import staging schema, Excel ingestion, staging validation, duplicate
-detection) are Done as of 2026-08-17; BIMSS-037 (promote staging ->
-domain entities) is next. Its dependency on the retired Razor/MVC plan is
-already rescoped (see the Phase 1D section below) — BIMSS-038 (Import
-batch admin UI) now depends on BIMSS-047 like every other Phase 1C UI
-task did.
+detection, promote staging -> domain entities) are Done as of 2026-08-17;
+BIMSS-038 (import batch admin UI) is next and is the last Phase 1D task.
+Its dependency on the retired Razor/MVC plan is already rescoped (see the
+Phase 1D section below) — it now depends on BIMSS-047 like every other
+Phase 1C UI task did.
 
 ## Phase 1A — Platform Foundation
 
@@ -1531,7 +1531,7 @@ out when the task is actually started, same as every other task.
 | BIMSS-034 | Excel ingestion service | Done — [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43) | BIMSS-033 |
 | BIMSS-035 | Staging validation rules | Done — [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44) | BIMSS-034 |
 | BIMSS-036 | Duplicate detection | Done — [PR #45](https://github.com/agurokeendavid/bi-buklod-bimss/pull/45) | BIMSS-035 |
-| BIMSS-037 | Promote staging → domain entities | Not started | BIMSS-022, BIMSS-036 |
+| BIMSS-037 | Promote staging → domain entities | Done — [PR #46](https://github.com/agurokeendavid/bi-buklod-bimss/pull/46) | BIMSS-022, BIMSS-036 |
 | BIMSS-038 | Import batch admin UI | Not started | BIMSS-033–037, BIMSS-047 |
 
 ### BIMSS-033 — ImportBatch/MemberImportStaging/ImportValidationError schema (Done)
@@ -1728,6 +1728,65 @@ Merged via [PR #45](https://github.com/agurokeendavid/bi-buklod-bimss/pull/45).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (399/399 passing) in
   Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-035.
+
+### BIMSS-037 — Promote staging → domain entities (Done)
+
+Merged via [PR #46](https://github.com/agurokeendavid/bi-buklod-bimss/pull/46).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's final migration steps: "Reviewer
+  confirms -> Create/update member through normal application services ->
+  Record migration audit." `ImportBatchPromotionService.PromoteRowAsync`
+  (`Bimss.Application/Membership/`) promotes exactly **one** staging row at
+  a time (the workflow expects a reviewer to look at rows individually,
+  never a blind bulk commit), and requires `ValidationStatus == Valid` and
+  `MatchStatus == NoMatch` — a `ConfirmedDuplicate` or `PossibleDuplicate`
+  row throws `ConflictException` and is left for manual review (no
+  auto-resolve policy exists, and none is confirmed with Buklod).
+- **Deliberately scoped to `Member` + `MemberEmployment` only** — the same
+  fields `CreateMemberCommand` already supports. Its own existing comment
+  says exactly why: "Contact, address, education, eligibility, family,
+  children, privacy consent, and documents are added afterward through
+  their own operations (the officer-review edit workflow, Phase 1E), not
+  bundled into this command." `MemberContact`/`MemberAddress`/
+  `MemberEducation`/`MemberEligibility`/`MemberFamilyInformation`/
+  `MemberPrivacyConsent` have **no** Application-layer creation capability
+  anywhere in the codebase yet (confirmed by grepping `Bimss.Application`/
+  `Bimss.Api` before starting this task) — building that speculatively here
+  with no other caller would be exactly the ahead-of-need work AGENTS.md
+  warns against. `MemberChild`/`MemberBeneficiary` stay unpromoted for the
+  same reason `ChildrenRaw`/`BeneficiariesRaw` stayed unparsed in
+  BIMSS-034: no agreed splitting rule yet.
+- Resolves `CivilStatus`/`OfficeUnit` text to a reference-data id (required
+  — `DomainValidationException` if unresolvable, though BIMSS-035 should
+  already have caught that); an unresolvable `Suffix` degrades to `null`
+  rather than blocking, same Warning-only treatment as BIMSS-035.
+  Re-parses `DateOfBirthRaw`/`PermanentAppointmentDateRaw` independently
+  (not reusing BIMSS-035/036's parse results, which weren't persisted) and
+  re-checks `EmployeeNumberExistsAsync` as defense in depth alongside the
+  unique DB index.
+- **Does not reuse `MemberCreationService`** — that service calls
+  `SaveChangesAsync` internally on its own, which would split
+  member-creation and marking-the-staging-row-promoted into two separate
+  units of work sharing one `DbContext`; a failure between them could leave
+  a `Member` created but its staging row still unmarked, inviting a
+  double-promotion attempt. Instead `IImportBatchRepository.PromoteRowAsync`
+  persists `Member` + `MemberEmployment` + the already-mutated staging row
+  (`MemberImportStaging.MarkPromoted`, called by the service beforehand) in
+  one atomic `SaveChangesAsync`.
+- `ImportBatch.MarkPromoted()` (the *batch-level* terminal status) is still
+  unwired — it means "this batch's review is fully closed out," which is a
+  reviewer/admin-UI action (BIMSS-038), not implied by promoting one row.
+  Same "domain method exists, caller lands later" pattern as `Member`'s
+  own `Verify`/`Deactivate` between BIMSS-015 and BIMSS-024/031.
+- Tests: `ImportBatchPromotionServiceTests` (unit — hand-rolled fakes;
+  happy path, optional-Suffix tolerance, audit logging, not-validated,
+  not-matched, confirmed-duplicate, possible-duplicate,
+  employee-number-exists, unresolvable civil status, unparseable date,
+  not-found); `ImportBatchRepositoryTests` gained two cases (not-found,
+  atomic member+employment+row persistence).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (412/412 passing) in
+  Release, `dotnet format --verify-no-changes`.
+- Dependencies: BIMSS-022, BIMSS-036.
 
 ## Phase 1E — Member Self-Service (Not started)
 

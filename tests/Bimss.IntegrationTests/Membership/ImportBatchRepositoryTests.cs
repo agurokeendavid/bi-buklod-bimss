@@ -1,6 +1,7 @@
 ﻿using Bimss.Domain.Membership;
 using Bimss.Infrastructure.Membership;
 using Bimss.IntegrationTests.Support;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bimss.IntegrationTests.Membership;
 
@@ -151,5 +152,54 @@ public class ImportBatchRepositoryTests
             "Dela Cruz", "Juan", new DateOnly(1991, 2, 20), CancellationToken.None);
 
         Assert.Null(found);
+    }
+
+    [Fact]
+    public async Task GetTrackedRowByIdAsync_ReturnsNull_WhenRowDoesNotExist()
+    {
+        await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var repository = new ImportBatchRepository(dbContext);
+
+        var row = await repository.GetTrackedRowByIdAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Null(row);
+    }
+
+    [Fact]
+    public async Task PromoteRowAsync_PersistsMemberEmploymentAndTheUpdatedRow_Atomically()
+    {
+        var batchId = Guid.NewGuid();
+        var stagingId = Guid.NewGuid();
+        var civilStatusId = Guid.NewGuid();
+        var officeUnitId = Guid.NewGuid();
+        Guid memberId;
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var repository = new ImportBatchRepository(writeContext);
+            var batch = new ImportBatch(batchId, "legacy-members.xlsx", Guid.NewGuid(), OccurredAt);
+            var row = new MemberImportStaging(stagingId, batchId, 1, new MemberImportStagingFields { LastName = "Dela Cruz" });
+            await repository.AddBatchWithRowsAsync(batch, [row], CancellationToken.None);
+
+            var trackedRow = await repository.GetTrackedRowByIdAsync(stagingId, CancellationToken.None);
+            Assert.NotNull(trackedRow);
+            trackedRow!.RecordValidation(isValid: true);
+            trackedRow.RecordMatch(matchedMemberId: null, ImportRowMatchStatus.NoMatch);
+
+            var member = new Member(
+                Guid.NewGuid(), "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 15), "Manila",
+                civilStatusId, joiningReason: null, OccurredAt);
+            memberId = member.Id;
+            var employment = new MemberEmployment(Guid.NewGuid(), memberId, "BI-00123", "Officer I", officeUnitId, null);
+            trackedRow.MarkPromoted(memberId);
+
+            await repository.PromoteRowAsync(trackedRow, member, employment, CancellationToken.None);
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        Assert.True(await readContext.Members.AnyAsync(m => m.Id == memberId));
+        Assert.True(await readContext.MemberEmployments.AnyAsync(e => e.MemberId == memberId));
+        var persistedRow = await readContext.MemberImportStagingRows.SingleAsync(r => r.Id == stagingId);
+        Assert.Equal(memberId, persistedRow.PromotedMemberId);
     }
 }
