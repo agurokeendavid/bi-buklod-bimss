@@ -9,4 +9,9 @@ namespace Bimss.Application.Membership;
 public interface IMemberUpdateRequestRepository
 {
     Task AddAsync(MemberUpdateRequest request, CancellationToken cancellationToken);
+
+    // BIMSS-043: officer review.
+    Task<MemberUpdateRequest?> GetTrackedByIdAsync(Guid requestId, CancellationToken cancellationToken);
+
+    Task SaveChangesAsync(CancellationToken cancellationToken);
 }
