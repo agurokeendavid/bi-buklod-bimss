@@ -52,16 +52,16 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 (BIMSS-033 through BIMSS-038) — see that section's note on BIMSS-038 for a
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
-`npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 through BIMSS-044 (member dashboard shell, My Profile read,
-`MemberUpdateRequest`/Change schema, member submits update request,
-officer review/approve/reject, direct self-service edit of contact info)
-are Done as of 2026-08-17. Along the way, two gaps the plan had already
-implied but never filled got fixed: `ApplicationUser.MemberId`
-(BIMSS-040, added in BIMSS-005, never wired up) and
-`Permission.Membership.ManageSelf` (BIMSS-042, referenced by this
-section's own note but never added). BIMSS-045 (update request status/
-history view) is next — the last Phase 1 task in this backlog.
+`npm run lint`/`build`). Phase 1E (Member Self-Service) is fully Done as
+of 2026-08-17: BIMSS-039 through BIMSS-045 (member dashboard shell, My
+Profile read, `MemberUpdateRequest`/Change schema, member submits update
+request, officer review/approve/reject, direct self-service edit of
+contact info, update request status/history view) are all Done. Along
+the way, two gaps the plan had already implied but never filled got
+fixed: `ApplicationUser.MemberId` (BIMSS-040, added in BIMSS-005, never
+wired up) and `Permission.Membership.ManageSelf` (BIMSS-042, referenced
+by this section's own note but never added). **All of Phase 1
+(BIMSS-001 through BIMSS-045) is Done as of 2026-08-17.**
 
 ## Phase 1A — Platform Foundation
 
@@ -1520,7 +1520,7 @@ cross-cutting spirit — no backend changes.
   visual-design source of truth and to correct the stale 18px-root note.
 - Verified: `npm run lint`/`npm run build` clean.
 
-## Phase 1D — Existing Member Import (Not started)
+## Phase 1D — Existing Member Import (Done)
 
 **Rescoped for the frontend pivot (2026-08-16)**: only BIMSS-038 (Import
 batch admin UI) has a frontend component — BIMSS-033–037 are pure
@@ -1848,7 +1848,7 @@ Phase 1D is now fully Done.
   build` clean on the frontend.
 - Dependencies: BIMSS-033–037, BIMSS-047.
 
-## Phase 1E — Member Self-Service
+## Phase 1E — Member Self-Service (Done)
 
 **Rescoped for the frontend pivot (2026-08-16)**: this is a member-facing
 portal, distinct from the officer-facing `/dashboard` admin screens Phase
@@ -1871,7 +1871,7 @@ actually started.
 | BIMSS-042 | Member submits update request | Done — [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51) | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | Done — [PR #52](https://github.com/agurokeendavid/bi-buklod-bimss/pull/52) | BIMSS-041, BIMSS-030 |
 | BIMSS-044 | Direct self-service edit for low-risk fields | Done — [PR #53](https://github.com/agurokeendavid/bi-buklod-bimss/pull/53) | BIMSS-042 |
-| BIMSS-045 | Update request status/history view | Not started | BIMSS-041, BIMSS-039 |
+| BIMSS-045 | Update request status/history view | Done — [PR #54](https://github.com/agurokeendavid/bi-buklod-bimss/pull/54) | BIMSS-041, BIMSS-039 |
 
 ### BIMSS-039 — Member dashboard shell (Done)
 
@@ -2179,6 +2179,60 @@ Merged via [PR #53](https://github.com/agurokeendavid/bi-buklod-bimss/pull/53).
   frontend (`/my/contact` compiles as a static route). Same frontend
   verification gap as BIMSS-038 onward (no live backend this session).
 - Dependencies: BIMSS-042.
+
+### BIMSS-045 — Update request status/history view (Done)
+
+Merged via [PR #54](https://github.com/agurokeendavid/bi-buklod-bimss/pull/54).
+
+- The last Phase 1 task in this backlog. Gives a member their own
+  read-only view of the update requests they've submitted (BIMSS-042) and
+  how each was resolved (BIMSS-043) — the self-service counterpart to the
+  officer-facing `dashboard/update-requests` queue, reusing the exact same
+  `MemberUpdateRequestSummary`/`Detail` projections and
+  `MemberUpdateRequestSummaryResponse`/`DetailResponse`/`ChangeResponse`
+  contracts (no new DTOs needed — the shape was already right, only the
+  scoping differs).
+- `IMemberUpdateRequestQueryService.ListByMemberIdAsync`
+  (`Bimss.Application`/`Bimss.Infrastructure/Membership/`) — the same
+  join as the officer queue's `ListAsync`, filtered to one `MemberId`
+  instead of `Status`.
+- `MyUpdateRequestsController` gained `GET` (list) and `GET {id}` actions.
+  **Refactored its authorization from a class-level `[Authorize(Policy =
+  ManageSelf)]` to per-action attributes** — stacking a
+  `[Authorize(Policy = ViewSelf)]` on the new read actions underneath a
+  class-level `ManageSelf` would have AND-combined the two policies
+  (`[Authorize]` attributes never OR), the exact pitfall
+  `AuthorizationPolicies.ReferenceDataRead`'s own comment already
+  documents from BIMSS-042. `GetById` checks `request.MemberId` against
+  the caller's own resolved member id and returns 404 (not 403) on a
+  mismatch, same "don't confirm another record's existence" reasoning as
+  the rest of the `api/my/*` surface — a member can never distinguish "not
+  mine" from "doesn't exist" by status code.
+- Frontend: `frontend/src/app/my/update-requests/page.tsx` (list, no
+  status filter — a member has few enough requests that filtering isn't
+  needed yet, unlike the officer queue) and
+  `frontend/src/app/my/update-requests/[id]/page.tsx` (detail — read-only
+  mirror of `dashboard/update-requests/[id]`, no Approve/Reject controls,
+  since that stays an officer-only action gated
+  `Permission.Membership.Manage`). Both reuse
+  `lib/types/member-update-request.ts` and
+  `lib/member-update-request-status.ts` as-is. Linked from `/my` as "My
+  update requests," alongside BIMSS-042/044's buttons.
+- Tests: `MemberUpdateRequestQueryServiceTests` gained
+  `ListByMemberIdAsync_ReturnsOnlyThatMembersRequests`;
+  `MyUpdateRequestsControllerTests` gained
+  401/403/200-list-scoped-to-caller and
+  404-for-another-members-request/200-detail cases for the two new
+  actions.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (495/495 passing:
+  2 architecture, 307 unit, 186 integration) in Release, `dotnet format
+  --verify-no-changes`; `npm run lint`/`npm run build` clean on the
+  frontend (both new `/my/update-requests` routes compile). Same frontend
+  verification gap as BIMSS-038 onward (no live backend this session).
+- Dependencies: BIMSS-041, BIMSS-039.
+
+**Phase 1 (all 45 backlog tasks, BIMSS-001 through BIMSS-045) is Done as
+of 2026-08-17.**
 
 ## Secrets convention
 

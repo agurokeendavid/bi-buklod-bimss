@@ -104,6 +104,9 @@ export default function MemberDashboardPage() {
           <Link href="/my/update-request" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
             Request a profile change
           </Link>
+          <Link href="/my/update-requests" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            My update requests
+          </Link>
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
