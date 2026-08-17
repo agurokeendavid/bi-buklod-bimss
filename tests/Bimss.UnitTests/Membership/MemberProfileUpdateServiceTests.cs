@@ -115,6 +115,18 @@ public class MemberProfileUpdateServiceTests
             SaveChangesCalled = true;
             return Task.CompletedTask;
         }
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberProfileUpdateService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger

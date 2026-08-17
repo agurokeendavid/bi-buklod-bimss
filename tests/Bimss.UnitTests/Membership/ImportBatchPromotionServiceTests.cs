@@ -261,6 +261,18 @@ public class ImportBatchPromotionServiceTests
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by ImportBatchPromotionService.");
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchPromotionService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchPromotionService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchPromotionService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchPromotionService.");
     }
 
     private sealed class FakeReferenceDataQueryService : IReferenceDataQueryService

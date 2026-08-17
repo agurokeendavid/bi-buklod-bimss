@@ -202,6 +202,18 @@ public class MemberUpdateRequestSubmissionServiceTests
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
     }
 
     private sealed class FakeMemberUpdateRequestRepository : IMemberUpdateRequestRepository

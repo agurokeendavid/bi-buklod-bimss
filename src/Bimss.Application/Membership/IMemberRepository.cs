@@ -31,5 +31,16 @@ public interface IMemberRepository
 
     Task<bool> HasAnyDocumentAsync(Guid memberId, CancellationToken cancellationToken);
 
+    // BIMSS-044: self-service direct edit of contact info (the one profile
+    // area a member can change without officer review, per
+    // docs/DATA_DICTIONARY.md's confirmed decision).
+    Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken);
+
+    Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken);
+
+    Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

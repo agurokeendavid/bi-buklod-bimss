@@ -23,4 +23,7 @@ public interface IMemberQueryService
     // resolved-reference-name projection (submitting an update request
     // compares against Member/MemberEmployment directly, not display names).
     Task<Guid?> GetMemberIdByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    // BIMSS-044: current contact info for the self-service edit form.
+    Task<MyContactDetail?> GetMyContactByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

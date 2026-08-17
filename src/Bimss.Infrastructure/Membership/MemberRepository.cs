@@ -48,6 +48,28 @@ public sealed class MemberRepository(BimssDbContext dbContext) : IMemberReposito
         return dbContext.MemberDocuments.AnyAsync(document => document.MemberId == memberId, cancellationToken);
     }
 
+    public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return dbContext.MemberContacts.SingleOrDefaultAsync(contact => contact.MemberId == memberId, cancellationToken);
+    }
+
+    public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+    {
+        dbContext.MemberContacts.Add(contact);
+        return Task.CompletedTask;
+    }
+
+    public async Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        return await dbContext.MemberAddresses.Where(address => address.MemberId == memberId).ToListAsync(cancellationToken);
+    }
+
+    public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+    {
+        dbContext.MemberAddresses.Add(address);
+        return Task.CompletedTask;
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await dbContext.SaveChangesAsync(cancellationToken);

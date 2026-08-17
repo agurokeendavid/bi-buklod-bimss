@@ -115,6 +115,18 @@ public class MemberCreationServiceTests
 
         public Task SaveChangesAsync(CancellationToken cancellationToken)
             => throw new NotSupportedException("Not used by MemberCreationService.");
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberCreationService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger

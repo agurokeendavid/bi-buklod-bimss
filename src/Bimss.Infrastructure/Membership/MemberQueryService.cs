@@ -1,4 +1,5 @@
 ﻿using Bimss.Application.Membership;
+using Bimss.Domain.Membership;
 using Bimss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -106,6 +107,30 @@ public sealed class MemberQueryService(BimssDbContext dbContext) : IMemberQueryS
             .AsNoTracking()
             .Where(user => user.Id == userId)
             .Select(user => user.MemberId)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<MyContactDetail?> GetMyContactByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return (
+            from user in dbContext.Users.AsNoTracking()
+            where user.Id == userId && user.MemberId != null
+            join member in dbContext.Members.AsNoTracking() on user.MemberId equals member.Id
+            join contact in dbContext.MemberContacts.AsNoTracking() on member.Id equals contact.MemberId into contactGroup
+            from contact in contactGroup.DefaultIfEmpty()
+            join presentAddress in dbContext.MemberAddresses.AsNoTracking().Where(address => address.AddressType == MemberAddressType.Present)
+                on member.Id equals presentAddress.MemberId into presentAddressGroup
+            from presentAddress in presentAddressGroup.DefaultIfEmpty()
+            join permanentAddress in dbContext.MemberAddresses.AsNoTracking().Where(address => address.AddressType == MemberAddressType.Permanent)
+                on member.Id equals permanentAddress.MemberId into permanentAddressGroup
+            from permanentAddress in permanentAddressGroup.DefaultIfEmpty()
+            select new MyContactDetail(
+                member.Id,
+                contact != null ? contact.Landline : null,
+                contact != null ? contact.MobileNumber : null,
+                contact != null ? contact.Email : null,
+                presentAddress != null ? presentAddress.AddressLine : null,
+                permanentAddress != null ? permanentAddress.AddressLine : null))
             .SingleOrDefaultAsync(cancellationToken);
     }
 }

@@ -168,6 +168,18 @@ public class MemberStatusTransitionServiceTests
             SaveChangesCalled = true;
             return Task.CompletedTask;
         }
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberStatusTransitionService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberStatusTransitionService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberStatusTransitionService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberStatusTransitionService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger

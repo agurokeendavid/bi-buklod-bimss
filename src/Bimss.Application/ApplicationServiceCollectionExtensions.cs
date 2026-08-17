@@ -25,6 +25,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ImportBatchPromotionService>();
         services.AddScoped<MemberUpdateRequestSubmissionService>();
         services.AddScoped<MemberUpdateRequestReviewService>();
+        services.AddScoped<MemberContactSelfServiceUpdateService>();
 
         return services;
     }
