@@ -1,5 +1,6 @@
 ﻿using Bimss.Domain.Membership;
 using Bimss.Domain.Membership.ReferenceData;
+using Bimss.Infrastructure.Membership;
 using Bimss.Infrastructure.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -353,6 +354,46 @@ public class MembershipSchemaConstraintTests : IAsyncLifetime
 
         await using var readContext = CreateDbContext();
         Assert.False(await readContext.MemberUpdateRequestChanges.AnyAsync(change => change.MemberUpdateRequestId == requestId));
+    }
+
+    // Regression coverage for a bug found in manual testing: EF Core's SQL
+    // Server provider throws InvalidOperationException at query-translation
+    // time for a Where/OrderBy applied *after* projecting into a record
+    // (MemberUpdateRequestSummary) rather than on the source entity first.
+    // The EF Core InMemory provider used by MemberUpdateRequestQueryServiceTests
+    // is far more permissive and never caught this — only a real SQL Server
+    // provider does, so this lives here rather than in that InMemory file.
+    [Fact]
+    public async Task MemberUpdateRequestQueryService_ListAsync_ExecutesAgainstRealSqlServer()
+    {
+        if (!_isAvailable)
+        {
+            return;
+        }
+
+        var civilStatusId = await SeedCivilStatusAsync();
+
+        await using (var dbContext = CreateDbContext())
+        {
+            var member = CreateMember(civilStatusId);
+            dbContext.Members.Add(member);
+            dbContext.MemberUpdateRequests.Add(new MemberUpdateRequest(
+                Guid.NewGuid(), member.Id, Guid.NewGuid(), DateTimeOffset.UtcNow,
+                [new MemberUpdateRequestChangeInput("LastName", "Dela Cruz", "Santos")]));
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using var readContext = CreateDbContext();
+        var queryService = new MemberUpdateRequestQueryService(readContext);
+
+        var unfiltered = await queryService.ListAsync(status: null, CancellationToken.None);
+        Assert.Single(unfiltered);
+
+        var pendingOnly = await queryService.ListAsync(MemberUpdateRequestStatus.Pending, CancellationToken.None);
+        Assert.Single(pendingOnly);
+
+        var byMember = await queryService.ListByMemberIdAsync(unfiltered[0].MemberId, CancellationToken.None);
+        Assert.Single(byMember);
     }
 
     private async Task<Guid> SeedCivilStatusAsync()
