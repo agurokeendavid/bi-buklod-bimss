@@ -67,7 +67,7 @@ public class MembershipSchemaConstraintTests : IAsyncLifetime
 
         var applied = await dbContext.Database.GetAppliedMigrationsAsync();
 
-        Assert.Contains(applied, migration => migration.EndsWith("_AddMemberDocument", StringComparison.Ordinal));
+        Assert.Contains(applied, migration => migration.EndsWith("_AddImportStagingSchema", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -212,6 +212,108 @@ public class MembershipSchemaConstraintTests : IAsyncLifetime
         Assert.False(await readContext.Members.AnyAsync(m => m.Id == memberId));
         Assert.False(await readContext.MemberStatusHistories.AnyAsync(h => h.MemberId == memberId));
         Assert.False(await readContext.MemberEmployments.AnyAsync(e => e.MemberId == memberId));
+    }
+
+    [Fact]
+    public async Task MemberImportStaging_RowNumberUniquePerBatch_IsEnforced()
+    {
+        if (!_isAvailable)
+        {
+            return;
+        }
+
+        Guid batchId;
+        await using (var dbContext = CreateDbContext())
+        {
+            var batch = new ImportBatch(Guid.NewGuid(), "legacy-members.xlsx", Guid.NewGuid(), DateTimeOffset.UtcNow);
+            batchId = batch.Id;
+            dbContext.ImportBatches.Add(batch);
+            dbContext.MemberImportStagingRows.Add(
+                new MemberImportStaging(Guid.NewGuid(), batchId, 1, new MemberImportStagingFields { LastName = "Dela Cruz" }));
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using var conflictingContext = CreateDbContext();
+        conflictingContext.MemberImportStagingRows.Add(
+            new MemberImportStaging(Guid.NewGuid(), batchId, 1, new MemberImportStagingFields { LastName = "Santos" }));
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => conflictingContext.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task MemberImportStaging_PromotedMemberUniqueConstraint_IsEnforced()
+    {
+        if (!_isAvailable)
+        {
+            return;
+        }
+
+        var civilStatusId = await SeedCivilStatusAsync();
+        var batchId = Guid.NewGuid();
+        Guid promotedMemberId;
+
+        await using (var dbContext = CreateDbContext())
+        {
+            dbContext.ImportBatches.Add(new ImportBatch(batchId, "legacy-members.xlsx", Guid.NewGuid(), DateTimeOffset.UtcNow));
+
+            var promotedMember = CreateMember(civilStatusId);
+            promotedMemberId = promotedMember.Id;
+            dbContext.Members.Add(promotedMember);
+
+            var firstRow = new MemberImportStaging(Guid.NewGuid(), batchId, 1, new MemberImportStagingFields { LastName = "Dela Cruz" });
+            firstRow.RecordValidation(isValid: true);
+            firstRow.MarkPromoted(promotedMemberId);
+            dbContext.MemberImportStagingRows.Add(firstRow);
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using var conflictingContext = CreateDbContext();
+        var secondRow = new MemberImportStaging(Guid.NewGuid(), batchId, 2, new MemberImportStagingFields { LastName = "Dela Cruz" });
+        secondRow.RecordValidation(isValid: true);
+        secondRow.MarkPromoted(promotedMemberId);
+        conflictingContext.MemberImportStagingRows.Add(secondRow);
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => conflictingContext.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task DeletingImportBatch_CascadesToStagingRowsAndValidationErrors()
+    {
+        if (!_isAvailable)
+        {
+            return;
+        }
+
+        Guid batchId;
+        Guid rowId;
+        await using (var dbContext = CreateDbContext())
+        {
+            var batch = new ImportBatch(Guid.NewGuid(), "legacy-members.xlsx", Guid.NewGuid(), DateTimeOffset.UtcNow);
+            batchId = batch.Id;
+            dbContext.ImportBatches.Add(batch);
+
+            var row = new MemberImportStaging(Guid.NewGuid(), batchId, 1, new MemberImportStagingFields { LastName = "Dela Cruz" });
+            rowId = row.Id;
+            dbContext.MemberImportStagingRows.Add(row);
+
+            dbContext.ImportValidationErrors.Add(new ImportValidationError(
+                Guid.NewGuid(), batchId, rowId, "EmployeeNumber", ImportValidationSeverity.Error, "Employee number is required.", DateTimeOffset.UtcNow));
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using (var deleteContext = CreateDbContext())
+        {
+            var batch = await deleteContext.ImportBatches.SingleAsync(b => b.Id == batchId);
+            deleteContext.ImportBatches.Remove(batch);
+            await deleteContext.SaveChangesAsync();
+        }
+
+        await using var readContext = CreateDbContext();
+        Assert.False(await readContext.ImportBatches.AnyAsync(b => b.Id == batchId));
+        Assert.False(await readContext.MemberImportStagingRows.AnyAsync(r => r.ImportBatchId == batchId));
+        Assert.False(await readContext.ImportValidationErrors.AnyAsync(e => e.ImportBatchId == batchId));
     }
 
     private async Task<Guid> SeedCivilStatusAsync()

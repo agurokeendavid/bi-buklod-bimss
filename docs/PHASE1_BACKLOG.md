@@ -48,10 +48,12 @@ membership register, member record, new-member form) — see
 versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
-Phase 1D (Existing Member Import) is next; its dependency on the retired
-Razor/MVC plan is already rescoped (see the Phase 1D section below) —
-BIMSS-038 (Import batch admin UI) now depends on BIMSS-047 like every
-other Phase 1C UI task did.
+Phase 1D (Existing Member Import) is underway: BIMSS-033 (import staging
+schema — `ImportBatch`/`MemberImportStaging`/`ImportValidationError`) is
+Done as of 2026-08-17; BIMSS-034 (Excel ingestion service) is next. Its
+dependency on the retired Razor/MVC plan is already rescoped (see the
+Phase 1D section below) — BIMSS-038 (Import batch admin UI) now depends
+on BIMSS-047 like every other Phase 1C UI task did.
 
 ## Phase 1A — Platform Foundation
 
@@ -1522,14 +1524,74 @@ screens (server-side authoritative validation, `fetchWithAuth`, shadcn/
 ui data table for reviewing staged rows). Detailed scope is still worked
 out when the task is actually started, same as every other task.
 
-| ID | Title | Depends on |
-|---|---|---|
-| BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | BIMSS-004 |
-| BIMSS-034 | Excel ingestion service | BIMSS-033 |
-| BIMSS-035 | Staging validation rules | BIMSS-034 |
-| BIMSS-036 | Duplicate detection | BIMSS-035 |
-| BIMSS-037 | Promote staging → domain entities | BIMSS-022, BIMSS-036 |
-| BIMSS-038 | Import batch admin UI | BIMSS-033–037, BIMSS-047 |
+| ID | Title | Status | Depends on |
+|---|---|---|---|
+| BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | Done — [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42) | BIMSS-004 |
+| BIMSS-034 | Excel ingestion service | Not started | BIMSS-033 |
+| BIMSS-035 | Staging validation rules | Not started | BIMSS-034 |
+| BIMSS-036 | Duplicate detection | Not started | BIMSS-035 |
+| BIMSS-037 | Promote staging → domain entities | Not started | BIMSS-022, BIMSS-036 |
+| BIMSS-038 | Import batch admin UI | Not started | BIMSS-033–037, BIMSS-047 |
+
+### BIMSS-033 — ImportBatch/MemberImportStaging/ImportValidationError schema (Done)
+
+Merged via [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42).
+
+- `ImportBatch` (`Bimss.Domain/Membership/`) — one row per import run
+  (docs/DOMAIN_WORKFLOWS.md's "Existing member migration / update"
+  workflow). `Created -> Staged -> Validated -> Promoted` lifecycle, plus
+  `Cancel` from any non-terminal state, each guarded with
+  `ConflictException` on an invalid transition — same pattern as `Member`'s
+  status machine. No FK from `UploadedByUserId` to `AspNetUsers` (indexed
+  only), matching `MemberStatusHistory.ActorUserId`'s established
+  reasoning. Does not hold an in-memory collection of its staging rows — a
+  batch can be thousands of rows, so those are queried by `ImportBatchId`
+  through a future query service instead (avoids N+1 / loading huge
+  aggregates, per `AGENTS.md`).
+- `MemberImportStaging` (`Bimss.Domain/Membership/`) — one row per source
+  spreadsheet row, holding the ~31 raw values from
+  `docs/DATA_DICTIONARY.md`'s Excel field mapping as unvalidated nullable
+  strings (nvarchar(max), deliberately unconstrained — truncating raw
+  migration data would be silent data loss). Repeating groups (children;
+  beneficiaries 1-N) are captured as a single raw value each
+  (`ChildrenRaw`, `BeneficiariesRaw`) rather than numbered columns, per the
+  data dictionary's own warning against that pattern — the exact
+  split/delimiter rule is still an open question deferred to
+  BIMSS-034/036. Raw values are bundled into a `MemberImportStagingFields`
+  record so the constructor doesn't take 30+ positional parameters.
+  `RecordValidation`/`RecordMatch`/`MarkPromoted` enforce the pipeline's
+  own invariants (can't promote an unvalidated or already-promoted row)
+  without deciding *how* a row is validated or matched — those algorithms
+  are BIMSS-035/036/037's job.
+- `ImportValidationError` (`Bimss.Domain/Membership/`) — immutable
+  row/field-level or batch-level validation finding, same
+  create-once-no-update reasoning as `MemberDocument`.
+- Configurations (`Bimss.Infrastructure/Membership/`): `MemberImportStaging`
+  has a unique `(ImportBatchId, RowNumber)` index (no two rows in a batch
+  share a source row number) and a unique filtered index on
+  `PromotedMemberId` (a member is promoted from at most one row); both FKs
+  to `Member` (`MatchedMemberId`, `PromotedMemberId`) are `Restrict`.
+  `ImportBatch`/`MemberImportStaging`/`ImportValidationError` cascade
+  through their parent (batch -> staging rows -> validation errors).
+- Migration: `AddImportStagingSchema` — three tables
+  (`ImportBatches`, `MemberImportStaging`, `ImportValidationErrors`).
+- Tests: `ImportBatchTests`/`MemberImportStagingTests`/
+  `ImportValidationErrorTests` (unit — constructor guards, transition
+  success/failure paths); `ImportBatchConfigurationTests`/
+  `MemberImportStagingConfigurationTests`/
+  `ImportValidationErrorConfigurationTests` (unit, `DbContext.Model`
+  metadata-inspection style); `ImportStagingPersistenceTests` (integration
+  — round-trips and multi-reload transition persistence, InMemory
+  provider); `MembershipSchemaConstraintTests` gained three real-SQL-Server
+  cases (row-number uniqueness, promoted-member uniqueness, batch-delete
+  cascade) and its migration smoke-check now points at
+  `AddImportStagingSchema`.
+- Scope is schema/domain-rule only, per the task title — no Application
+  use case, ingestion service, or admin UI (BIMSS-034 onward).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (364/364 passing)
+  in Release, `dotnet format --verify-no-changes`. Migration diff reviewed
+  for sanity (three tables, expected FKs/indexes, nothing else touched).
+- Dependencies: BIMSS-004.
 
 ## Phase 1E — Member Self-Service (Not started)
 
