@@ -38,6 +38,12 @@ public class BimssDbContext(DbContextOptions<BimssDbContext> options)
 
     public DbSet<MemberDocument> MemberDocuments => Set<MemberDocument>();
 
+    public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
+
+    public DbSet<MemberImportStaging> MemberImportStagingRows => Set<MemberImportStaging>();
+
+    public DbSet<ImportValidationError> ImportValidationErrors => Set<ImportValidationError>();
+
     public DbSet<CivilStatus> CivilStatuses => Set<CivilStatus>();
 
     public DbSet<Suffix> Suffixes => Set<Suffix>();
