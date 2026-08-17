@@ -21,6 +21,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<MemberDocumentUploadService>();
         services.AddScoped<ImportBatchIngestionService>();
         services.AddScoped<ImportBatchValidationService>();
+        services.AddScoped<ImportBatchMatchingService>();
 
         return services;
     }

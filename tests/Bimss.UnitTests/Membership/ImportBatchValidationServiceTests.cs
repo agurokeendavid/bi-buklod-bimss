@@ -218,6 +218,13 @@ public class ImportBatchValidationServiceTests
             SaveChangesAsyncCalled = true;
             return Task.CompletedTask;
         }
+
+        public Task<Guid?> FindMemberIdByEmployeeNumberAsync(string employeeNumber, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchValidationService.");
+
+        public Task<Guid?> FindMemberIdByNameAndDateOfBirthAsync(
+            string lastName, string firstName, DateOnly dateOfBirth, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by ImportBatchValidationService.");
     }
 
     private sealed class FakeReferenceDataQueryService : IReferenceDataQueryService

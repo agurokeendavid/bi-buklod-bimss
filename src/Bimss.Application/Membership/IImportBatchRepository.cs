@@ -22,4 +22,10 @@ public interface IImportBatchRepository
     Task AddValidationErrorsAsync(IReadOnlyCollection<ImportValidationError> errors, CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    // BIMSS-036: duplicate detection.
+    Task<Guid?> FindMemberIdByEmployeeNumberAsync(string employeeNumber, CancellationToken cancellationToken);
+
+    Task<Guid?> FindMemberIdByNameAndDateOfBirthAsync(
+        string lastName, string firstName, DateOnly dateOfBirth, CancellationToken cancellationToken);
 }
