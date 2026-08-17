@@ -123,3 +123,23 @@ export interface MyProfile {
 export interface SubmitMemberUpdateRequestResult {
   id: string;
 }
+
+// Mirrors Bimss.Contracts.Membership.MyContactResponse.
+export interface MyContact {
+  landline: string | null;
+  mobileNumber: string | null;
+  email: string | null;
+  presentAddress: string | null;
+  permanentAddress: string | null;
+}
+
+// Mirrors Bimss.Contracts.Membership.UpdateMyContactRequest — the one
+// profile area a member can edit directly without officer review, per
+// docs/DATA_DICTIONARY.md's confirmed decision.
+export interface UpdateMyContactRequest {
+  landline: string | null;
+  mobileNumber: string;
+  email: string;
+  presentAddress: string | null;
+  permanentAddress: string | null;
+}

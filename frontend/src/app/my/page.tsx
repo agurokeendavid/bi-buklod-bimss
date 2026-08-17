@@ -97,9 +97,14 @@ export default function MemberDashboardPage() {
           </div>
           <CardDescription>{profile.positionDesignation} · {profile.officeUnitName}</CardDescription>
         </div>
-        <Link href="/my/update-request" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-          Request a profile change
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/my/contact" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Update contact info
+          </Link>
+          <Link href="/my/update-request" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Request a profile change
+          </Link>
+        </div>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <FactBlock label="Membership status" value={profile.status} />

@@ -179,6 +179,18 @@ public class MemberUpdateRequestReviewServiceTests
             => throw new NotSupportedException("Not used by MemberUpdateRequestReviewService.");
 
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<MemberContact?> GetTrackedContactByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestReviewService.");
+
+        public Task AddContactAsync(MemberContact contact, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestReviewService.");
+
+        public Task<IReadOnlyList<MemberAddress>> GetTrackedAddressesByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestReviewService.");
+
+        public Task AddAddressAsync(MemberAddress address, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestReviewService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger
