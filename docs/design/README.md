@@ -27,6 +27,39 @@ because the backing API/data doesn't exist yet:
 
 See `docs/PHASE1_BACKLOG.md` for the task-level record of what shipped and what's still open.
 
+## Superseded design assumptions (2026-08-18)
+
+This handoff predates `docs/DEVELOPMENT_ROADMAP.md`'s phase renumbering
+and the Phase 2/3 business-question confirmations recorded in
+`docs/DATA_DICTIONARY.md`. Two design assumptions below are **wrong** and
+must not be carried into Phase 2/3 implementation:
+
+- **Beneficiary shares/percentages do not exist.** The Member record
+  screen's Beneficiaries panel (below, "Contributions tab") and the
+  "Beneficiary shares total 100%" business rule (below, "Business rules
+  the UI must express" #5) are both superseded — Buklod confirmed
+  2026-08-17 that a beneficiary is just a name + relationship, no share
+  field, no 100%-total validation. See `docs/PHASE2_BACKLOG.md`.
+- **Contribution amount does not vary by rank/tier.** The membership
+  application's "Contribution basis" radio cards (Standard/Supervisory/
+  Voluntary top-up, below, screen 5) are superseded — Buklod confirmed
+  2026-08-17 that the rate is a single fixed flat amount for every
+  member (effective-dated, but not per-member). See
+  `docs/PHASE3_BACKLOG.md`.
+
+Everything else in this document (layout, spacing, typography, shell,
+tokens, screens 1–4 and 6–9's non-beneficiary/non-contribution-tier
+content) still reflects the current design direction. Also note:
+**"Member self-service (Phase 2)" in "Not designed yet" below is stale —
+self-service shipped in Phase 1E** (BIMSS-039–045); this doc predates
+that work.
+
+Also worth a deliberate decision before building Phase 4 (Loans): the
+Settings screen's "two-person approval above ₱50,000" toggle (below,
+screen 9) introduces a specific threshold rule never confirmed with
+Buklod during Phase 4's business-question round
+(`docs/PHASE4_BACKLOG.md`). Don't silently adopt or drop it — ask.
+
 ## Overview
 
 UI design for the **Buklod Integrated Membership and Services System (BIMSS)** — the Bureau of Immigration Buklod ng Kawani employee association system. The design covers nine screens spanning authentication, an admin dashboard, the membership register, a member record view, a membership application wizard, contributions/remittance posting, an approvals queue, reports, and settings/roles.
@@ -241,9 +274,9 @@ Three rows.
 - Breadcrumb "Members / {name}" (existing `breadcrumbs.tsx`).
 - **Identity header card:** 76px ID-photo placeholder (diagonal stripe pattern `repeating-linear-gradient(135deg, #f4f4f5 0 6px, #e9eaec 6px 12px)`, `rounded-lg`, centered 9.5px "ID photo" label) · name (21px / 600 / `-0.025em`) + status badge · "Position · Division · Member since {date}" (13px muted) · four fact blocks 26px apart (label 11.5px muted over value 14px / 600 tabular): Membership ID, Employee no., Contributions YTD, Outstanding loan · right actions "Print ID" (outline) and "Edit record" (primary).
 - **Tabs** (underline style, 2px primary indicator, 13px): Contributions · Personal · Loans · Benefit claims · Documents · Audit trail. Wire the existing `member-documents-panel.tsx` into **Documents** and `member-status-history-panel.tsx` into **Audit trail**.
-- **Contributions tab**, `1.35fr / 1fr`: left = **Contribution ledger** table (Period · Reference tabular muted · Amount right-aligned · Status badge). Right column = **Personal details** (key/value rows, muted label left, 500-weight value right-aligned) over **Beneficiaries** (bordered `rounded-lg` rows: name 13px/500 + relationship 11.5px muted, right-aligned share %).
+- **Contributions tab**, `1.35fr / 1fr`: left = **Contribution ledger** table (Period · Reference tabular muted · Amount right-aligned · Status badge). Right column = **Personal details** (key/value rows, muted label left, 500-weight value right-aligned) over **Beneficiaries** (bordered `rounded-lg` rows: name 13px/500 + relationship 11.5px muted — **drop the right-aligned share % column, see "Superseded design assumptions"**).
 
-**Validation:** beneficiary shares must total 100%.
+~~**Validation:** beneficiary shares must total 100%.~~ Superseded — no shares field exists (`docs/PHASE2_BACKLOG.md`).
 
 ### 5. Membership application — `/dashboard/members/new`
 
@@ -254,14 +287,14 @@ Steps: Personal information → **Employment and eligibility** (shown) → Benef
 - **Header card:** title "Membership application" · "Draft saved 2 minutes ago · Ref. APP-2026-00412" · right-aligned "Step 2 of 5". Below, five equal-width segments: a 4px `rounded-full` bar (primary if done/current, `--border` if upcoming) over an 11.5px label (current = 600 weight, foreground; upcoming = muted).
 - **Body card:** section title "Employment and eligibility" + helper *"Verified against the BI personnel record. Fields marked with an asterisk are required."* Two-column grid, `gap: 16px 18px`, fields spanning 1 or 2 columns.
 - **Field states:** normal white with `--border`; **read-only** `#fafafa` background, muted text, helper "Pulled from the BI personnel record and read-only."; **error** `#fca5a5` border + destructive helper; optional right-aligned 11px suffix such as "verified".
-- **Contribution basis:** three bordered radio cards in a row — "Standard · ₱800 / month" (Default rate for rank-and-file) · "Supervisory · ₱1,200 / month" (Division chiefs and above) · "Voluntary top-up" (Member specifies the amount). Selected: primary border + `--primary-subtle` background + filled 7px dot.
+- ~~**Contribution basis:** three bordered radio cards in a row — "Standard · ₱800 / month" (Default rate for rank-and-file) · "Supervisory · ₱1,200 / month" (Division chiefs and above) · "Voluntary top-up" (Member specifies the amount). Selected: primary border + `--primary-subtle` background + filled 7px dot.~~ **Superseded 2026-08-18** — contribution rate is a single fixed flat amount for every member, not a rank-based tier picker. Drop this field from the membership-application form entirely; the rate itself is configured once in `ContributionRate` (`docs/PHASE3_BACKLOG.md`), not chosen per application.
 - **Supporting documents:** dashed `#d4d4d8` `rounded-lg` drop zone on `#fafafa`, 20px padding, "Drop files or browse" + constraints line *"PDF, JPG, or PNG · maximum 5 MB per file · appointment paper and valid ID required"*. Below, uploaded-file chips: 26px type square, name 12.5px/500, size 11px muted, `✕` remove.
 - **Cross-field warning** as an amber `Alert` with a 3px left bar: *"The employee number entered already has a closed Buklod record from 2016. Confirm whether this is a reinstatement before submitting; reinstatements retain the original membership ID."*
 - **Footer** above a divider: "Back" outline left; "Save draft" outline + "Continue to beneficiaries" primary right.
 
 **Behavior:** `react-hook-form` + `zod` per step; validate on step change; autosave draft on step change; block forward navigation on validation failure but always allow Back.
 
-### 6. Contributions and remittances — `/contributions` *(Phase 4)*
+### 6. Contributions and remittances — `/contributions` *(Phase 3 — see "Superseded design assumptions" for the contribution-tier caveat)*
 
 - Four tiles: Posted this period ₱2.06M · Unposted / on hold ₱74.4K · Arrears ₱312K · Adjustments YTD 41.
 - Card header "Post remittance batch" + "Payroll deduction file for the period 01–15 Aug 2026"; actions "Import payroll file" (outline) and "Post batch" (primary).
@@ -269,7 +302,7 @@ Steps: Personal information → **Employment and eligibility** (shown) → Benef
 
 **Behavior:** posting is irreversible — confirm in a `Dialog` naming the batch id, member count, and total. Posted batches are corrected only through an `ADJ-` adjustment entry.
 
-### 7. Approvals — `/approvals` *(Phase 5)*
+### 7. Approvals — `/approvals` *(Phase 4 — this is the Loan application review/approve queue, per its own detail content below)*
 
 Master–detail, `1.25fr / 1fr`.
 
@@ -278,7 +311,7 @@ Master–detail, `1.25fr / 1fr`.
 
 **Behavior:** Return and Deny require remarks; Approve does not. Amounts above the two-person threshold show a second-approver notice.
 
-### 8. Reports — `/reports` *(Phase 7)*
+### 8. Reports — `/reports` *(Phase 6)*
 
 3-column card grid: name (14px/600) · description (12.5px muted, line-height 1.55) · cadence pill + "Last run {date}". Hover = primary border. Cards: Collection summary · Membership register · Loan portfolio · Benefit claims released · Delinquency report · Audit trail extract.
 
@@ -328,7 +361,7 @@ Per-screen client state needed: table selection set, active filter pill, current
 2. Posted financial records are immutable; corrections are new `ADJ-` entries with remarks.
 3. Return and Deny require remarks.
 4. Read-only fields sourced from the BI personnel record are visibly disabled with the reason stated.
-5. Beneficiary shares total 100%.
+5. ~~Beneficiary shares total 100%.~~ **Superseded 2026-08-18 — no shares exist, see the note near the top of this document.**
 6. Members never see other members' data — including counts and search results.
 7. Currency always `₱` with thousands separators and two decimals in ledgers; summary tiles may abbreviate (`₱4.12M`).
 8. Reference ID formats: `BKD-YYYY-NNNNN` member · `BI-YYYY-NNNNN` employee · `APP-` application · `LN-` loan · `CLM-` claim · `RC-` record correction · `RB-` remittance batch · `ADJ-` adjustment · `OTC-` over-the-counter.
@@ -354,16 +387,25 @@ No image assets. The "BI" seal is a text placeholder inside a ringed circle, and
 5. **Dashboard** — three-row layout; Recharts for the paired bar chart.
 6. **Member record** — tabs; rewire the two existing panels.
 7. **Wizard** — `/members/new` five-step form.
-8. Phase 4+ — Contributions, Approvals, Reports, Settings.
+8. Phase 3+ — Contributions, Loan approvals, Reports, Settings.
 
 ## Not designed yet
 
-Member self-service (Phase 2), beneficiaries UI (Phase 3), **elections module (Phase 6 — no designs exist)**, import-batch error/staging screens, ID card print template, loan amortization schedule, mobile layouts, dark mode, and the audit-log browser. Ask before implementing these.
+Beneficiaries UI (Phase 2 — see "Superseded design assumptions" for the
+one field this doc got wrong), the rest of Loans beyond the approval
+queue — application form, amortization schedule, payment history (Phase
+4), **elections module (Phase 5 — no designs exist)**, notification
+center/announcements (Phase 6), import-batch error/staging screens, ID
+card print template, mobile layouts, dark mode, and the audit-log
+browser. Ask before implementing these. (Member self-service is no
+longer on this list — it shipped in Phase 1E, BIMSS-039–045.)
 
 ## Files in this bundle
 
 | File | What it is |
 |---|---|
-| `BIMSS.dc.html` | Interactive prototype — all nine screens. Open in a browser and click through. |
+| `prototype/BIMSS.dc.html` | Interactive prototype — all nine screens. Open in a browser and click through (loads `prototype/support.js` relatively, so the pair must stay together). |
+| `prototype/support.js` | Runtime the prototype needs to render — generated, not hand-edited. |
 | `BIMSS-UI-SPEC.md` | Full UI specification with the repo mapping table (which spec section touches which file). |
+| `CLAUDE_DESIGN_BRIEF.md` | Paste-in brief for updating the live Claude Design project with Phase 2–6 corrections and new screens. |
 | `README.md` | This document. |
