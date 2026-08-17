@@ -140,6 +140,7 @@ Example permissions:
 
 ```text
 Membership.ViewSelf
+Membership.ManageSelf
 Membership.Manage
 Membership.Verify
 Beneficiary.ManageSelf

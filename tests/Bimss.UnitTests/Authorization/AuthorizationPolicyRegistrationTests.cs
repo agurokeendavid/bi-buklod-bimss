@@ -1,4 +1,5 @@
-﻿using Bimss.Domain.Authorization;
+﻿using System.Security.Claims;
+using Bimss.Domain.Authorization;
 using Bimss.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
@@ -28,6 +29,25 @@ public class AuthorizationPolicyRegistrationTests
                     && requirement.AllowedValues != null
                     && requirement.AllowedValues.Contains(permission));
         }
+    }
+
+    [Theory]
+    [InlineData(Permission.Membership.Manage, true)]
+    [InlineData(Permission.Membership.ManageSelf, true)]
+    [InlineData(Permission.Membership.ViewSelf, false)]
+    public async Task ReferenceDataReadPolicy_AllowsManageOrManageSelf_ButNotOtherPermissions(string permission, bool expectedToSucceed)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddBimssAuthorization();
+        await using var provider = services.BuildServiceProvider();
+
+        var authorizationService = provider.GetRequiredService<IAuthorizationService>();
+        var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(Permission.ClaimType, permission)], "Test"));
+
+        var result = await authorizationService.AuthorizeAsync(user, resource: null, AuthorizationPolicies.ReferenceDataRead);
+
+        Assert.Equal(expectedToSucceed, result.Succeeded);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-﻿namespace Bimss.Contracts.Membership;
+namespace Bimss.Contracts.Membership;
 
 public class MyProfileResponse
 {
@@ -10,11 +10,15 @@ public class MyProfileResponse
 
     public string? MiddleName { get; set; }
 
+    public Guid? SuffixId { get; set; }
+
     public string? SuffixName { get; set; }
 
     public DateOnly DateOfBirth { get; set; }
 
     public string PlaceOfBirth { get; set; } = string.Empty;
+
+    public Guid CivilStatusId { get; set; }
 
     public string CivilStatusName { get; set; } = string.Empty;
 
@@ -25,6 +29,8 @@ public class MyProfileResponse
     public string EmployeeNumber { get; set; } = string.Empty;
 
     public string PositionDesignation { get; set; } = string.Empty;
+
+    public Guid OfficeUnitId { get; set; }
 
     public string OfficeUnitName { get; set; } = string.Empty;
 

@@ -24,6 +24,7 @@ public static class DevelopmentIdentitySeeder
         ("Member",
         [
             Permission.Membership.ViewSelf,
+            Permission.Membership.ManageSelf,
             Permission.Beneficiary.ManageSelf,
             Permission.Contribution.ViewSelf,
             Permission.Loan.Apply,

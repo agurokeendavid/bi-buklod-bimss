@@ -17,4 +17,10 @@ public interface IMemberQueryService
     // permission to hit the officer-facing ReferenceDataController, which
     // stays scoped to Permission.Membership.Manage).
     Task<MyProfileDetail?> GetMyProfileByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    // BIMSS-042: a lighter lookup than GetMyProfileByUserIdAsync for
+    // callers that just need to resolve "which member" without the
+    // resolved-reference-name projection (submitting an update request
+    // compares against Member/MemberEmployment directly, not display names).
+    Task<Guid?> GetMemberIdByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 }

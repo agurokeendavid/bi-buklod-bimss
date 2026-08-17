@@ -1,14 +1,18 @@
 ﻿using Bimss.Application.Membership;
 using Bimss.Contracts.Membership;
-using Bimss.Domain.Authorization;
+using Bimss.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bimss.Api.Controllers;
 
+// Gated by the combined ReferenceDataReadPolicy (Manage OR ManageSelf), not
+// a single Permission — this is shared taxonomy the officer-facing admin
+// forms and the member self-service edit form (BIMSS-042) both need to
+// populate a Select from; it isn't member-specific or sensitive.
 [ApiController]
 [Route("api/reference-data")]
-[Authorize(Policy = Permission.Membership.Manage)]
+[Authorize(Policy = AuthorizationPolicies.ReferenceDataRead)]
 public class ReferenceDataController(IReferenceDataQueryService referenceDataQueryService) : ControllerBase
 {
     [HttpGet("civil-statuses")]

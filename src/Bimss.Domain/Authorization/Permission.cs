@@ -7,6 +7,11 @@ public static class Permission
     public static class Membership
     {
         public const string ViewSelf = "Membership.ViewSelf";
+
+        // Submitting/tracking one's own update requests (BIMSS-042/045) and
+        // direct self-service edit of low-risk fields (BIMSS-044) — distinct
+        // from ViewSelf (read-only) and Manage (officer, any member).
+        public const string ManageSelf = "Membership.ManageSelf";
         public const string Manage = "Membership.Manage";
         public const string Verify = "Membership.Verify";
     }
@@ -53,6 +58,7 @@ public static class Permission
     public static IReadOnlyCollection<string> All { get; } =
     [
         Membership.ViewSelf,
+        Membership.ManageSelf,
         Membership.Manage,
         Membership.Verify,
         Beneficiary.ManageSelf,

@@ -54,7 +54,10 @@ export interface CreateMemberRequest {
 }
 
 // Mirrors Bimss.Contracts.Membership.UpdateMemberRequest. EmployeeNumber is
-// a business identifier and not editable through this request.
+// a business identifier and not editable through this request. Reused
+// as-is for BIMSS-042's self-service update-request submission — the
+// proposed-values shape is identical, only the workflow differs (apply
+// immediately vs. queue for officer review).
 export interface UpdateMemberRequest {
   lastName: string;
   firstName: string;
@@ -80,27 +83,6 @@ export interface MemberDocument {
   uploadedByUserId: string | null;
 }
 
-// Mirrors Bimss.Contracts.Membership.MyProfileResponse — self-service's own
-// projection, with reference values already resolved to display names
-// server-side (unlike MemberDetail, which keeps raw ids for the
-// officer-facing edit form's Select components).
-export interface MyProfile {
-  id: string;
-  lastName: string;
-  firstName: string;
-  middleName: string | null;
-  suffixName: string | null;
-  dateOfBirth: string;
-  placeOfBirth: string;
-  civilStatusName: string;
-  joiningReason: string | null;
-  status: MemberStatus;
-  employeeNumber: string;
-  positionDesignation: string;
-  officeUnitName: string;
-  permanentAppointmentDate: string | null;
-}
-
 // Mirrors Bimss.Contracts.Membership.MemberStatusHistoryResponse.
 export interface MemberStatusHistoryEntry {
   id: string;
@@ -110,4 +92,34 @@ export interface MemberStatusHistoryEntry {
   actorUserId: string | null;
   occurredAtUtc: string;
   remarks: string | null;
+}
+
+// Mirrors Bimss.Contracts.Membership.MyProfileResponse — self-service's own
+// projection. Carries both the resolved display name (for the read-only
+// "My Profile" view) and the raw id (for BIMSS-042's edit form, which needs
+// to pre-select the right option in each Select the same way
+// MemberDetail's ids do for the officer-facing edit form).
+export interface MyProfile {
+  id: string;
+  lastName: string;
+  firstName: string;
+  middleName: string | null;
+  suffixId: string | null;
+  suffixName: string | null;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  civilStatusId: string;
+  civilStatusName: string;
+  joiningReason: string | null;
+  status: MemberStatus;
+  employeeNumber: string;
+  positionDesignation: string;
+  officeUnitId: string;
+  officeUnitName: string;
+  permanentAppointmentDate: string | null;
+}
+
+// Mirrors Bimss.Contracts.Membership.SubmitMemberUpdateRequestResponse.
+export interface SubmitMemberUpdateRequestResult {
+  id: string;
 }
