@@ -45,6 +45,9 @@ Technical configuration and user/permission administration. System administrator
 10. Audit
 11. Reference Data
 12. Migration/Imports
+13. Benefits (benefit claims — confirmed real 2026-08-18, surfaced from the
+    Claude Design mockup's Reports/Approvals/dashboard references before
+    it had ever been scoped; see `docs/DEVELOPMENT_ROADMAP.md`)
 
 ## Important non-functional goals
 

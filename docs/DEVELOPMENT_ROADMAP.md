@@ -49,6 +49,7 @@ its section below for why.
 | 6 | Elections | 5 | Not started — scoped in `PHASE5_BACKLOG.md` |
 | 7 | Notifications and Announcements | 6 | Not started — scoped in `PHASE6_BACKLOG.md` |
 | 8 | Reports | 6 | Not started — scoped in `PHASE6_BACKLOG.md` |
+| 13 | Benefits (benefit claims) | 7 (new) | Not started — no backlog yet, blocked on Buklod questions (see below) |
 
 Notifications and Reports are grouped into one phase (6) because neither
 is a standalone data domain — DOMAIN_WORKFLOWS.md's workflow #10
@@ -142,7 +143,40 @@ data, even though the notification/schema groundwork (BIMSS-088–090)
 doesn't depend on that and can start any time — see the backlog's
 "Current state" note.
 
-## Phase 7 — Hardening / UAT / production (Not started)
+## Phase 7 — Benefits (benefit claims) (Not started, not yet scoped)
+
+**New module, not in the original roadmap** — surfaced 2026-08-18 while
+building out the Claude Design mockup: "Benefit claims" was referenced
+across the Reports card grid, the Approvals queue, and the original
+prototype's dashboard/member-record tabs, without ever having been
+scoped as a real feature anywhere in this repo's docs. Confirmed with
+the user 2026-08-18 that this is a real Buklod feature, not decorative
+leftover content — a member benefit payout (e.g. death/calamity/
+education benefit) with its own claims workflow, likely structurally
+similar to Loans (application → review/approval → release → paid) but
+against a benefit rather than a loan.
+
+Blocked on business questions that don't have answers yet — same
+pattern as Contributions/Loans/Elections before their backlogs got
+written. Get these from Buklod before drafting `PHASE7_BACKLOG.md`:
+
+- What benefit types exist (death, calamity, education, retirement,
+  other)? One generic type or several with different rules, mirroring
+  the Loans "one product for now" question?
+- Eligibility rules — membership tenure, contribution standing, event
+  documentation (e.g. death certificate) required to file a claim?
+- Payout amount rules — fixed per benefit type, tied to
+  contribution/membership history, or something else?
+- Approval workflow — same review/approve/release shape as Loans, or
+  different (e.g. committee vote, single officer)?
+- Funding source — paid from the same fund as loans/contributions, or a
+  separate benefit fund needing its own ledger?
+
+Until these are answered, don't invent numbers the way the Claude
+Design tool's stray "You answered" block did for Loans (see that
+phase's mockup session notes) — leave it genuinely open.
+
+## Phase 8 — Hardening / UAT / production (Not started)
 
 Unchanged in substance from the original roadmap's Phase 8, renumbered:
 

@@ -300,3 +300,9 @@ their backlogs.
 
 1. Are retirees/former employees/honorary members possible?
 2. What record-retention rules apply after membership ends?
+3. Benefits (confirmed real 2026-08-18, not yet scoped — see
+   `docs/DEVELOPMENT_ROADMAP.md` Phase 7): what benefit types exist
+   (death/calamity/education/retirement/other), what eligibility rules
+   apply, what payout amount rules apply, what approval workflow
+   applies, and is it funded from the same pool as loans/contributions
+   or a separate benefit fund?
