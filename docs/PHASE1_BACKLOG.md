@@ -48,10 +48,10 @@ membership register, member record, new-member form) — see
 versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
-Phase 1D (Existing Member Import) is underway: BIMSS-033 (import staging
-schema), BIMSS-034 (Excel ingestion service), and BIMSS-035 (staging
-validation rules) are Done as of 2026-08-17; BIMSS-036 (duplicate
-detection) is next. Its dependency on the retired Razor/MVC plan is
+Phase 1D (Existing Member Import) is underway: BIMSS-033 through BIMSS-036
+(import staging schema, Excel ingestion, staging validation, duplicate
+detection) are Done as of 2026-08-17; BIMSS-037 (promote staging ->
+domain entities) is next. Its dependency on the retired Razor/MVC plan is
 already rescoped (see the Phase 1D section below) — BIMSS-038 (Import
 batch admin UI) now depends on BIMSS-047 like every other Phase 1C UI
 task did.
@@ -1530,7 +1530,7 @@ out when the task is actually started, same as every other task.
 | BIMSS-033 | ImportBatch/MemberImportStaging/ImportValidationError schema | Done — [PR #42](https://github.com/agurokeendavid/bi-buklod-bimss/pull/42) | BIMSS-004 |
 | BIMSS-034 | Excel ingestion service | Done — [PR #43](https://github.com/agurokeendavid/bi-buklod-bimss/pull/43) | BIMSS-033 |
 | BIMSS-035 | Staging validation rules | Done — [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44) | BIMSS-034 |
-| BIMSS-036 | Duplicate detection | Not started | BIMSS-035 |
+| BIMSS-036 | Duplicate detection | Done — [PR #45](https://github.com/agurokeendavid/bi-buklod-bimss/pull/45) | BIMSS-035 |
 | BIMSS-037 | Promote staging → domain entities | Not started | BIMSS-022, BIMSS-036 |
 | BIMSS-038 | Import batch admin UI | Not started | BIMSS-033–037, BIMSS-047 |
 
@@ -1691,6 +1691,43 @@ Merged via [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (388/388 passing) in
   Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-034.
+
+### BIMSS-036 — Duplicate detection (Done)
+
+Merged via [PR #45](https://github.com/agurokeendavid/bi-buklod-bimss/pull/45).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's third and fourth migration steps:
+  "Match possible existing member -> Detect duplicate Employee Number /
+  identity candidates." `ImportBatchMatchingService.MatchAsync`
+  (`Bimss.Application/Membership/`) requires the batch be `Validated` first
+  (`ConflictException` otherwise) but runs matching against every row
+  regardless of that row's own `ValidationStatus` — a row can be flagged as
+  a duplicate independent of unrelated field errors. Matching does not
+  advance `ImportBatch.Status`; it only enriches each row via
+  `MemberImportStaging.RecordMatch`, since a reviewer needs both validation
+  and match results together before deciding whether to promote (still
+  BIMSS-037).
+- Two-tier matching, in order: an exact (case-insensitive) `EmployeeNumber`
+  match against an existing `MemberEmployment` is a `ConfirmedDuplicate` —
+  the number is unique and mandatory, so a match is the same person, not a
+  lookalike. Failing that, a same `LastName` + `FirstName` +
+  `DateOfBirth` match against an existing `Member` is only a
+  `PossibleDuplicate` (same name/DOB doesn't prove same identity) — left for
+  a reviewer to confirm or dismiss, never auto-resolved. `DateOfBirthRaw` is
+  parsed independently here (not reused from BIMSS-035) since a row can
+  still have an unrelated validation error while its date parses fine.
+- `IImportBatchRepository` grew with `FindMemberIdByEmployeeNumberAsync`/
+  `FindMemberIdByNameAndDateOfBirthAsync`; `ImportBatchRepository`
+  implements both with `.ToUpper()` comparisons (translatable by both the
+  SQL Server and InMemory providers, unlike `StringComparer.OrdinalIgnoreCase`).
+- Tests: `ImportBatchMatchingServiceTests` (unit — hand-rolled fakes;
+  confirmed-duplicate, possible-duplicate, no-match, unparseable-date,
+  wrong-batch-status, not-found, audit logging); `ImportBatchRepositoryTests`
+  gained four cases for the two new repository methods (case-insensitive
+  match, no-match, and a date-of-birth mismatch).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (399/399 passing) in
+  Release, `dotnet format --verify-no-changes`.
+- Dependencies: BIMSS-035.
 
 ## Phase 1E — Member Self-Service (Not started)
 

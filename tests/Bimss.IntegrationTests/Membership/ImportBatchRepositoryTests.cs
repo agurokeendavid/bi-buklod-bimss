@@ -74,4 +74,82 @@ public class ImportBatchRepositoryTests
         Assert.Equal(stagingId, error.MemberImportStagingId);
         Assert.Equal("LastName", error.FieldName);
     }
+
+    [Fact]
+    public async Task FindMemberIdByEmployeeNumberAsync_ReturnsMemberId_ForACaseInsensitiveExactMatch()
+    {
+        var memberId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var member = new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 15), "Manila",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            writeContext.Members.Add(member);
+            writeContext.MemberEmployments.Add(
+                new MemberEmployment(Guid.NewGuid(), memberId, "BI-00123", "Officer I", Guid.NewGuid(), null));
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var repository = new ImportBatchRepository(readContext);
+
+        var found = await repository.FindMemberIdByEmployeeNumberAsync("bi-00123", CancellationToken.None);
+
+        Assert.Equal(memberId, found);
+    }
+
+    [Fact]
+    public async Task FindMemberIdByEmployeeNumberAsync_ReturnsNull_WhenNoMemberHasThatNumber()
+    {
+        await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var repository = new ImportBatchRepository(dbContext);
+
+        var found = await repository.FindMemberIdByEmployeeNumberAsync("BI-99999", CancellationToken.None);
+
+        Assert.Null(found);
+    }
+
+    [Fact]
+    public async Task FindMemberIdByNameAndDateOfBirthAsync_ReturnsMemberId_ForACaseInsensitiveExactMatch()
+    {
+        var memberId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            var member = new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 15), "Manila",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            writeContext.Members.Add(member);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var repository = new ImportBatchRepository(readContext);
+
+        var found = await repository.FindMemberIdByNameAndDateOfBirthAsync(
+            "dela cruz", "juan", new DateOnly(1990, 1, 15), CancellationToken.None);
+
+        Assert.Equal(memberId, found);
+    }
+
+    [Fact]
+    public async Task FindMemberIdByNameAndDateOfBirthAsync_ReturnsNull_WhenDateOfBirthDiffers()
+    {
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            writeContext.Members.Add(new Member(
+                Guid.NewGuid(), "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 15), "Manila",
+                Guid.NewGuid(), joiningReason: null, OccurredAt));
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var repository = new ImportBatchRepository(readContext);
+
+        var found = await repository.FindMemberIdByNameAndDateOfBirthAsync(
+            "Dela Cruz", "Juan", new DateOnly(1991, 2, 20), CancellationToken.None);
+
+        Assert.Null(found);
+    }
 }
