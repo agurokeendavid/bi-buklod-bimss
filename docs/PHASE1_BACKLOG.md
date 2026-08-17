@@ -48,13 +48,12 @@ membership register, member record, new-member form) — see
 versus what stayed deferred (contributions/loans/approvals/reports/settings/
 elections screens all need data or endpoints that don't exist yet). The
 design system itself now lives at `docs/design/BIMSS-UI-SPEC.md`.
-Phase 1D (Existing Member Import) is underway: BIMSS-033 through BIMSS-037
-(import staging schema, Excel ingestion, staging validation, duplicate
-detection, promote staging -> domain entities) are Done as of 2026-08-17;
-BIMSS-038 (import batch admin UI) is next and is the last Phase 1D task.
-Its dependency on the retired Razor/MVC plan is already rescoped (see the
-Phase 1D section below) — it now depends on BIMSS-047 like every other
-Phase 1C UI task did.
+Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
+(BIMSS-033 through BIMSS-038) — see that section's note on BIMSS-038 for a
+frontend verification gap (no live backend was available to click through
+the new screens; covered instead by `ImportBatchesControllerTests`, plus
+`npm run lint`/`build`). Phase 1E (Member Self-Service) is next, starting
+with BIMSS-039.
 
 ## Phase 1A — Platform Foundation
 
@@ -1532,7 +1531,7 @@ out when the task is actually started, same as every other task.
 | BIMSS-035 | Staging validation rules | Done — [PR #44](https://github.com/agurokeendavid/bi-buklod-bimss/pull/44) | BIMSS-034 |
 | BIMSS-036 | Duplicate detection | Done — [PR #45](https://github.com/agurokeendavid/bi-buklod-bimss/pull/45) | BIMSS-035 |
 | BIMSS-037 | Promote staging → domain entities | Done — [PR #46](https://github.com/agurokeendavid/bi-buklod-bimss/pull/46) | BIMSS-022, BIMSS-036 |
-| BIMSS-038 | Import batch admin UI | Not started | BIMSS-033–037, BIMSS-047 |
+| BIMSS-038 | Import batch admin UI | Done — [PR #47](https://github.com/agurokeendavid/bi-buklod-bimss/pull/47) | BIMSS-033–037, BIMSS-047 |
 
 ### BIMSS-033 — ImportBatch/MemberImportStaging/ImportValidationError schema (Done)
 
@@ -1787,6 +1786,59 @@ Merged via [PR #46](https://github.com/agurokeendavid/bi-buklod-bimss/pull/46).
 - Verified: clean rebuild, `dotnet build`/`dotnet test` (412/412 passing) in
   Release, `dotnet format --verify-no-changes`.
 - Dependencies: BIMSS-022, BIMSS-036.
+
+### BIMSS-038 — Import batch admin UI (Done)
+
+Merged via [PR #47](https://github.com/agurokeendavid/bi-buklod-bimss/pull/47). Last Phase 1D task —
+Phase 1D is now fully Done.
+
+- New `ImportBatchesController` (`Bimss.Api/Controllers/`, `api/import-batches`)
+  wires up BIMSS-033–037's Application services for the first time — none of
+  them had any endpoint before this task. Gated by
+  `Permission.Membership.Manage`, same as the rest of membership
+  administration (no dedicated Import permission exists, and this is a
+  Membership Officer action per `docs/design/BIMSS-UI-SPEC.md`'s roles
+  table). Routes: `GET /`, `GET /{id}`, `GET /{id}/rows`, `GET /{id}/errors`,
+  `POST /` (multipart upload, `[RequestSizeLimit(10_485_760)]` — same
+  undocumented 10 MB default as `MemberDocumentsController.Upload`),
+  `POST /{id}/validate`, `POST /{id}/match`, `POST /{id}/rows/{rowId}/promote`.
+- New `IImportBatchQueryService`/`ImportBatchQueryService`
+  (`Bimss.Application`/`Bimss.Infrastructure`) — read-only `AsNoTracking`
+  projections (`ImportBatchSummary`/`ImportBatchDetail`/
+  `MemberImportStagingRowSummary`/`ImportValidationErrorSummary`), same
+  style as `MemberQueryService`. New response contracts under
+  `Bimss.Contracts/Membership/`.
+- Frontend: `frontend/src/app/dashboard/import-batches/` — a list page
+  (upload form + batch table, plain `<table>` since the row count here is
+  small, not a TanStack grid) and a `[id]` detail page (batch facts,
+  Validate/Match action buttons gated on `ImportBatch.Status`, a validation
+  issues panel, and a staging-rows table with a per-row Promote button
+  enabled only when `ValidationStatus === "Valid" && MatchStatus ===
+  "NoMatch"`; an already-promoted row links to its new member record
+  instead). New `lib/types/import-batch.ts` and
+  `lib/import-batch-status.ts` (centralized badge-color maps, same
+  convention as `lib/member-status.ts`). Added "Member imports" to the
+  sidebar nav (`lib/nav-items.ts`).
+- Tests: `ImportBatchesControllerTests` (integration —
+  `WebApplicationFactory` + `TestAuthHandler`, same pattern as
+  `MemberDocumentsControllerTests`; unauthenticated/unauthorized, bad
+  upload, full ingest→list→detail→rows round trip, validate→match status
+  transitions against seeded reference data, and a full promote-to-member
+  case). Extracted a shared `ExcelFixtures.BuildWorkbook` test helper
+  (`Bimss.IntegrationTests/Support/`) used by both this and
+  `ClosedXmlWorkbookReaderTests`.
+- **Frontend verification gap**: no live backend/dev database was available
+  in this session to click through the new screens in a browser. Verified
+  instead via `npm run lint` (clean), `npm run build` (type-checks the
+  frontend against the actual API contracts), and the backend's
+  `ImportBatchesControllerTests`, which already exercise the exact same
+  HTTP endpoints the frontend calls end-to-end (upload → validate → match →
+  promote) through `WebApplicationFactory`. A manual click-through with a
+  real `.xlsx` file is still recommended before this ships to users.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (419/419 passing) in
+  Release, `dotnet format --verify-no-changes`; `npm run lint`/`npm run
+  build` clean on the frontend.
+- Dependencies: BIMSS-033–037, BIMSS-047.
 
 ## Phase 1E — Member Self-Service (Not started)
 
