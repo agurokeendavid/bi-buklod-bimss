@@ -190,13 +190,30 @@ Audit
 4. **MemberChild** records require both name and birth date; birth date is
    not optional. (Resolves former question 5; feeds BIMSS-019.)
 
+## Confirmed decisions (Buklod, 2026-08-17)
+
+5. **Beneficiary shares/percentages are not required.** A beneficiary is
+   just a name + relationship, matching how the Excel export already
+   captures it (no percentage column). (Resolves former question 2; feeds
+   BIMSS-048.)
+6. **Beneficiary count is unlimited** — no hard cap enforced at the
+   database level, consistent with `docs/DOMAIN_WORKFLOWS.md` #3's "no
+   fixed maximum" note. (Resolves former question 3; feeds BIMSS-048.)
+7. **Beneficiary changes require officer review/approval.** Members cannot
+   directly edit their beneficiaries the way BIMSS-044 lets them directly
+   edit contact info — every add/update/remove goes through the review
+   workflow in `docs/DOMAIN_WORKFLOWS.md` #3. (Resolves former question 4;
+   feeds BIMSS-049/051.)
+
+Still open, and distinct from question 2 above: the Excel export's
+free-text "Additional Beneficiaries (Beneficiary 5 and above)" column has
+no agreed delimiter/format for splitting it into individual rows — see
+`docs/PHASE2_BACKLOG.md`'s BIMSS-054 note.
+
 ## Questions to confirm with Buklod before final schema
 
 1. Are retirees/former employees/honorary members possible?
-2. Are beneficiary percentages/shares required?
-3. Can a member have unlimited beneficiaries?
-4. Does changing beneficiaries require officer approval?
-5. What contribution amount/rules vary by member or year?
-6. What official loan products, interest rules, terms, penalties, and eligibility rules exist?
-7. What election positions and voting rules apply, including abstention and number of selections per position?
-8. What record-retention rules apply after membership ends?
+2. What contribution amount/rules vary by member or year?
+3. What official loan products, interest rules, terms, penalties, and eligibility rules exist?
+4. What election positions and voting rules apply, including abstention and number of selections per position?
+5. What record-retention rules apply after membership ends?
