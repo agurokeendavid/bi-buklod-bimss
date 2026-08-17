@@ -53,14 +53,15 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
 `npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 through BIMSS-043 (member dashboard shell, My Profile read,
+BIMSS-039 through BIMSS-044 (member dashboard shell, My Profile read,
 `MemberUpdateRequest`/Change schema, member submits update request,
-officer review/approve/reject) are Done as of 2026-08-17. Along the way,
-two gaps the plan had already implied but never filled got fixed:
-`ApplicationUser.MemberId` (BIMSS-040, added in BIMSS-005, never wired up)
-and `Permission.Membership.ManageSelf` (BIMSS-042, referenced by this
-section's own note but never added). BIMSS-044 (direct self-service edit
-for low-risk fields) is next.
+officer review/approve/reject, direct self-service edit of contact info)
+are Done as of 2026-08-17. Along the way, two gaps the plan had already
+implied but never filled got fixed: `ApplicationUser.MemberId`
+(BIMSS-040, added in BIMSS-005, never wired up) and
+`Permission.Membership.ManageSelf` (BIMSS-042, referenced by this
+section's own note but never added). BIMSS-045 (update request status/
+history view) is next — the last Phase 1 task in this backlog.
 
 ## Phase 1A — Platform Foundation
 
@@ -1869,7 +1870,7 @@ actually started.
 | BIMSS-041 | `MemberUpdateRequest`/Change schema | Done — [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50) | BIMSS-004 |
 | BIMSS-042 | Member submits update request | Done — [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51) | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | Done — [PR #52](https://github.com/agurokeendavid/bi-buklod-bimss/pull/52) | BIMSS-041, BIMSS-030 |
-| BIMSS-044 | Direct self-service edit for low-risk fields | Not started | BIMSS-042 |
+| BIMSS-044 | Direct self-service edit for low-risk fields | Done — [PR #53](https://github.com/agurokeendavid/bi-buklod-bimss/pull/53) | BIMSS-042 |
 | BIMSS-045 | Update request status/history view | Not started | BIMSS-041, BIMSS-039 |
 
 ### BIMSS-039 — Member dashboard shell (Done)
@@ -2126,6 +2127,58 @@ Merged via [PR #52](https://github.com/agurokeendavid/bi-buklod-bimss/pull/52).
   build` clean on the frontend (both new routes compile). Same frontend
   verification gap as BIMSS-038 onward (no live backend this session).
 - Dependencies: BIMSS-041, BIMSS-030.
+
+### BIMSS-044 — Direct self-service edit for low-risk fields (Done)
+
+Merged via [PR #53](https://github.com/agurokeendavid/bi-buklod-bimss/pull/53).
+
+- Implements `docs/DATA_DICTIONARY.md`'s confirmed decision: "Self-service
+  direct edit (no officer review) is limited to contact information only
+  (phone, email, mailing address)" — everything else on `Member`/
+  `MemberEmployment` stays on the BIMSS-041/042/043 review-request path.
+- `MemberContactSelfServiceUpdateService`
+  (`Bimss.Application/Membership/`) upserts `MemberContact` plus both
+  `MemberAddress` rows (Present and Permanent — both treated as "mailing
+  address" for this rule, since `docs/DATA_DICTIONARY.md` doesn't
+  distinguish them and neither carries identity/employment implications)
+  atomically in one `SaveChangesAsync`. A blank submitted address value
+  leaves an existing address untouched — no "clear" support, matching
+  `MemberAddress.UpdateAddressLine`'s own non-blank guard.
+  `IMemberRepository` gained four new tracked-load/add methods
+  (`GetTrackedContactByMemberIdAsync`, `AddContactAsync`,
+  `GetTrackedAddressesByMemberIdAsync`, `AddAddressAsync`) implemented in
+  `MemberRepository`; the `Add*Async` methods deliberately don't call
+  `SaveChangesAsync` inline (unlike `AddDocumentAsync`'s pattern) so the
+  service can commit contact+both addresses in a single transaction.
+- `IMemberQueryService.GetMyContactByUserIdAsync`/`MyContactDetail`
+  (`Bimss.Application/Membership/`) — a multi-optional-join projection
+  (Users -> Members -> MemberContacts[optional] -> MemberAddresses
+  filtered Present[optional] -> MemberAddresses filtered
+  Permanent[optional]), same "resolve from the caller's own user id"
+  shape as `GetMyProfileByUserIdAsync`.
+- `MyContactController` (`api/my/contact`) — GET gated
+  `Permission.Membership.ViewSelf`, PUT gated `ManageSelf`, resolves
+  "which member" from the caller's own user id via
+  `IMemberQueryService.GetMemberIdByUserIdAsync` (BIMSS-042), same
+  pattern as `MyProfileController`/`MyUpdateRequestsController` — no way
+  to edit another member's contact info.
+- Frontend: `frontend/src/app/my/contact/page.tsx` — reuses the
+  `FormSection`/`FormFooter` shell from BIMSS-038/042. Linked from `/my`
+  as "Update contact info", alongside BIMSS-042's "Request a profile
+  change" button. `/my/update-request`'s own description already said
+  "Contact details are not covered here — those update directly," written
+  in BIMSS-042 anticipating this task.
+- Tests: `MemberContactSelfServiceUpdateServiceTests` (unit — not-found,
+  add-when-none-exist, update-in-place for existing contact/address,
+  blank-value-leaves-address-untouched); `MyContactControllerTests`
+  (integration — 401/403/404/200-get, 403/400-missing-mobile/200-put with
+  a persisted round-trip check).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (489/489 passing:
+  2 architecture, 307 unit, 180 integration) in Release, `dotnet format
+  --verify-no-changes`; `npm run lint`/`npm run build` clean on the
+  frontend (`/my/contact` compiles as a static route). Same frontend
+  verification gap as BIMSS-038 onward (no live backend this session).
+- Dependencies: BIMSS-042.
 
 ## Secrets convention
 
