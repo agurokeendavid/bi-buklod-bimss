@@ -52,8 +52,9 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 (BIMSS-033 through BIMSS-038) — see that section's note on BIMSS-038 for a
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
-`npm run lint`/`build`). Phase 1E (Member Self-Service) is next, starting
-with BIMSS-039.
+`npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
+BIMSS-039 (member dashboard shell) is Done as of 2026-08-17; BIMSS-040 (My
+Profile, read) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1840,7 +1841,7 @@ Phase 1D is now fully Done.
   build` clean on the frontend.
 - Dependencies: BIMSS-033–037, BIMSS-047.
 
-## Phase 1E — Member Self-Service (Not started)
+## Phase 1E — Member Self-Service
 
 **Rescoped for the frontend pivot (2026-08-16)**: this is a member-facing
 portal, distinct from the officer-facing `/dashboard` admin screens Phase
@@ -1855,15 +1856,46 @@ server-side DataAnnotations) scoped to `Membership.ViewSelf`/`ManageSelf`
 instead of `Manage`. Detailed scope for each is still worked out when
 actually started.
 
-| ID | Title | Depends on |
-|---|---|---|
-| BIMSS-039 | Member dashboard shell | BIMSS-047 |
-| BIMSS-040 | My Profile (read) | BIMSS-023, BIMSS-039 |
-| BIMSS-041 | `MemberUpdateRequest`/Change schema | BIMSS-004 |
-| BIMSS-042 | Member submits update request | BIMSS-041, BIMSS-039 |
-| BIMSS-043 | Officer review/approve/reject | BIMSS-041, BIMSS-030 |
-| BIMSS-044 | Direct self-service edit for low-risk fields | BIMSS-042 |
-| BIMSS-045 | Update request status/history view | BIMSS-041, BIMSS-039 |
+| ID | Title | Status | Depends on |
+|---|---|---|---|
+| BIMSS-039 | Member dashboard shell | Done — [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48) | BIMSS-047 |
+| BIMSS-040 | My Profile (read) | Not started | BIMSS-023, BIMSS-039 |
+| BIMSS-041 | `MemberUpdateRequest`/Change schema | Not started | BIMSS-004 |
+| BIMSS-042 | Member submits update request | Not started | BIMSS-041, BIMSS-039 |
+| BIMSS-043 | Officer review/approve/reject | Not started | BIMSS-041, BIMSS-030 |
+| BIMSS-044 | Direct self-service edit for low-risk fields | Not started | BIMSS-042 |
+| BIMSS-045 | Update request status/history view | Not started | BIMSS-041, BIMSS-039 |
+
+### BIMSS-039 — Member dashboard shell (Done)
+
+Merged via [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48).
+
+- New `frontend/src/app/my/` route group — its own layout
+  (`components/member-header.tsx`: title, dark-mode toggle, avatar/sign-out
+  — no sidebar, no admin nav, per this section's "distinct from
+  `/dashboard`" note) and a placeholder landing page. Auth gate matches
+  `/dashboard/layout.tsx`'s existing pattern exactly (client-side
+  authenticated check only; real authorization for actual member data is a
+  server-side concern on each endpoint starting BIMSS-040 —
+  `Permission.Membership.ViewSelf`/`ManageSelf` — never enforced
+  client-side, per `AGENTS.md`).
+- Landing page is a placeholder only — there's no "My Profile" data to show
+  yet (that's BIMSS-040); it greets the signed-in user by name (decoded
+  from the JWT for display only, same `decodeJwtDisplayName` used
+  elsewhere) and states more is coming.
+- **Deliberately did not touch** the post-login redirect or add role-aware
+  routing between `/dashboard` and `/my` — the access token carries no
+  role/permission claims by design (`JwtTokenService`'s own comment:
+  permission claims are re-derived server-side per request, never embedded
+  in the token), so the frontend has no client-side signal to route on yet.
+  `/my` is reachable directly for now; deciding how a member vs. an officer
+  lands on the right shell is deferred until there's a concrete reason to
+  differentiate (e.g. once nav-by-role filtering exists on the admin side
+  too, which also isn't implemented yet).
+- Verified: `npm run lint` (clean), `npm run build` (succeeds, `/my` route
+  compiles). No live backend was available this session to click through
+  authenticated — same known gap noted on BIMSS-038.
+- Dependencies: BIMSS-047.
 
 ## Secrets convention
 
