@@ -213,6 +213,12 @@ public class MemberUpdateRequestSubmissionServiceTests
             AddedRequest = request;
             return Task.CompletedTask;
         }
+
+        public Task<MemberUpdateRequest?> GetTrackedByIdAsync(Guid requestId, CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+            => throw new NotSupportedException("Not used by MemberUpdateRequestSubmissionService.");
     }
 
     private sealed class FakeAuditLogger : IAuditLogger

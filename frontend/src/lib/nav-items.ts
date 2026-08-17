@@ -1,4 +1,4 @@
-import { FileSpreadsheet, LayoutDashboard, Users, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, FileSpreadsheet, LayoutDashboard, Users, type LucideIcon } from "lucide-react";
 
 export type NavGroup = "operations" | "administration";
 
@@ -24,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, group: "operations", exact: true },
   { href: "/dashboard/members", label: "Membership register", icon: Users, group: "operations" },
   { href: "/dashboard/import-batches", label: "Member imports", icon: FileSpreadsheet, group: "operations" },
+  { href: "/dashboard/update-requests", label: "Update requests", icon: ClipboardCheck, group: "operations" },
 ];
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {

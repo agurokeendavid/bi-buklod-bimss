@@ -1,4 +1,4 @@
-namespace Bimss.Contracts.Membership;
+﻿namespace Bimss.Contracts.Membership;
 
 public class MyProfileResponse
 {

@@ -53,13 +53,14 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
 `npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 through BIMSS-042 (member dashboard shell, My Profile read,
-`MemberUpdateRequest`/Change schema, member submits update request) are
-Done as of 2026-08-17. Along the way, two gaps the plan had already
-implied but never filled got fixed: `ApplicationUser.MemberId` (BIMSS-040,
-added in BIMSS-005, never wired up) and `Permission.Membership.ManageSelf`
-(BIMSS-042, referenced by this section's own note but never added).
-BIMSS-043 (officer review/approve/reject) is next.
+BIMSS-039 through BIMSS-043 (member dashboard shell, My Profile read,
+`MemberUpdateRequest`/Change schema, member submits update request,
+officer review/approve/reject) are Done as of 2026-08-17. Along the way,
+two gaps the plan had already implied but never filled got fixed:
+`ApplicationUser.MemberId` (BIMSS-040, added in BIMSS-005, never wired up)
+and `Permission.Membership.ManageSelf` (BIMSS-042, referenced by this
+section's own note but never added). BIMSS-044 (direct self-service edit
+for low-risk fields) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1867,7 +1868,7 @@ actually started.
 | BIMSS-040 | My Profile (read) | Done — [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49) | BIMSS-023, BIMSS-039 |
 | BIMSS-041 | `MemberUpdateRequest`/Change schema | Done — [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50) | BIMSS-004 |
 | BIMSS-042 | Member submits update request | Done — [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51) | BIMSS-041, BIMSS-039 |
-| BIMSS-043 | Officer review/approve/reject | Not started | BIMSS-041, BIMSS-030 |
+| BIMSS-043 | Officer review/approve/reject | Done — [PR #52](https://github.com/agurokeendavid/bi-buklod-bimss/pull/52) | BIMSS-041, BIMSS-030 |
 | BIMSS-044 | Direct self-service edit for low-risk fields | Not started | BIMSS-042 |
 | BIMSS-045 | Update request status/history view | Not started | BIMSS-041, BIMSS-039 |
 
@@ -2071,6 +2072,60 @@ Merged via [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51).
   build` clean on the frontend (both `/my` routes compile). Same frontend
   verification gap as BIMSS-038/039/040 (no live backend this session).
 - Dependencies: BIMSS-041, BIMSS-039.
+
+### BIMSS-043 — Officer review/approve/reject (Done)
+
+Merged via [PR #52](https://github.com/agurokeendavid/bi-buklod-bimss/pull/52).
+
+- Implements docs/DOMAIN_WORKFLOWS.md's remaining "Member profile update"
+  steps: "Membership Officer reviews differences -> Approve / Reject ->
+  Approved changes applied -> History/audit recorded."
+  `MemberUpdateRequestReviewService.ApproveAsync`/`RejectAsync`
+  (`Bimss.Application/Membership/`). `RejectAsync` only records the
+  decision. `ApproveAsync` additionally **reuses
+  `MemberProfileUpdateService`** (BIMSS-030's officer-direct-edit path,
+  already validated/tested) to actually apply the change: it replays the
+  request's per-field `NewValue` diffs onto the member's *current* values
+  to reconstruct the same `UpdateMemberCommand` shape that service already
+  persists, rather than re-implementing field-by-field mutation here. The
+  decode logic mirrors BIMSS-042's `BuildChanges` encode exactly (same
+  `nameof(...)` field-name keys, same `"O"` round-trip date format) — this
+  coupling is intentional and documented in both files' comments, not
+  hidden. Approving logs **two** separate audit entries
+  (`Member.UpdateProfile` from the reused service, `MemberUpdateRequest.Approve`
+  from this one) since they're two distinct auditable facts: the review
+  decision, and the resulting profile change.
+- `IMemberUpdateRequestQueryService`/`MemberUpdateRequestQueryService`
+  (list with optional status filter + detail-with-changes) — LINQ-joins
+  `Member` in for display (no navigation property between the two
+  entities, by design, same as `MemberQueryService`).
+- `MemberUpdateRequestsController` (`api/update-requests`, its own flat
+  controller — not nested under `/members/{id}`, since this is a
+  cross-member review queue, same shape as the Approvals screen in
+  `docs/design/BIMSS-UI-SPEC.md`) gated `Permission.Membership.Manage`.
+  `Reject` returns 400 if remarks are blank (checked at the controller
+  boundary before the domain guard fires, so the officer gets a normal
+  validation response rather than an unhandled exception path).
+- Frontend: `frontend/src/app/dashboard/update-requests/` — a list page
+  (defaults to `?status=Pending`) and a detail page (submitted/reviewed
+  timestamps, an old-value/new-value changes table, and Approve/Reject
+  actions with a shared remarks textarea, only shown while the request is
+  still Pending). Added "Update requests" to the sidebar nav.
+- Tests: `MemberUpdateRequestReviewServiceTests` (unit — hand-rolled fakes
+  plus a *real* `MemberProfileUpdateService` instance wired to the same
+  fakes, since it's a concrete class the review service genuinely depends
+  on, not an interface to mock; covers single/multi-field apply, both audit
+  entries, not-pending/not-found guards for both actions);
+  `MemberUpdateRequestQueryServiceTests` (integration — list, status
+  filter, detail-with-changes, not-found);
+  `MemberUpdateRequestsControllerTests` (integration —
+  401/403/400-missing-remarks/200-reject/200-approve-applies-the-change/
+  list-then-get-round-trip).
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (478/478 passing)
+  in Release, `dotnet format --verify-no-changes`; `npm run lint`/`npm run
+  build` clean on the frontend (both new routes compile). Same frontend
+  verification gap as BIMSS-038 onward (no live backend this session).
+- Dependencies: BIMSS-041, BIMSS-030.
 
 ## Secrets convention
 
