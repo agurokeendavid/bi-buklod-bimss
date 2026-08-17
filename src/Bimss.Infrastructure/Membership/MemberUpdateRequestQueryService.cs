@@ -33,6 +33,24 @@ public sealed class MemberUpdateRequestQueryService(BimssDbContext dbContext) : 
         return await query.OrderByDescending(summary => summary.SubmittedAtUtc).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<MemberUpdateRequestSummary>> ListByMemberIdAsync(Guid memberId, CancellationToken cancellationToken)
+    {
+        var query =
+            from request in dbContext.MemberUpdateRequests.AsNoTracking()
+            join member in dbContext.Members.AsNoTracking() on request.MemberId equals member.Id
+            where request.MemberId == memberId
+            select new MemberUpdateRequestSummary(
+                request.Id,
+                request.MemberId,
+                member.LastName,
+                member.FirstName,
+                request.SubmittedByUserId,
+                request.SubmittedAtUtc,
+                request.Status);
+
+        return await query.OrderByDescending(summary => summary.SubmittedAtUtc).ToListAsync(cancellationToken);
+    }
+
     public async Task<MemberUpdateRequestDetail?> GetByIdAsync(Guid requestId, CancellationToken cancellationToken)
     {
         var request =

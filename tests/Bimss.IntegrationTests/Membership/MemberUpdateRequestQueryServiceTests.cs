@@ -113,6 +113,45 @@ public class MemberUpdateRequestQueryServiceTests
     }
 
     [Fact]
+    public async Task ListByMemberIdAsync_ReturnsOnlyThatMembersRequests()
+    {
+        var memberId = Guid.NewGuid();
+        var otherMemberId = Guid.NewGuid();
+        Guid requestId;
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            writeContext.Members.Add(new Member(
+                memberId, "Dela Cruz", "Juan", middleName: null, suffixId: null, new DateOnly(1990, 1, 1), "Manila",
+                Guid.NewGuid(), joiningReason: null, OccurredAt));
+            writeContext.Members.Add(new Member(
+                otherMemberId, "Reyes", "Maria", middleName: null, suffixId: null, new DateOnly(1992, 3, 4), "Cebu",
+                Guid.NewGuid(), joiningReason: null, OccurredAt));
+
+            var request = new MemberUpdateRequest(
+                Guid.NewGuid(), memberId, Guid.NewGuid(), OccurredAt,
+                [new MemberUpdateRequestChangeInput("FirstName", "Juan", "Juanito")]);
+            requestId = request.Id;
+
+            var otherRequest = new MemberUpdateRequest(
+                Guid.NewGuid(), otherMemberId, Guid.NewGuid(), OccurredAt,
+                [new MemberUpdateRequestChangeInput("PlaceOfBirth", "Cebu", "Manila")]);
+
+            writeContext.MemberUpdateRequests.AddRange(request, otherRequest);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberUpdateRequestQueryService(readContext);
+
+        var requests = await queryService.ListByMemberIdAsync(memberId, CancellationToken.None);
+
+        var summary = Assert.Single(requests);
+        Assert.Equal(requestId, summary.Id);
+        Assert.Equal(memberId, summary.MemberId);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_ReturnsNull_WhenRequestDoesNotExist()
     {
         await using var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName);

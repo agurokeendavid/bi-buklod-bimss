@@ -142,6 +142,135 @@ public class MyUpdateRequestsControllerTests : IDisposable
         Assert.Equal(MemberUpdateRequestStatus.Pending, persisted.Status);
     }
 
+    [Fact]
+    public async Task List_ReturnsUnauthorized_WhenNotAuthenticated()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/my/update-requests");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_ReturnsForbidden_WithoutViewSelfPermission()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+
+        var response = await client.GetAsync("/api/my/update-requests");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_ReturnsOnlyTheCallersOwnRequests()
+    {
+        var userId = Guid.NewGuid();
+        Member member = null!;
+        MemberEmployment employment = null!;
+
+        await using (var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            (member, employment) = await SeedMemberAsync(dbContext, userId);
+
+            var otherMember = new Member(
+                Guid.NewGuid(), "Reyes", "Maria", middleName: null, suffixId: null, new DateOnly(1992, 3, 4), "Cebu",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            dbContext.Members.Add(otherMember);
+
+            dbContext.MemberUpdateRequests.Add(new MemberUpdateRequest(
+                Guid.NewGuid(), member.Id, userId, OccurredAt,
+                [new MemberUpdateRequestChangeInput("FirstName", "Juan", "Juanito")]));
+            dbContext.MemberUpdateRequests.Add(new MemberUpdateRequest(
+                Guid.NewGuid(), otherMember.Id, Guid.NewGuid(), OccurredAt,
+                [new MemberUpdateRequestChangeInput("PlaceOfBirth", "Cebu", "Manila")]));
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.ViewSelf);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+
+        var response = await client.GetAsync("/api/my/update-requests");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var requests = await response.Content.ReadFromJsonAsync<List<MemberUpdateRequestSummaryResponse>>();
+        Assert.NotNull(requests);
+        var summary = Assert.Single(requests!);
+        Assert.Equal(member.Id, summary.MemberId);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsNotFound_ForAnotherMembersRequest()
+    {
+        var userId = Guid.NewGuid();
+
+        Guid otherRequestId;
+        await using (var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            await SeedMemberAsync(dbContext, userId);
+
+            var otherMember = new Member(
+                Guid.NewGuid(), "Reyes", "Maria", middleName: null, suffixId: null, new DateOnly(1992, 3, 4), "Cebu",
+                Guid.NewGuid(), joiningReason: null, OccurredAt);
+            dbContext.Members.Add(otherMember);
+
+            var otherRequest = new MemberUpdateRequest(
+                Guid.NewGuid(), otherMember.Id, Guid.NewGuid(), OccurredAt,
+                [new MemberUpdateRequestChangeInput("PlaceOfBirth", "Cebu", "Manila")]);
+            otherRequestId = otherRequest.Id;
+            dbContext.MemberUpdateRequests.Add(otherRequest);
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.ViewSelf);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+
+        var response = await client.GetAsync($"/api/my/update-requests/{otherRequestId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsDetail_ForTheCallersOwnRequest()
+    {
+        var userId = Guid.NewGuid();
+        Member member = null!;
+        Guid requestId;
+
+        await using (var dbContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            (member, _) = await SeedMemberAsync(dbContext, userId);
+
+            var request = new MemberUpdateRequest(
+                Guid.NewGuid(), member.Id, userId, OccurredAt,
+                [new MemberUpdateRequestChangeInput("FirstName", "Juan", "Juanito")]);
+            requestId = request.Id;
+            dbContext.MemberUpdateRequests.Add(request);
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.AuthenticatedHeader, "true");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, Permission.Membership.ViewSelf);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+
+        var response = await client.GetAsync($"/api/my/update-requests/{requestId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var detail = await response.Content.ReadFromJsonAsync<MemberUpdateRequestDetailResponse>();
+        Assert.NotNull(detail);
+        Assert.Equal(requestId, detail!.Id);
+        Assert.Single(detail.Changes);
+    }
+
     private static async Task<(Member Member, MemberEmployment Employment)> SeedMemberAsync(BimssDbContext dbContext, Guid userId)
     {
         var member = new Member(
