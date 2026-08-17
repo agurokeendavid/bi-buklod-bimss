@@ -23,6 +23,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ImportBatchValidationService>();
         services.AddScoped<ImportBatchMatchingService>();
         services.AddScoped<ImportBatchPromotionService>();
+        services.AddScoped<MemberUpdateRequestSubmissionService>();
 
         return services;
     }

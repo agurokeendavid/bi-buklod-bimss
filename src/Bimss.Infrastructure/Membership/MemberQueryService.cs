@@ -84,16 +84,28 @@ public sealed class MemberQueryService(BimssDbContext dbContext) : IMemberQueryS
                 member.LastName,
                 member.FirstName,
                 member.MiddleName,
+                member.SuffixId,
                 suffix != null ? suffix.Name : null,
                 member.DateOfBirth,
                 member.PlaceOfBirth,
+                member.CivilStatusId,
                 civilStatus.Name,
                 member.JoiningReason,
                 member.Status,
                 employment.EmployeeNumber,
                 employment.PositionDesignation,
+                employment.OfficeUnitId,
                 officeUnit.Name,
                 employment.PermanentAppointmentDate))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<Guid?> GetMemberIdByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => user.MemberId)
             .SingleOrDefaultAsync(cancellationToken);
     }
 }

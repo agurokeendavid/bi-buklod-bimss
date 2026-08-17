@@ -201,6 +201,7 @@ public class MemberQueryServiceTests
         Assert.NotNull(linkedProfile);
         Assert.Equal(memberId, linkedProfile!.Id);
         Assert.Equal("Dela Cruz", linkedProfile.LastName);
+        Assert.Equal(suffixId, linkedProfile.SuffixId);
         Assert.Equal("Jr.", linkedProfile.SuffixName);
         Assert.Equal("Single", linkedProfile.CivilStatusName);
         Assert.Equal("Port Operations Division", linkedProfile.OfficeUnitName);
@@ -255,5 +256,44 @@ public class MemberQueryServiceTests
 
         Assert.NotNull(profile);
         Assert.Null(profile!.SuffixName);
+    }
+
+    [Fact]
+    public async Task GetMemberIdByUserIdAsync_ReturnsTheLinkedMemberId()
+    {
+        var memberId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            writeContext.Users.Add(new ApplicationUser { Id = userId, UserName = "member3.dev", MemberId = memberId });
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+
+        var result = await queryService.GetMemberIdByUserIdAsync(userId, CancellationToken.None);
+
+        Assert.Equal(memberId, result);
+    }
+
+    [Fact]
+    public async Task GetMemberIdByUserIdAsync_ReturnsNull_WhenUserHasNoLinkedMember()
+    {
+        var userId = Guid.NewGuid();
+
+        await using (var writeContext = InMemoryBimssDbContextFactory.Create(_databaseName))
+        {
+            writeContext.Users.Add(new ApplicationUser { Id = userId, UserName = "officer2.dev", MemberId = null });
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = InMemoryBimssDbContextFactory.Create(_databaseName);
+        var queryService = new MemberQueryService(readContext);
+
+        var result = await queryService.GetMemberIdByUserIdAsync(userId, CancellationToken.None);
+
+        Assert.Null(result);
     }
 }

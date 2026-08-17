@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import type { MyProfile } from "@/lib/types/member";
 import { memberStatusBadgeClassName } from "@/lib/member-status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 function FactBlock({ label, value }: { label: string; value: string }) {
   return (
@@ -86,12 +89,17 @@ export default function MemberDashboardPage() {
 
   return (
     <Card className="rounded-xl shadow-none">
-      <CardHeader>
-        <div className="flex items-center gap-2.5">
-          <CardTitle className="text-[14.5px] font-semibold">{fullName}</CardTitle>
-          <Badge className={memberStatusBadgeClassName[profile.status]}>{profile.status}</Badge>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <CardTitle className="text-[14.5px] font-semibold">{fullName}</CardTitle>
+            <Badge className={memberStatusBadgeClassName[profile.status]}>{profile.status}</Badge>
+          </div>
+          <CardDescription>{profile.positionDesignation} · {profile.officeUnitName}</CardDescription>
         </div>
-        <CardDescription>{profile.positionDesignation} · {profile.officeUnitName}</CardDescription>
+        <Link href="/my/update-request" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          Request a profile change
+        </Link>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <FactBlock label="Membership status" value={profile.status} />

@@ -53,11 +53,13 @@ Phase 1D (Existing Member Import) is fully Done as of 2026-08-17
 frontend verification gap (no live backend was available to click through
 the new screens; covered instead by `ImportBatchesControllerTests`, plus
 `npm run lint`/`build`). Phase 1E (Member Self-Service) is underway:
-BIMSS-039 through BIMSS-041 (member dashboard shell, My Profile read,
-`MemberUpdateRequest`/Change schema) are Done as of 2026-08-17 — BIMSS-040
-also retroactively wired up `ApplicationUser.MemberId` (added in
-BIMSS-005, never actually used until now). BIMSS-042 (member submits
-update request) is next.
+BIMSS-039 through BIMSS-042 (member dashboard shell, My Profile read,
+`MemberUpdateRequest`/Change schema, member submits update request) are
+Done as of 2026-08-17. Along the way, two gaps the plan had already
+implied but never filled got fixed: `ApplicationUser.MemberId` (BIMSS-040,
+added in BIMSS-005, never wired up) and `Permission.Membership.ManageSelf`
+(BIMSS-042, referenced by this section's own note but never added).
+BIMSS-043 (officer review/approve/reject) is next.
 
 ## Phase 1A — Platform Foundation
 
@@ -1864,7 +1866,7 @@ actually started.
 | BIMSS-039 | Member dashboard shell | Done — [PR #48](https://github.com/agurokeendavid/bi-buklod-bimss/pull/48) | BIMSS-047 |
 | BIMSS-040 | My Profile (read) | Done — [PR #49](https://github.com/agurokeendavid/bi-buklod-bimss/pull/49) | BIMSS-023, BIMSS-039 |
 | BIMSS-041 | `MemberUpdateRequest`/Change schema | Done — [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50) | BIMSS-004 |
-| BIMSS-042 | Member submits update request | Not started | BIMSS-041, BIMSS-039 |
+| BIMSS-042 | Member submits update request | Done — [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51) | BIMSS-041, BIMSS-039 |
 | BIMSS-043 | Officer review/approve/reject | Not started | BIMSS-041, BIMSS-030 |
 | BIMSS-044 | Direct self-service edit for low-risk fields | Not started | BIMSS-042 |
 | BIMSS-045 | Update request status/history view | Not started | BIMSS-041, BIMSS-039 |
@@ -2008,6 +2010,67 @@ Merged via [PR #50](https://github.com/agurokeendavid/bi-buklod-bimss/pull/50).
   in CI's SQL Server service container) in Release, `dotnet format
   --verify-no-changes`.
 - Dependencies: BIMSS-004.
+
+### BIMSS-042 — Member submits update request (Done)
+
+Merged via [PR #51](https://github.com/agurokeendavid/bi-buklod-bimss/pull/51).
+
+- **Discovered gap, fixed as part of this task**: `Permission.Membership`
+  only had `ViewSelf`/`Manage`/`Verify` — no `ManageSelf`, even though the
+  Phase 1E backlog note already said screens would be "scoped to
+  `Membership.ViewSelf`/`ManageSelf` instead of `Manage`" and the seeded
+  `Member` role's own permission list never included it either. Added
+  `Permission.Membership.ManageSelf` (submitting/tracking one's own update
+  requests, and BIMSS-044's direct edit), wired into `Permission.All`, the
+  `Member` role's seed list, `docs/ARCHITECTURE.md`'s example list, and
+  `PermissionCatalogTests`' expected set.
+- **Second discovered gap**: `ReferenceDataController` (civil statuses,
+  suffixes, office units) was gated to `Permission.Membership.Manage`
+  only — but the edit form here needs those same lookups to populate its
+  Selects, and a self-service caller has only `ManageSelf`. Reference data
+  isn't member-specific or sensitive, so rather than widen a single
+  `Permission`, added a combined named policy,
+  `AuthorizationPolicies.ReferenceDataRead` (`Manage` OR `ManageSelf` via
+  `RequireAssertion` — stacking `[Authorize]` attributes AND-combines,
+  per `MembersController`'s own comment on that exact pitfall, so a
+  second named policy was the only way to express "either"). Also
+  extended `MyProfileDetail`/`MyProfileResponse` (BIMSS-040) with the raw
+  `SuffixId`/`CivilStatusId`/`OfficeUnitId` alongside the already-resolved
+  names — the edit form needs both (names for the read view, ids to
+  pre-select each Select), matching what `MemberDetail` already does for
+  the officer-facing edit form.
+- `MemberUpdateRequestSubmissionService.SubmitAsync`
+  (`Bimss.Application/Membership/`) reuses `UpdateMemberCommand` — the same
+  shape the officer-direct-edit flow (BIMSS-030) already applies
+  immediately — as the "proposed values" input, since the editable field
+  set is identical; only the workflow differs (apply immediately vs. queue
+  for review). Compares each field against the member's current value and
+  records only the ones that actually changed; throws
+  `DomainValidationException` if nothing changed. `EmployeeNumber` and
+  contact information (phone/email/mailing address) are excluded — the
+  former was never in `UpdateMemberCommand` to begin with, the latter is
+  BIMSS-044's direct-edit path per `docs/DATA_DICTIONARY.md`'s confirmed
+  decision, not this approval workflow.
+- `MyUpdateRequestsController` (`api/my/update-requests`, its own
+  controller) resolves "which member" from the caller's own user id, same
+  pattern as `MyProfileController` — no way to submit on another member's
+  behalf.
+- Frontend: `/my/update-request/page.tsx` — pre-fills from `/api/my/profile`,
+  reuses the `FormSection`/`FormFooter` shell from BIMSS-038's create-member
+  page. Linked from `/my`'s "Request a profile change" button.
+- Tests: `MemberUpdateRequestSubmissionServiceTests` (unit — only-changed-
+  fields recorded, multi-field changes, audit logging, no-op rejection,
+  not-found); `MemberQueryServiceTests`/`MyProfileControllerTests` gained
+  cases for `GetMemberIdByUserIdAsync` and the new id fields;
+  `MyUpdateRequestsControllerTests` (integration — 401/403/404/400/200);
+  `AuthorizationPolicyRegistrationTests` gained a case proving
+  `ReferenceDataReadPolicy` accepts `Manage` or `ManageSelf` but nothing
+  else.
+- Verified: clean rebuild, `dotnet build`/`dotnet test` (462/462 passing)
+  in Release, `dotnet format --verify-no-changes`; `npm run lint`/`npm run
+  build` clean on the frontend (both `/my` routes compile). Same frontend
+  verification gap as BIMSS-038/039/040 (no live backend this session).
+- Dependencies: BIMSS-041, BIMSS-039.
 
 ## Secrets convention
 

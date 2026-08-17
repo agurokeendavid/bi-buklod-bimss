@@ -7,6 +7,7 @@ public class PermissionCatalogTests
     private static readonly string[] ExpectedPermissions =
     [
         "Membership.ViewSelf",
+        "Membership.ManageSelf",
         "Membership.Manage",
         "Membership.Verify",
         "Beneficiary.ManageSelf",
