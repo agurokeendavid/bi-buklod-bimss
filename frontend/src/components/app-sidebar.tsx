@@ -13,7 +13,7 @@ const NAV_GROUP_ORDER: NavGroup[] = ["operations", "administration"];
 function SidebarContent({ pathname, onNavigate, onClose }: { pathname: string; onNavigate?: () => void; onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="relative flex flex-col items-center gap-2 px-4 pt-6 pb-5">
+      <div className="relative flex flex-col items-center gap-2.5 px-6 pt-7 pb-6">
         {onClose ? (
           <Button
             variant="ghost"
@@ -25,10 +25,10 @@ function SidebarContent({ pathname, onNavigate, onClose }: { pathname: string; o
             <X className="size-5" />
           </Button>
         ) : null}
-        <Image src="/bi-seal.png" alt="" width={56} height={56} className="object-contain" priority />
+        <Image src="/bi-seal.png" alt="" width={170} height={170} className="w-full max-w-[170px] object-contain" priority />
         <div className="flex flex-col items-center text-center leading-tight">
-          <span className="text-[15px] font-semibold">BIMSS</span>
-          <span className="text-[11px] text-white/70">Buklod ng Kawani</span>
+          <span className="text-lg font-semibold">BIMSS</span>
+          <span className="text-[13px] text-white/70">Buklod ng Kawani</span>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-2">
