@@ -1520,6 +1520,57 @@ cross-cutting spirit — no backend changes.
   visual-design source of truth and to correct the stale 18px-root note.
 - Verified: `npm run lint`/`npm run build` clean.
 
+### Claude Design update applied — brand assets, wizard, typography (2026-08-18, no BIMSS ID — cross-cutting, not a new feature)
+
+Follow-up to the 2026-08-16 design-system integration above, applying a
+newer round of the same Claude Design handoff (updated `docs/design/`)
+to the same five already-built screens — still no backend changes, still
+scoped to "re-skin what's built + shared components for future modules,"
+not new screens for modules without a backend (Beneficiaries/Loans/
+Elections/Notifications stay mockup-only, tracked in
+`docs/PHASE2_BACKLOG.md`–`PHASE6_BACKLOG.md`).
+
+- **Real brand assets**: `frontend/public/bi-seal.png` and
+  `immigration-bg.jpg` (first image assets in the app) replace the
+  placeholder "BI" text-circle on both the sidebar and the login page;
+  the login page's left panel now layers the building photo under the
+  existing navy gradient overlay.
+- **Self-hosted Inter** (`@fontsource-variable/inter`, not
+  `next/font/google`) replaces the system-font stack as the primary
+  `--font-sans` face — still zero runtime network dependency (font files
+  ship in the build), so the 2026-08-16 offline/intranet reasoning holds;
+  only the specific font changed, not the constraint. System fonts remain
+  the fallback chain.
+- **New shared wizard shell** (`components/forms/wizard.tsx` —
+  `WizardHeader`/`WizardStepBody`): the new-member form became an actual
+  navigable 2-step wizard (Personal information → Employment information,
+  with Back/Continue/"Save as draft"/Cancel), and the edit-member page was
+  rebuilt to mirror it exactly instead of a single flat form. This is the
+  intended pattern for future multi-step flows (Loans apply, Elections
+  setup) — build on it rather than a bespoke stepper.
+- **Header chrome added** matching the spec: a search input and
+  notification bell are now visually present but intentionally inert (no
+  cross-entity search or notifications backend yet, per the 2026-08-16
+  "don't show a link with nothing behind it" rule — the difference here is
+  the user explicitly asked for the chrome to be visible ahead of its
+  backend, unlike that rule's default). "New member" is a real, functional
+  link.
+- **Typography standardized at the primitive level.** Every shared
+  `components/ui/*` component (`input`, `select`, `textarea`, `table`,
+  `badge`, `card`, `label`, `button`, `tabs`, `alert`, `avatar`,
+  `dropdown-menu`) had its default text size corrected to
+  `docs/design/BIMSS-UI-SPEC.md`'s type scale — they'd been rendering at
+  Tailwind's stock defaults (16px inputs/labels, 14px body/badges) since
+  the 2026-08-16 pass only fixed the root font-size, not each primitive's
+  own `text-*` class. `Label` was the largest gap (16px everywhere, should
+  be 13px). Fixing the primitive defaults means every future screen built
+  from these components inherits the correct scale automatically.
+- **Sidebar logo enlarged** to fill the rail width (170px) with margin,
+  restructured into a vertical logo → "BIMSS" → org-name stack.
+- Verified: `npm run lint`/`npm run build` clean; live manual verification
+  by the user across the members register, create/edit member wizards, and
+  a member detail page.
+
 ## Phase 1D — Existing Member Import (Done)
 
 **Rescoped for the frontend pivot (2026-08-16)**: only BIMSS-038 (Import

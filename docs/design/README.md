@@ -2,21 +2,39 @@
 
 ## Integration status (2026-08-18)
 
-Tokens, the navy sidebar/header shell, and centralized status badges from an earlier
-round of this handoff are integrated into `frontend/` — login, dashboard, the
-members register, member record, and the new-member form (still its original
-single-page Personal+Employment shape) are re-skinned to match. See
-`docs/PHASE1_BACKLOG.md` for the task-level record of exactly what shipped.
+Tokens, the navy sidebar/header shell, centralized status badges, the real brand
+assets (BI seal + login background photo), self-hosted Inter, and a reusable
+wizard shell (`components/forms/wizard.tsx`) are integrated into `frontend/`.
+Login, dashboard, the members register, member record, and the new/edit member
+forms (now an actual navigable 2-step wizard: Personal information → Employment
+information, not a single page) are re-skinned to match. The header also carries
+a search box and notification bell matching this spec — both visually present
+but intentionally inert (no cross-entity search or notifications backend yet);
+"New member" is a real, functional link. See `docs/PHASE1_BACKLOG.md` for the
+task-level record of exactly what shipped.
 
-**Everything else in this document — the expanded six-step wizard, Beneficiaries,
-Loans, Elections, Notifications/Announcements, the Audit log browser, the real
-brand assets (seal + login background), and the expanded Reports grid — exists
-only in this design handoff and the live Claude Design project. None of it has
-been implemented in `frontend/` yet.** These are Phase 2–6 (and Phase 7 once
-scoped) work, tracked in `docs/PHASE2_BACKLOG.md` through `docs/PHASE6_BACKLOG.md`
-— read the relevant one before implementing any of these screens, since the
-actual task breakdown (and any Buklod-confirmed business rules, especially the
-UNCONFIRMED loan placeholders below) lives there, not here.
+**Typography now matches this document's type scale exactly at the primitive
+level, not just per-screen.** Every shared shadcn/ui component under
+`components/ui/` (`input`, `select`, `textarea`, `table`, `badge`, `card`,
+`label`, `button`, `tabs`, `alert`, `avatar`, `dropdown-menu`) has its default
+text size set to this spec's Typography table below (13px form fields/body,
+12.5px helper/meta, 12px table header/badge, 14.5px/600 card titles) — they
+previously defaulted to Tailwind's stock sizes (16px inputs and labels, 14px
+body/badges), off-spec everywhere until this pass. **Build future screens on
+these primitives directly and they inherit the correct scale automatically —
+don't re-derive sizes from the prototype or hardcode `text-[…]` values that
+duplicate what the primitive already sets.**
+
+**Everything else in this document — the expanded six-step wizard's later steps
+(Family, Beneficiaries, Documents, Review+Submit), Beneficiaries, Loans,
+Elections, Notifications/Announcements, the Audit log browser, and the expanded
+Reports grid — exists only in this design handoff and the live Claude Design
+project. None of it has been implemented in `frontend/` yet.** These are
+Phase 2–6 (and Phase 7 once scoped) work, tracked in `docs/PHASE2_BACKLOG.md`
+through `docs/PHASE6_BACKLOG.md` — read the relevant one before implementing
+any of these screens, since the actual task breakdown (and any Buklod-confirmed
+business rules, especially the UNCONFIRMED loan placeholders below) lives
+there, not here.
 
 ## Overview
 
@@ -36,7 +54,7 @@ Open `BIMSS.dc.html` in a browser to click through every screen (sidebar Adminis
 
 **High-fidelity.** Final layout, spacing, typography scale, component anatomy, copy, and color relationships. Recreate faithfully, but **express every value through the codebase's existing Tailwind/shadcn tokens** (`bg-primary`, `text-muted-foreground`, `border-border`), never as hardcoded hex. The hex values in this document exist so you can read the prototype, not so you can paste them.
 
-One deliberate deviation: the prototype renders in Inter because it runs in a browser preview. **The app keeps its existing system font stack** — do not add `next/font/google`. The reasoning in the project's `globals.css` (offline/intranet-friendly for a government deployment) is correct.
+The prototype renders in Inter, and the app now matches: Inter is **self-hosted** via `@fontsource-variable/inter` (the font files ship with the build), not loaded via `next/font/google`. Never add `next/font/google` or a CDN `<link>` — either fetches over the network at runtime, which breaks the offline/intranet government deployment this app targets. The system-font stack (`ui-sans-serif, system-ui, ...`) is kept only as the `--font-sans` fallback chain in `globals.css`, not the primary face.
 
 ---
 
@@ -51,21 +69,30 @@ app/
   dashboard/layout.tsx
   dashboard/members/page.tsx
   dashboard/members/[id]/
-  dashboard/members/new/
+  dashboard/members/new/page.tsx      (2-step wizard)
+  dashboard/members/[id]/edit/page.tsx (mirrors new/, 2-step wizard)
   globals.css
 components/
   app-sidebar.tsx  app-header.tsx  breadcrumbs.tsx
   members-table.tsx
   member-documents-panel.tsx  member-status-history-panel.tsx
-  ui/  (avatar badge button card dropdown-menu input label
-        select separator sonner table textarea tooltip)
+  forms/
+    wizard.tsx        — reusable stepper shell (WizardHeader, WizardStepBody);
+                         build future multi-step flows (Loans apply, Elections
+                         setup, Benefits once scoped) on this, not a bespoke one
+    record-form.tsx    — FormSection, FormFooter, RequiredMark, FieldError
+  ui/  (alert avatar badge button card dropdown-menu input label
+        select separator sonner table tabs textarea tooltip)
 lib/
   nav-items.ts  member-status.ts  auth-context.tsx  jwt.ts
   api-errors.ts  config.ts  utils.ts
   types/member.ts
+public/
+  bi-seal.png  immigration-bg.jpg   — real brand assets, first image
+  assets in the app; reuse these rather than re-exporting from Claude Design
 ```
 
-**shadcn components still to add:** `checkbox`, `radio-group`, `tabs`, `dialog`, `sheet`, `progress`, `alert`, `form`, `pagination`, `skeleton`, `switch`.
+**shadcn components still to add:** `checkbox`, `radio-group`, `dialog`, `sheet`, `progress`, `form`, `pagination`, `skeleton`, `switch`.
 
 ### Four decisions already made — apply these
 
