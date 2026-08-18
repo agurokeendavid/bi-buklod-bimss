@@ -9,16 +9,28 @@ import { parseFieldErrors } from "@/lib/api-errors";
 import type { CreateMemberRequest, ReferenceDataItem } from "@/lib/types/member";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { FormSection, FormFooter, RequiredMark, FieldError } from "@/components/forms/record-form";
+import { WizardHeader } from "@/components/forms/wizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const NO_SUFFIX = "__none__";
+const WIZARD_STEPS = ["Personal information", "Employment information"];
+const STEP_0_FIELDS = new Set([
+  "lastName",
+  "firstName",
+  "middleName",
+  "suffixId",
+  "dateOfBirth",
+  "placeOfBirth",
+  "civilStatusId",
+  "joiningReason",
+]);
 
 export default function NewMemberPage() {
   const router = useRouter();
@@ -43,6 +55,7 @@ export default function NewMemberPage() {
   const [officeUnitId, setOfficeUnitId] = useState("");
   const [permanentAppointmentDate, setPermanentAppointmentDate] = useState("");
 
+  const [step, setStep] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -120,6 +133,31 @@ export default function NewMemberPage() {
     router.push("/dashboard/members");
   }
 
+  // Personal information's required fields aren't in the DOM once step 1 is
+  // showing, so neither native `required` validation nor a step-0 field error
+  // returned by the API would be visible to the user there. Checked explicitly
+  // before advancing, and step-0 API field errors send the user back to see them.
+  function validateStep0(): boolean {
+    const missing: Record<string, string> = {};
+    if (!lastName.trim()) missing.lastName = "Last name is required.";
+    if (!firstName.trim()) missing.firstName = "First name is required.";
+    if (!dateOfBirth) missing.dateOfBirth = "Date of birth is required.";
+    if (!placeOfBirth.trim()) missing.placeOfBirth = "Place of birth is required.";
+    if (!civilStatusId) missing.civilStatusId = "Civil status is required.";
+
+    if (Object.keys(missing).length > 0) {
+      setFieldErrors((current) => ({ ...current, ...missing }));
+      return false;
+    }
+    return true;
+  }
+
+  function handleContinue() {
+    if (validateStep0()) {
+      setStep(1);
+    }
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError(null);
@@ -157,6 +195,9 @@ export default function NewMemberPage() {
         const errors = await parseFieldErrors(response);
         setFieldErrors(errors);
         setSubmitError("Please fix the highlighted fields.");
+        if (Object.keys(errors).some((field) => STEP_0_FIELDS.has(field))) {
+          setStep(0);
+        }
         return;
       }
 
@@ -184,14 +225,16 @@ export default function NewMemberPage() {
         ]}
       />
 
-      <Card className="mx-auto w-full max-w-[980px] rounded-xl shadow-none">
-        <CardHeader>
-          <CardTitle className="text-[14.5px] font-semibold">Create member</CardTitle>
-          <CardDescription>
-            Core identity and employment information. BI Employee Number is mandatory and unique. Fields marked
-            <RequiredMark /> are required.
-          </CardDescription>
-        </CardHeader>
+      <Card className="rounded-xl shadow-none">
+        <WizardHeader
+          title="Membership application"
+          meta="BI Employee Number is mandatory and unique. Fields marked * are required."
+          steps={WIZARD_STEPS}
+          currentStep={step}
+        />
+      </Card>
+
+      <Card className="rounded-xl shadow-none">
         <CardContent>
           {loadError ? (
             <Alert variant="destructive">
@@ -213,6 +256,7 @@ export default function NewMemberPage() {
             </div>
           ) : (
             <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
+              {step === 0 ? (
               <FormSection
                 title="Personal information"
                 description="Legal identity as it will appear on the membership record."
@@ -337,7 +381,9 @@ export default function NewMemberPage() {
                   <FieldError message={fieldErrors.joiningReason} />
                 </div>
               </FormSection>
+              ) : null}
 
+              {step === 1 ? (
               <FormSection
                 title="Employment information"
                 description="Verified against BI personnel records where applicable."
@@ -406,6 +452,7 @@ export default function NewMemberPage() {
                   <FieldError message={fieldErrors.permanentAppointmentDate} />
                 </div>
               </FormSection>
+              ) : null}
 
               {submitError ? (
                 <Alert variant="destructive">
@@ -415,13 +462,35 @@ export default function NewMemberPage() {
               ) : null}
 
               <FormFooter>
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
+                {step === 0 ? (
+                  <Button type="button" variant="outline" onClick={handleCancel}>
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => setStep(0)}>
+                    Back
+                  </Button>
+                )}
                 <div className="flex-1" />
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating…" : "Create member"}
+                {/* Not wired to real draft persistence yet — no draft-save endpoint
+                    exists. Present per the design's wizard footer; will save for
+                    real once that's built. */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toast.info("Saving drafts isn't available yet — coming in a later phase.")}
+                >
+                  Save as draft
                 </Button>
+                {step === 0 ? (
+                  <Button type="button" onClick={handleContinue}>
+                    Continue to {WIZARD_STEPS[1]}
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating…" : "Create member"}
+                  </Button>
+                )}
               </FormFooter>
             </form>
           )}

@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Menu, Moon, Sun } from "lucide-react";
+import { toast } from "sonner";
+import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { decodeJwtDisplayName } from "@/lib/jwt";
 import { activeNavLabel } from "@/lib/nav-items";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 function initialsFor(name: string | null): string {
   if (!name) {
@@ -65,6 +69,34 @@ export function AppHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
       </div>
 
       <div className="flex items-center gap-2">
+        <div className="relative hidden lg:block">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Not wired to a real search yet — no cross-entity search endpoint exists.
+              Present per docs/design/BIMSS-UI-SPEC.md's topbar anatomy; will search
+              once that feature lands. */}
+          <Input placeholder="Search…" className="w-[258px] pl-8" aria-label="Search (not yet available)" />
+        </div>
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => toast.info("Notifications aren't available yet — coming in a later phase.")}
+                aria-label="Notifications"
+              >
+                <Bell className="size-5" />
+              </Button>
+            }
+          />
+          <TooltipContent>Notifications (coming soon)</TooltipContent>
+        </Tooltip>
+
+        <Link href="/dashboard/members/new" className={cn(buttonVariants({ size: "sm" }), "hidden sm:inline-flex")}>
+          New member
+        </Link>
+
         {mounted ? (
           <Tooltip>
             <TooltipTrigger

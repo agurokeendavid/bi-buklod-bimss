@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Self-hosted (not Google Fonts CDN) — the actual font files ship with the
+   app build, so this works fully offline/behind a restrictive intranet.
+   Matches the mockup's Inter without the next/font/google runtime fetch
+   this repo previously and deliberately avoided — see the --font-sans note
+   below and docs/design/README.md's "Fidelity" section. */
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -51,9 +57,11 @@
 }
 
 :root {
-  /* System font stack — no external font loading, works offline/behind a
-     restrictive intranet, appropriate for a government deployment. */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Inter (self-hosted via @fontsource-variable/inter above), matching the
+     mockup, with the original system-font stack kept as the fallback chain
+     — still offline-safe either way, since neither tier fetches anything
+     over the network at runtime. */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

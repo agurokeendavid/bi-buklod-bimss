@@ -13,3 +13,11 @@ export const memberStatusBadgeClassName: Record<MemberStatus, string> = {
   PendingVerification: "border-transparent bg-[#fef9c3] text-[#854d0e] dark:bg-amber-500/15 dark:text-amber-400",
   Inactive: "border-transparent bg-[#f4f4f5] text-[#52525b] dark:bg-zinc-500/15 dark:text-zinc-400",
 };
+
+// Human-readable labels for the same status enum — badges/text should render
+// this, never the raw PascalCase API value (e.g. "PendingVerification").
+export const memberStatusLabel: Record<MemberStatus, string> = {
+  Active: "Active",
+  PendingVerification: "Pending verification",
+  Inactive: "Inactive",
+};

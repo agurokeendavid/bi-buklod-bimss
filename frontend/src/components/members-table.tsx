@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { memberStatusBadgeClassName } from "@/lib/member-status";
+import { memberStatusBadgeClassName, memberStatusLabel } from "@/lib/member-status";
 import { cn } from "@/lib/utils";
 
 interface FilterPill {
@@ -151,7 +151,7 @@ export function MembersTable({
         ),
         cell: ({ row }) => (
           <Badge variant="outline" className={cn("rounded-full text-[11.5px]", memberStatusBadgeClassName[row.original.status])}>
-            {row.original.status}
+            {memberStatusLabel[row.original.status]}
           </Badge>
         ),
         filterFn: (row, columnId, filterValue: string) => {
@@ -237,9 +237,13 @@ export function MembersTable({
     const header = ["Last name", "First name", "Middle name", "Employee number", "Status"];
     const rows = filteredRows.map((row) => {
       const member = row.original;
-      return [member.lastName, member.firstName, member.middleName ?? "", member.employeeNumber ?? "", member.status].map(
-        toCsvValue,
-      );
+      return [
+        member.lastName,
+        member.firstName,
+        member.middleName ?? "",
+        member.employeeNumber ?? "",
+        memberStatusLabel[member.status],
+      ].map(toCsvValue);
     });
     const csv = [header, ...rows].map((line) => line.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

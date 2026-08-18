@@ -3,38 +3,33 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { parseFieldErrors } from "@/lib/api-errors";
 import type { MemberDetail, ReferenceDataItem, UpdateMemberRequest } from "@/lib/types/member";
+import { FormSection, FormFooter, RequiredMark, FieldError } from "@/components/forms/record-form";
+import { WizardHeader } from "@/components/forms/wizard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 const NO_SUFFIX = "__none__";
-
-function RequiredMark() {
-  return (
-    <span aria-hidden="true" className="text-destructive">
-      {" "}
-      *
-    </span>
-  );
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-  return (
-    <p role="alert" className="text-sm text-destructive">
-      {message}
-    </p>
-  );
-}
+const WIZARD_STEPS = ["Personal information", "Employment information"];
+const STEP_0_FIELDS = new Set([
+  "lastName",
+  "firstName",
+  "middleName",
+  "suffixId",
+  "dateOfBirth",
+  "placeOfBirth",
+  "civilStatusId",
+  "joiningReason",
+]);
 
 export default function EditMemberPage() {
   const params = useParams<{ id: string }>();
@@ -61,6 +56,7 @@ export default function EditMemberPage() {
   const [officeUnitId, setOfficeUnitId] = useState("");
   const [permanentAppointmentDate, setPermanentAppointmentDate] = useState("");
 
+  const [step, setStep] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -150,6 +146,37 @@ export default function EditMemberPage() {
     };
   }
 
+  function handleBack() {
+    if (isDirty && !window.confirm("Discard your changes to this member record?")) {
+      return;
+    }
+    router.push(`/dashboard/members/${params.id}`);
+  }
+
+  // Same reasoning as the new-member wizard: Personal information's required
+  // fields aren't in the DOM once step 1 is showing, so they need an explicit
+  // check before advancing (and a way back if the API rejects one on submit).
+  function validateStep0(): boolean {
+    const missing: Record<string, string> = {};
+    if (!lastName.trim()) missing.lastName = "Last name is required.";
+    if (!firstName.trim()) missing.firstName = "First name is required.";
+    if (!dateOfBirth) missing.dateOfBirth = "Date of birth is required.";
+    if (!placeOfBirth.trim()) missing.placeOfBirth = "Place of birth is required.";
+    if (!civilStatusId) missing.civilStatusId = "Civil status is required.";
+
+    if (Object.keys(missing).length > 0) {
+      setFieldErrors((current) => ({ ...current, ...missing }));
+      return false;
+    }
+    return true;
+  }
+
+  function handleContinue() {
+    if (validateStep0()) {
+      setStep(1);
+    }
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError(null);
@@ -181,6 +208,9 @@ export default function EditMemberPage() {
         const errors = await parseFieldErrors(response);
         setFieldErrors(errors);
         setSubmitError("Please fix the highlighted fields.");
+        if (Object.keys(errors).some((field) => STEP_0_FIELDS.has(field))) {
+          setStep(0);
+        }
         return;
       }
 
@@ -208,14 +238,16 @@ export default function EditMemberPage() {
         ]}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit member</CardTitle>
-          <CardDescription>
-            Core identity and employment information. BI Employee Number cannot be changed here. Fields marked
-            <RequiredMark /> are required.
-          </CardDescription>
-        </CardHeader>
+      <Card className="rounded-xl shadow-none">
+        <WizardHeader
+          title="Edit member"
+          meta="BI Employee Number cannot be changed here. Fields marked * are required."
+          steps={WIZARD_STEPS}
+          currentStep={step}
+        />
+      </Card>
+
+      <Card className="rounded-xl shadow-none">
         <CardContent>
           {notFound ? (
             <p className="text-sm text-muted-foreground">Member not found.</p>
@@ -224,12 +256,12 @@ export default function EditMemberPage() {
           ) : !isLoaded ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="employeeNumber">BI employee number</Label>
-                  <Input id="employeeNumber" value={employeeNumber} disabled />
-                </div>
+            <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
+              {step === 0 ? (
+              <FormSection
+                title="Personal information"
+                description="Legal identity as it will appear on the membership record."
+              >
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="lastName">
                     Last name
@@ -258,7 +290,6 @@ export default function EditMemberPage() {
                   />
                   <FieldError message={fieldErrors.firstName} />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="middleName">Middle name</Label>
                   <Input
@@ -302,7 +333,6 @@ export default function EditMemberPage() {
                   />
                   <FieldError message={fieldErrors.dateOfBirth} />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="placeOfBirth">
                     Place of birth
@@ -342,6 +372,27 @@ export default function EditMemberPage() {
                   </Select>
                   <FieldError message={fieldErrors.civilStatusId} />
                 </div>
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <Label htmlFor="joiningReason">Reason for joining Buklod</Label>
+                  <Textarea
+                    id="joiningReason"
+                    value={joiningReason}
+                    onChange={(event) => set(setJoiningReason, "joiningReason")(event.target.value)}
+                  />
+                  <FieldError message={fieldErrors.joiningReason} />
+                </div>
+              </FormSection>
+              ) : null}
+
+              {step === 1 ? (
+              <FormSection
+                title="Employment information"
+                description="BI Employee Number cannot be changed here."
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="employeeNumber">BI employee number</Label>
+                  <Input id="employeeNumber" value={employeeNumber} disabled />
+                </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="positionDesignation">
                     Position / designation
@@ -356,7 +407,6 @@ export default function EditMemberPage() {
                   />
                   <FieldError message={fieldErrors.positionDesignation} />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="officeUnit">
                     Office unit
@@ -392,27 +442,46 @@ export default function EditMemberPage() {
                   />
                   <FieldError message={fieldErrors.permanentAppointmentDate} />
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="joiningReason">Reason for joining Buklod</Label>
-                <Textarea
-                  id="joiningReason"
-                  value={joiningReason}
-                  onChange={(event) => set(setJoiningReason, "joiningReason")(event.target.value)}
-                />
-                <FieldError message={fieldErrors.joiningReason} />
-              </div>
-
-              {submitError ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {submitError}
-                </p>
+              </FormSection>
               ) : null}
 
-              <Button type="submit" disabled={isSubmitting} className="w-fit">
-                {isSubmitting ? "Saving…" : "Save changes"}
-              </Button>
+              {submitError ? (
+                <Alert variant="destructive">
+                  <OctagonAlert />
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              <FormFooter>
+                {step === 0 ? (
+                  <Button type="button" variant="outline" onClick={handleBack}>
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => setStep(0)}>
+                    Back
+                  </Button>
+                )}
+                <div className="flex-1" />
+                {/* Not wired to real draft persistence yet — see the same note on
+                    the new-member wizard's footer. */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toast.info("Saving drafts isn't available yet — coming in a later phase.")}
+                >
+                  Save as draft
+                </Button>
+                {step === 0 ? (
+                  <Button type="button" onClick={handleContinue}>
+                    Continue to {WIZARD_STEPS[1]}
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving…" : "Save changes"}
+                  </Button>
+                )}
+              </FormFooter>
             </form>
           )}
         </CardContent>

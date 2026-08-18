@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
@@ -12,25 +13,23 @@ const NAV_GROUP_ORDER: NavGroup[] = ["operations", "administration"];
 function SidebarContent({ pathname, onNavigate, onClose }: { pathname: string; onNavigate?: () => void; onClose?: () => void }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-2.5 px-4">
-        <div className="flex size-[34px] shrink-0 items-center justify-center rounded-full border-2 border-white/50 text-xs font-semibold">
-          BI
-        </div>
-        <div className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-sm font-semibold">BIMSS</span>
-          <span className="truncate text-[11px] text-white/70">Buklod ng Kawani</span>
-        </div>
+      <div className="relative flex flex-col items-center gap-2 px-4 pt-6 pb-5">
         {onClose ? (
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
             aria-label="Close navigation"
-            className="ml-auto shrink-0 text-white hover:bg-white/10 hover:text-white"
+            className="absolute top-2 right-2 shrink-0 text-white hover:bg-white/10 hover:text-white"
           >
             <X className="size-5" />
           </Button>
         ) : null}
+        <Image src="/bi-seal.png" alt="" width={56} height={56} className="object-contain" priority />
+        <div className="flex flex-col items-center text-center leading-tight">
+          <span className="text-[15px] font-semibold">BIMSS</span>
+          <span className="text-[11px] text-white/70">Buklod ng Kawani</span>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         {NAV_GROUP_ORDER.map((group) => {

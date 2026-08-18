@@ -1,7 +1,7 @@
 import type { MemberStatusHistoryEntry, ReferenceDataItem } from "@/lib/types/member";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { memberStatusBadgeClassName } from "@/lib/member-status";
+import { memberStatusBadgeClassName, memberStatusLabel } from "@/lib/member-status";
 
 export function MemberStatusHistoryPanel({
   history,
@@ -32,13 +32,13 @@ export function MemberStatusHistoryPanel({
                     {entry.fromStatus ? (
                       <>
                         <Badge variant="outline" className={memberStatusBadgeClassName[entry.fromStatus]}>
-                          {entry.fromStatus}
+                          {memberStatusLabel[entry.fromStatus]}
                         </Badge>
                         <span className="text-muted-foreground">→</span>
                       </>
                     ) : null}
                     <Badge variant="outline" className={memberStatusBadgeClassName[entry.toStatus]}>
-                      {entry.toStatus}
+                      {memberStatusLabel[entry.toStatus]}
                     </Badge>
                   </div>
                 </TableCell>

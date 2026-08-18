@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MemberDocumentsPanel } from "@/components/member-documents-panel";
 import { MemberStatusHistoryPanel } from "@/components/member-status-history-panel";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { memberStatusBadgeClassName } from "@/lib/member-status";
+import { memberStatusBadgeClassName, memberStatusLabel } from "@/lib/member-status";
 import { cn } from "@/lib/utils";
 
 type StatusAction = "verify" | "deactivate" | "reactivate";
@@ -220,7 +220,7 @@ export default function MemberDetailPage() {
                         {member.middleName ? ` ${member.middleName.charAt(0)}.` : ""}
                       </h2>
                       <Badge variant="outline" className={memberStatusBadgeClassName[member.status]}>
-                        {member.status}
+                        {memberStatusLabel[member.status]}
                       </Badge>
                     </div>
                     <p className="text-[13px] text-muted-foreground">{member.positionDesignation ?? "Position not on file"}</p>

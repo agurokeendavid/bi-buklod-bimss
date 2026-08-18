@@ -5,7 +5,7 @@ import Link from "next/link";
 import { OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import type { MyProfile } from "@/lib/types/member";
-import { memberStatusBadgeClassName } from "@/lib/member-status";
+import { memberStatusBadgeClassName, memberStatusLabel } from "@/lib/member-status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -93,7 +93,7 @@ export default function MemberDashboardPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <CardTitle className="text-[14.5px] font-semibold">{fullName}</CardTitle>
-            <Badge className={memberStatusBadgeClassName[profile.status]}>{profile.status}</Badge>
+            <Badge className={memberStatusBadgeClassName[profile.status]}>{memberStatusLabel[profile.status]}</Badge>
           </div>
           <CardDescription>{profile.positionDesignation} · {profile.officeUnitName}</CardDescription>
         </div>
@@ -110,7 +110,7 @@ export default function MemberDashboardPage() {
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <FactBlock label="Membership status" value={profile.status} />
+        <FactBlock label="Membership status" value={memberStatusLabel[profile.status]} />
         <FactBlock label="BI employee number" value={profile.employeeNumber} />
         <FactBlock label="Civil status" value={profile.civilStatusName} />
         <FactBlock label="Date of birth" value={new Date(profile.dateOfBirth).toLocaleDateString()} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, OctagonAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -41,15 +42,23 @@ export default function LoginPage() {
           live stats (unauthenticated page, no public endpoint) and no role selector
           (production reads the role from JWT claims — see docs/design/BIMSS-UI-SPEC.md §5.1). */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-[#0b3b6f] px-14 py-13 text-white lg:flex">
+        {/* Building photo, layered under the navy overlay — docs/design/README.md's
+            "Assets" section. Sits behind the decorative circles and all content. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(11,59,111,.92), rgba(11,59,111,.86) 45%, rgba(11,59,111,.95)), url(/immigration-bg.jpg)",
+          }}
+        />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-28 -bottom-28 size-[440px] rounded-full border border-white/[.13]" />
           <div className="absolute -right-16 -bottom-16 size-[290px] rounded-full border border-white/10" />
         </div>
 
         <div className="relative flex items-center gap-3">
-          <div className="flex size-[46px] shrink-0 items-center justify-center rounded-full border-2 border-white/50 text-sm font-semibold">
-            BI
-          </div>
+          <Image src="/bi-seal.png" alt="" width={46} height={46} className="shrink-0 object-contain" priority />
           <div className="flex flex-col leading-tight">
             <span className="text-[10.5px] font-semibold tracking-[.16em] text-white/72 uppercase">
               Republic of the Philippines
