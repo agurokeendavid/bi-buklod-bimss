@@ -160,6 +160,14 @@ export default function NewMemberPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // Defensive: step 0's "Continue" is type="button", but some browsers
+    // still fire a native form submit right after it advances the step
+    // (observed even with no submit()/requestSubmit() call in the JS call
+    // stack). Refuse to persist anything unless the wizard is genuinely on
+    // its last step, regardless of what triggered this submit event.
+    if (step !== WIZARD_STEPS.length - 1) {
+      return;
+    }
     setSubmitError(null);
     setFieldErrors({});
     setIsSubmitting(true);
@@ -255,8 +263,15 @@ export default function NewMemberPage() {
               </div>
             </div>
           ) : (
-            <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
-              {step === 0 ? (
+            step === 0 ? (
+            // Deliberately a <div>, not a <form>: on some browsers, clicking
+            // this step's "Continue" (type="button") was observed to also
+            // trigger a native form submit once the DOM advanced to step 1 —
+            // even with no submit()/requestSubmit() call anywhere in the JS
+            // call stack, and reproducing with extensions disabled. Only
+            // wrapping the final step in a real <form> removes any element
+            // for that native behavior to act on.
+            <div className="flex flex-col gap-8">
               <FormSection
                 title="Personal information"
                 description="Legal identity as it will appear on the membership record."
@@ -381,9 +396,36 @@ export default function NewMemberPage() {
                   <FieldError message={fieldErrors.joiningReason} />
                 </div>
               </FormSection>
+
+              {submitError ? (
+                <Alert variant="destructive">
+                  <OctagonAlert />
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
               ) : null}
 
-              {step === 1 ? (
+              <FormFooter>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <div className="flex-1" />
+                {/* Not wired to real draft persistence yet — no draft-save endpoint
+                    exists. Present per the design's wizard footer; will save for
+                    real once that's built. */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toast.info("Saving drafts isn't available yet — coming in a later phase.")}
+                >
+                  Save as draft
+                </Button>
+                <Button type="button" onClick={handleContinue}>
+                  Continue to {WIZARD_STEPS[1]}
+                </Button>
+              </FormFooter>
+            </div>
+            ) : (
+            <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
               <FormSection
                 title="Employment information"
                 description="Verified against BI personnel records where applicable."
@@ -452,7 +494,6 @@ export default function NewMemberPage() {
                   <FieldError message={fieldErrors.permanentAppointmentDate} />
                 </div>
               </FormSection>
-              ) : null}
 
               {submitError ? (
                 <Alert variant="destructive">
@@ -462,15 +503,9 @@ export default function NewMemberPage() {
               ) : null}
 
               <FormFooter>
-                {step === 0 ? (
-                  <Button type="button" variant="outline" onClick={handleCancel}>
-                    Cancel
-                  </Button>
-                ) : (
-                  <Button type="button" variant="outline" onClick={() => setStep(0)}>
-                    Back
-                  </Button>
-                )}
+                <Button type="button" variant="outline" onClick={() => setStep(0)}>
+                  Back
+                </Button>
                 <div className="flex-1" />
                 {/* Not wired to real draft persistence yet — no draft-save endpoint
                     exists. Present per the design's wizard footer; will save for
@@ -482,17 +517,12 @@ export default function NewMemberPage() {
                 >
                   Save as draft
                 </Button>
-                {step === 0 ? (
-                  <Button type="button" onClick={handleContinue}>
-                    Continue to {WIZARD_STEPS[1]}
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating…" : "Create member"}
-                  </Button>
-                )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating…" : "Create member"}
+                </Button>
               </FormFooter>
             </form>
+            )
           )}
         </CardContent>
       </Card>
